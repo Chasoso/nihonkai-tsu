@@ -1,0 +1,296 @@
+:root {
+  font-family: "Hiragino Sans", "Yu Gothic", sans-serif;
+  color: #f6f3ec;
+  background: radial-gradient(circle at top, #1f3a4e 0%, #081019 60%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+.app-shell {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 24px 16px 96px;
+}
+
+.section {
+  margin: 40px 0;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 12px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  opacity: 0.8;
+  letter-spacing: 0.06em;
+}
+
+.hero {
+  padding: 28px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(92, 146, 196, 0.22), rgba(58, 84, 116, 0.45));
+}
+
+.hero-subline {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.card {
+  background: rgba(11, 22, 34, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.meta {
+  display: flex;
+  gap: 20px;
+}
+
+.meta dt {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.meta dd {
+  margin: 4px 0 0;
+  font-weight: 700;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+button {
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  background: rgba(120, 162, 204, 0.2);
+  color: #f8f6f2;
+  border-radius: 999px;
+  padding: 9px 14px;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+textarea {
+  width: 100%;
+  min-height: 120px;
+  margin-top: 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(8, 16, 25, 0.72);
+  color: inherit;
+  padding: 10px;
+}
+
+.fixed-template {
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(222, 226, 232, 0.12);
+}
+
+.fixed-template pre {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.history-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.history-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.progress-shell {
+  width: 100%;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #63d2ff, #f6c26f);
+  transition: width 220ms ease;
+}
+
+.voronoi-wrapper {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.voronoi-wrapper svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: rgba(11, 22, 34, 0.86);
+}
+
+.voronoi-cell {
+  transition: opacity 160ms ease;
+  cursor: pointer;
+}
+
+.voronoi-cell:hover {
+  opacity: 1;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  background: rgba(8, 16, 25, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  width: min(360px, calc(100vw - 28px));
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(7, 14, 24, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transform: translateY(120%);
+  opacity: 0;
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+
+.toast-visible {
+  transform: translateY(0%);
+  opacity: 1;
+}
+
+.toast-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(8, 16, 25, 0.7);
+  animation: overlay-fade 1.5s ease forwards;
+}
+
+.overlay-badge {
+  padding: 20px 28px;
+  border-radius: 999px;
+  background: rgba(242, 197, 113, 0.92);
+  color: #1a1c1f;
+  font-size: 24px;
+  font-weight: 800;
+  animation: badge-scale 1.5s ease forwards;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: rgba(7, 13, 20, 0.78);
+}
+
+.modal {
+  position: relative;
+  width: min(560px, calc(100vw - 20px));
+  border-radius: 12px;
+  background: #0f1f2f;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  padding: 18px;
+}
+
+.close-button {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+}
+
+@keyframes overlay-fade {
+  from {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes badge-scale {
+  from {
+    transform: scale(0.76);
+    opacity: 0;
+  }
+  20% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .app-shell {
+    padding: 18px 12px 88px;
+  }
+
+  .hero {
+    padding: 20px;
+  }
+
+  .history-list li {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
