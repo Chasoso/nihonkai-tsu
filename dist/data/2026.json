@@ -1,0 +1,98 @@
+{
+  "year": 2026,
+  "theme": {
+    "headline": "変わる海を、味わう。",
+    "subline": "2026年度 日本海の旬"
+  },
+  "categories": [
+    { "id": "trend", "label": "旬", "description": "今年、存在感を増している魚" },
+    { "id": "discovery", "label": "発見", "description": "あまり知られていないが魅力的な魚" },
+    { "id": "classic", "label": "王道", "description": "定番のブランド魚" }
+  ],
+  "fish": [
+    {
+      "id": "sawara",
+      "name": "サワラ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 12,
+      "microcopy": "ここ数年で存在感が増えています。",
+      "share": {
+        "badgeLabel": "2026 サワラ通",
+        "text": "2026年の日本海を味わった。主役はサワラ。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "buri",
+      "name": "ブリ",
+      "category": "classic",
+      "trend": "flat",
+      "percentile": 28,
+      "microcopy": "冬の王道。脂の厚みで旅の記憶を作る魚。",
+      "share": {
+        "badgeLabel": "2026 ブリ通",
+        "text": "2026年の日本海を味わった。主役はブリ。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "nodoguro",
+      "name": "ノドグロ",
+      "category": "classic",
+      "trend": "up",
+      "percentile": 8,
+      "microcopy": "炙りの香りまで含めて特別な一皿。",
+      "share": {
+        "badgeLabel": "2026 ノドグロ通",
+        "text": "2026年の日本海を味わった。主役はノドグロ。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "amadai",
+      "name": "アマダイ",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 22,
+      "microcopy": "うろこ焼きで旨味が際立つ、隠れた実力派。",
+      "share": {
+        "badgeLabel": "2026 アマダイ通",
+        "text": "2026年の日本海を味わった。主役はアマダイ。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "kawahagi",
+      "name": "カワハギ",
+      "category": "discovery",
+      "trend": "flat",
+      "percentile": 41,
+      "microcopy": "肝と合わせると印象が変わる、通好みの魚。",
+      "share": {
+        "badgeLabel": "2026 カワハギ通",
+        "text": "2026年の日本海を味わった。主役はカワハギ。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "maaji",
+      "name": "真アジ",
+      "category": "trend",
+      "trend": "down",
+      "percentile": 55,
+      "microcopy": "時期を選べば驚くほど濃い旨味を感じられる。",
+      "share": {
+        "badgeLabel": "2026 真アジ通",
+        "text": "2026年の日本海を味わった。主役は真アジ。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "mutsu",
+      "name": "ムツ",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 35,
+      "microcopy": "煮付けでも焼きでも旨味が崩れない深海系。",
+      "share": {
+        "badgeLabel": "2026 ムツ通",
+        "text": "2026年の日本海を味わった。主役はムツ。#日本海通2026 #石川の旬"
+      }
+    }
+  ]
+}

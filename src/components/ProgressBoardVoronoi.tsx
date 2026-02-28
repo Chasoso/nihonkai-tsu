@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { hierarchy } from "d3";
+import { hierarchy } from "d3-hierarchy";
 import { voronoiTreemap } from "d3-voronoi-treemap";
 import type { Category, Fish } from "../types";
 
@@ -11,13 +11,22 @@ interface ProgressBoardVoronoiProps {
   onOpenFish: (fish: Fish) => void;
 }
 
-interface LeafData {
+type TreeNode = {
+  name: string;
+  id?: string;
+  category?: string;
+  percentile?: number;
+  weight?: number;
+  children?: TreeNode[];
+};
+
+type LeafNode = {
   id: string;
   name: string;
   category: string;
   percentile: number;
-  weight: number;
-}
+  polygon: [number, number][];
+};
 
 const WIDTH = 960;
 const HEIGHT = 520;
@@ -39,30 +48,28 @@ export function ProgressBoardVoronoi({
 
   const fishById = useMemo(() => new Map(fish.map((item) => [item.id, item])), [fish]);
 
-  const leaves = useMemo(() => {
-    const treeData = {
+  const leaves = useMemo<LeafNode[]>(() => {
+    const treeData: TreeNode = {
       name: "root",
       children: categories.map((category) => ({
         name: category.id,
         children: fish
           .filter((item) => item.category === category.id)
-          .map(
-            (item): LeafData => ({
-              id: item.id,
-              name: item.name,
-              category: item.category,
-              percentile: item.percentile,
-              weight: Math.max(1, 100 - item.percentile)
-            })
-          )
+          .map((item) => ({
+            id: item.id,
+            name: item.name,
+            category: item.category,
+            percentile: item.percentile,
+            weight: Math.max(1, 100 - item.percentile)
+          }))
       }))
     };
 
-    const root = hierarchy(treeData)
-      .sum((node) => ("weight" in node ? (node as unknown as LeafData).weight : 0))
+    const root = hierarchy<TreeNode>(treeData)
+      .sum((node) => node.weight ?? 0)
       .sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
 
-    const layout = voronoiTreemap<unknown>().clip([
+    const layout = voronoiTreemap<TreeNode>().clip([
       [0, 0],
       [WIDTH, 0],
       [WIDTH, HEIGHT],
@@ -70,13 +77,20 @@ export function ProgressBoardVoronoi({
     ]);
     layout(root as never);
 
-    return root.leaves().map((leaf) => {
-      const data = leaf.data as unknown as LeafData;
+    return root.leaves().flatMap((leaf) => {
+      const data = leaf.data;
       const polygon = (leaf as unknown as { polygon?: [number, number][] }).polygon ?? [];
-      return {
-        ...data,
-        polygon
-      };
+      if (!data.id || !data.category || typeof data.percentile !== "number") return [];
+
+      return [
+        {
+          id: data.id,
+          name: data.name,
+          category: data.category,
+          percentile: data.percentile,
+          polygon
+        }
+      ];
     });
   }, [fish, categories]);
 
