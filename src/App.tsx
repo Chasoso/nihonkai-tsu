@@ -92,7 +92,11 @@ export default function App() {
         <h2>今年の魚</h2>
         <div className="chip-row">
           {data.fish.map((fish) => (
-            <button key={fish.id} onClick={() => setModalFish(fish)}>
+            <button
+              key={fish.id}
+              onClick={() => setSelectedFish(fish)}
+              className={selectedFish?.id === fish.id ? "chip-active" : ""}
+            >
               {fish.name}
             </button>
           ))}
@@ -104,10 +108,34 @@ export default function App() {
       <section ref={shareRef}>
         <ShareStudio
           fish={selectedFish}
-          onOpenXIntent={(finalText) => {
-            if (!selectedFish) return;
+          onOpenXIntent={async (finalText, imageFile) => {
+            const canShareWithImage =
+              !!imageFile &&
+              typeof navigator.canShare === "function" &&
+              navigator.canShare({ files: [imageFile] });
+
+            if (canShareWithImage) {
+              try {
+                await navigator.share({
+                  text: finalText,
+                  files: [imageFile]
+                });
+                return true;
+              } catch (error) {
+                if (error instanceof DOMException && error.name === "AbortError") {
+                  return false;
+                }
+              }
+            }
+
             const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(finalText)}`;
-            window.open(url, "_blank");
+            window.open(url, "_blank", "noopener,noreferrer");
+
+            if (imageFile) {
+              window.alert("このブラウザでは画像の自動添付に未対応のため、Xの投稿画面で画像を手動追加してください。");
+            }
+
+            return true;
           }}
           onComplete={() => {
             if (!selectedFish) return;
