@@ -33,6 +33,29 @@ export interface AppData {
   fish: Fish[];
 }
 
+export interface LandingMonthlyRecord {
+  year: number;
+  m: number;
+  value: number;
+}
+
+export interface LandingSpecies {
+  id: string;
+  name_ja: string;
+  monthly: LandingMonthlyRecord[];
+}
+
+export interface LandingsMeta {
+  range_years: number[];
+  unit: string;
+  updated_at: string;
+}
+
+export interface LandingsData {
+  meta: LandingsMeta;
+  species: LandingSpecies[];
+}
+
 export interface BadgeRecord {
   year: number;
   fishId: string;
