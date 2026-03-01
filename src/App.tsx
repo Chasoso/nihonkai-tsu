@@ -3,16 +3,18 @@ import { Hero } from "./components/Hero";
 import { FishSpotlight } from "./components/FishSpotlight";
 import { FishModal } from "./components/FishModal";
 import { ShareStudio } from "./components/ShareStudio";
+import { SeasonalityCalendar } from "./components/SeasonalityCalendar";
 import { BadgeToast } from "./components/BadgeToast";
 import { BadgeHistory } from "./components/BadgeHistory";
 import { ProgressBoardVoronoi } from "./components/ProgressBoardVoronoi";
-import { fetchYearData } from "./lib/data";
+import { fetchLandings5y, fetchYearData } from "./lib/data";
 import { computeMaxCoveredPercentile } from "./lib/progress";
 import { earnBadge, getBadges } from "./lib/storage";
-import type { AppData, Fish } from "./types";
+import type { AppData, Fish, LandingsData } from "./types";
 
 export default function App() {
   const [data, setData] = useState<AppData | null>(null);
+  const [landings, setLandings] = useState<LandingsData | null>(null);
   const [selectedFish, setSelectedFish] = useState<Fish | null>(null);
   const [modalFish, setModalFish] = useState<Fish | null>(null);
   const [badges, setBadges] = useState(() => getBadges());
@@ -27,14 +29,15 @@ export default function App() {
   const overlayTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    fetchYearData()
-      .then((res) => {
-        setData(res);
-        if (res.fish.length > 0) {
-          setSelectedFish(res.fish[0]);
+    Promise.all([fetchYearData(), fetchLandings5y()])
+      .then(([yearData, landingData]) => {
+        setData(yearData);
+        setLandings(landingData);
+        if (yearData.fish.length > 0) {
+          setSelectedFish(yearData.fish[0]);
         }
       })
-      .catch((e) => setError(e instanceof Error ? e.message : "データ読み込みに失敗しました"));
+      .catch((e) => setError(e instanceof Error ? e.message : "データの読み込みに失敗しました"));
   }, []);
 
   useEffect(() => {
@@ -78,7 +81,7 @@ export default function App() {
     return <main className="app-shell">Error: {error}</main>;
   }
 
-  if (!data) {
+  if (!data || !landings) {
     return <main className="app-shell">Loading...</main>;
   }
 
@@ -104,6 +107,18 @@ export default function App() {
       </section>
 
       <FishModal fish={modalFish} onClose={() => setModalFish(null)} onSelectForShare={openFishForShare} />
+
+      <SeasonalityCalendar
+        fishList={data.fish}
+        landings={landings}
+        selectedFishId={selectedFish?.id ?? null}
+        onSelectMainFish={(fishId) => {
+          const fish = data.fish.find((item) => item.id === fishId);
+          if (fish) {
+            setSelectedFish(fish);
+          }
+        }}
+      />
 
       <section ref={shareRef}>
         <ShareStudio

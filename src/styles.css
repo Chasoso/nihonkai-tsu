@@ -79,6 +79,55 @@ h3 {
   border-color: rgba(246, 194, 111, 0.9);
 }
 
+.seasonality-section {
+  margin-top: 28px;
+}
+
+.season-lists {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.season-card h3 {
+  margin-bottom: 8px;
+}
+
+.season-controls {
+  margin-top: 14px;
+}
+
+.season-controls select {
+  margin-left: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(8, 16, 25, 0.7);
+  color: inherit;
+  padding: 6px 8px;
+}
+
+.season-grid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.season-tile {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  padding: 8px;
+  background: rgba(100, 152, 206, 0.24);
+  min-height: 64px;
+  display: grid;
+  gap: 4px;
+}
+
+.season-tile-peak {
+  border-color: rgba(246, 194, 111, 0.95);
+  box-shadow: 0 0 0 1px rgba(246, 194, 111, 0.6) inset;
+}
+
 button {
   border: 1px solid rgba(255, 255, 255, 0.26);
   background: rgba(120, 162, 204, 0.2);
@@ -387,5 +436,13 @@ textarea {
   .history-list li {
     flex-direction: column;
     gap: 4px;
+  }
+
+  .season-lists {
+    grid-template-columns: 1fr;
+  }
+
+  .season-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
