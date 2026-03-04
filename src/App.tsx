@@ -16,6 +16,7 @@ export default function App() {
   const [data, setData] = useState<AppData | null>(null);
   const [landings, setLandings] = useState<LandingsData | null>(null);
   const [selectedFish, setSelectedFish] = useState<Fish | null>(null);
+  const [openShareComposerNonce, setOpenShareComposerNonce] = useState(0);
   const [modalFish, setModalFish] = useState<Fish | null>(null);
   const [badges, setBadges] = useState(() => getBadges());
   const [toastMessage, setToastMessage] = useState("");
@@ -97,7 +98,13 @@ export default function App() {
           {data.fish.map((fish) => (
             <button
               key={fish.id}
-              onClick={() => setSelectedFish(fish)}
+              onClick={() => {
+                if (selectedFish?.id === fish.id) {
+                  setOpenShareComposerNonce((prev) => prev + 1);
+                  return;
+                }
+                setSelectedFish(fish);
+              }}
               className={selectedFish?.id === fish.id ? "chip-active" : ""}
             >
               {fish.name}
@@ -123,6 +130,8 @@ export default function App() {
       <section ref={shareRef}>
         <ShareStudio
           fish={selectedFish}
+          landings={landings}
+          openComposerNonce={openShareComposerNonce}
           onOpenXIntent={async (finalText, imageFile) => {
             const canShareWithImage =
               !!imageFile &&
