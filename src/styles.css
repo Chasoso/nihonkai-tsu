@@ -74,6 +74,106 @@ h3 {
   gap: 8px;
 }
 
+.fish-chip-list-shell {
+  position: relative;
+}
+
+.fish-chip-list-collapsed {
+  max-height: 236px;
+  overflow: hidden;
+}
+
+.fish-list-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 92px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 0 0 8px;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 16, 25, 0) 0%,
+    rgba(8, 16, 25, 0.84) 70%,
+    rgba(8, 16, 25, 0.98) 100%
+  );
+}
+
+.fish-list-expand-button {
+  pointer-events: auto;
+  border-radius: 10px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-color: rgba(246, 194, 111, 0.9);
+  background: rgba(17, 32, 47, 0.95);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+}
+
+.fish-list-collapse-row {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.fish-list-collapse-button {
+  border-radius: 10px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-color: rgba(99, 210, 255, 0.75);
+  background: rgba(11, 27, 41, 0.9);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.24);
+}
+
+.fish-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fish-search-wrap {
+  position: relative;
+  display: inline-block;
+  width: min(320px, 100%);
+}
+
+.fish-search-input {
+  width: 100%;
+  height: 40px;
+  padding: 8px 40px 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(8, 16, 25, 0.72);
+  color: #f8f6f2;
+  outline: none;
+}
+
+.fish-search-input::placeholder {
+  color: rgba(248, 246, 242, 0.7);
+}
+
+.fish-search-input:focus {
+  border-color: rgba(99, 210, 255, 0.9);
+  box-shadow: 0 0 0 2px rgba(99, 210, 255, 0.2);
+}
+
+.fish-search-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
 .chip-active {
   background: rgba(246, 194, 111, 0.35);
   border-color: rgba(246, 194, 111, 0.9);
@@ -555,5 +655,18 @@ textarea {
 
   .frame-chart-card {
     width: 52%;
+  }
+
+  .fish-list-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .fish-chip-list-collapsed {
+    max-height: 246px;
+  }
+
+  .fish-list-fade {
+    height: 102px;
   }
 }

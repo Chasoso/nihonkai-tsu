@@ -12,11 +12,21 @@ import { computeMaxCoveredPercentile } from "./lib/progress";
 import { earnBadge, getBadges } from "./lib/storage";
 import type { AppData, Fish, LandingsData } from "./types";
 
+function toKatakana(input: string): string {
+  return input.replace(/[\u3041-\u3096]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) + 0x60));
+}
+
+function normalizeForSearch(input: string): string {
+  return toKatakana(input).toLowerCase().replace(/\s+/g, "");
+}
+
 export default function App() {
   const [data, setData] = useState<AppData | null>(null);
   const [landings, setLandings] = useState<LandingsData | null>(null);
   const [selectedFish, setSelectedFish] = useState<Fish | null>(null);
   const [openShareComposerNonce, setOpenShareComposerNonce] = useState(0);
+  const [fishSearchQuery, setFishSearchQuery] = useState("");
+  const [showAllFish, setShowAllFish] = useState(false);
   const [modalFish, setModalFish] = useState<Fish | null>(null);
   const [badges, setBadges] = useState(() => getBadges());
   const [toastMessage, setToastMessage] = useState("");
@@ -62,6 +72,14 @@ export default function App() {
     [yearBadges, data?.fish]
   );
 
+  const filteredFish = useMemo(() => {
+    if (!data) return [];
+    const q = normalizeForSearch(fishSearchQuery.trim());
+    if (!q) return data.fish;
+    return data.fish.filter((fish) => normalizeForSearch(fish.name).includes(q));
+  }, [data, fishSearchQuery]);
+  const shouldCollapseFishList = !showAllFish && !fishSearchQuery.trim() && filteredFish.length > 0;
+
   const openToast = (message: string) => {
     setToastMessage(message);
     setToastVisible(true);
@@ -93,24 +111,53 @@ export default function App() {
       <FishSpotlight fish={selectedFish ?? data.fish[0]} onOpenDetail={setModalFish} />
 
       <section className="section fish-list">
-        <h2>今年の魚</h2>
-        <div className="chip-row">
-          {data.fish.map((fish) => (
-            <button
-              key={fish.id}
-              onClick={() => {
-                if (selectedFish?.id === fish.id) {
-                  setOpenShareComposerNonce((prev) => prev + 1);
-                  return;
-                }
-                setSelectedFish(fish);
-              }}
-              className={selectedFish?.id === fish.id ? "chip-active" : ""}
-            >
-              {fish.name}
-            </button>
-          ))}
+        <div className="fish-list-header">
+          <h2>今年の魚</h2>
+          <label className="fish-search-wrap" aria-label="魚検索">
+            <input
+              className="fish-search-input"
+              type="search"
+              placeholder="魚を検索"
+              value={fishSearchQuery}
+              onChange={(event) => setFishSearchQuery(event.target.value)}
+            />
+            <span className="fish-search-icon" aria-hidden="true">
+              🔍
+            </span>
+          </label>
         </div>
+        <div className={`fish-chip-list-shell ${shouldCollapseFishList ? "fish-chip-list-collapsed" : ""}`}>
+          <div className="chip-row">
+            {filteredFish.map((fish) => (
+              <button
+                key={fish.id}
+                onClick={() => {
+                  if (selectedFish?.id === fish.id) {
+                    setOpenShareComposerNonce((prev) => prev + 1);
+                    return;
+                  }
+                  setSelectedFish(fish);
+                }}
+                className={selectedFish?.id === fish.id ? "chip-active" : ""}
+              >
+                {fish.name}
+              </button>
+            ))}
+            {!filteredFish.length ? <p>該当する魚がありません</p> : null}
+          </div>
+          {shouldCollapseFishList ? (
+            <div className="fish-list-fade">
+              <button className="fish-list-expand-button" onClick={() => setShowAllFish(true)}>
+                さらに表示
+              </button>
+            </div>
+          ) : null}
+        </div>
+        {showAllFish && !fishSearchQuery.trim() ? (
+          <div className="fish-list-collapse-row">
+            <button className="fish-list-collapse-button" onClick={() => setShowAllFish(false)}>折りたたむ</button>
+          </div>
+        ) : null}
       </section>
 
       <FishModal fish={modalFish} onClose={() => setModalFish(null)} onSelectForShare={openFishForShare} />

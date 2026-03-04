@@ -238,6 +238,7 @@ export function ShareStudio({ fish, landings, openComposerNonce, onOpenXIntent, 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const lastOpenNonceRef = useRef(openComposerNonce);
 
   const fixedTemplate = fish?.share.text ?? "";
   const finalText = useMemo(() => {
@@ -280,6 +281,8 @@ export function ShareStudio({ fish, landings, openComposerNonce, onOpenXIntent, 
   }, [selectedImageUrl]);
 
   useEffect(() => {
+    if (openComposerNonce === lastOpenNonceRef.current) return;
+    lastOpenNonceRef.current = openComposerNonce;
     if (!fish) return;
     setComposerOpen(true);
   }, [openComposerNonce]);
