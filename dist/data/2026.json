@@ -5,94 +5,1510 @@
     "subline": "2026年度 日本海の旬"
   },
   "categories": [
-    { "id": "trend", "label": "旬", "description": "今年、存在感を増している魚" },
-    { "id": "discovery", "label": "発見", "description": "あまり知られていないが魅力的な魚" },
-    { "id": "classic", "label": "王道", "description": "定番のブランド魚" }
+    {
+      "id": "trend",
+      "label": "旬",
+      "description": "近年の伸びが見える魚"
+    },
+    {
+      "id": "discovery",
+      "label": "発見",
+      "description": "通向けに深掘りしたい魚"
+    },
+    {
+      "id": "classic",
+      "label": "王道",
+      "description": "安定した代表的な魚"
+    }
   ],
   "fish": [
     {
-      "id": "sawara",
+      "id": "brand_5400",
+      "name": "マイワシ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 34.1,
+      "microcopy": "直近5年平均の構成比は 34.10%。旬のピークは 3月。",
+      "share": {
+        "badgeLabel": "2026 マイワシ通",
+        "text": "2026年の日本海の魚『マイワシ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_36600",
+      "name": "マサバ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 16.74,
+      "microcopy": "直近5年平均の構成比は 16.74%。旬のピークは 6月。",
+      "share": {
+        "badgeLabel": "2026 マサバ通",
+        "text": "2026年の日本海の魚『マサバ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_62100",
+      "name": "スルメイカ",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 7.14,
+      "microcopy": "直近5年平均の構成比は 7.14%。旬のピークは 6月。",
+      "share": {
+        "badgeLabel": "2026 スルメイカ通",
+        "text": "2026年の日本海の魚『スルメイカ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_23400",
+      "name": "ブリ",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 4.9,
+      "microcopy": "直近5年平均の構成比は 4.90%。旬のピークは 6月。",
+      "share": {
+        "badgeLabel": "2026 ブリ通",
+        "text": "2026年の日本海の魚『ブリ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_23500",
+      "name": "マアジ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 3.89,
+      "microcopy": "直近5年平均の構成比は 3.89%。旬のピークは 6月。",
+      "share": {
+        "badgeLabel": "2026 マアジ通",
+        "text": "2026年の日本海の魚『マアジ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_23410",
+      "name": "ガンド(ブリ)",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 3.37,
+      "microcopy": "直近5年平均の構成比は 3.37%。旬のピークは 10月。",
+      "share": {
+        "badgeLabel": "2026 ガンド(ブリ)通",
+        "text": "2026年の日本海の魚『ガンド(ブリ)』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_23420",
+      "name": "フクラギ(ブリ)",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 2.83,
+      "microcopy": "直近5年平均の構成比は 2.83%。旬のピークは 5月。",
+      "share": {
+        "badgeLabel": "2026 フクラギ(ブリ)通",
+        "text": "2026年の日本海の魚『フクラギ(ブリ)』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_80200",
+      "name": "ベニズワイ",
+      "category": "classic",
+      "trend": "flat",
+      "percentile": 2.76,
+      "microcopy": "直近5年平均の構成比は 2.76%。旬のピークは 7月。",
+      "share": {
+        "badgeLabel": "2026 ベニズワイ通",
+        "text": "2026年の日本海の魚『ベニズワイ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_36700",
       "name": "サワラ",
       "category": "trend",
       "trend": "up",
-      "percentile": 12,
-      "microcopy": "ここ数年で存在感が増えています。",
+      "percentile": 2.28,
+      "microcopy": "直近5年平均の構成比は 2.28%。旬のピークは 10月。",
       "share": {
         "badgeLabel": "2026 サワラ通",
-        "text": "2026年の日本海を味わった。主役はサワラ。#日本海通2026 #石川の旬"
+        "text": "2026年の日本海の魚『サワラ』に注目。#日本海通2026 #石川の旬"
       }
     },
     {
-      "id": "buri",
-      "name": "ブリ",
-      "category": "classic",
-      "trend": "flat",
-      "percentile": 28,
-      "microcopy": "冬の王道。脂の厚みで旅の記憶を作る魚。",
-      "share": {
-        "badgeLabel": "2026 ブリ通",
-        "text": "2026年の日本海を味わった。主役はブリ。#日本海通2026 #石川の旬"
-      }
-    },
-    {
-      "id": "nodoguro",
-      "name": "ノドグロ",
-      "category": "classic",
-      "trend": "up",
-      "percentile": 8,
-      "microcopy": "炙りの香りまで含めて特別な一皿。",
-      "share": {
-        "badgeLabel": "2026 ノドグロ通",
-        "text": "2026年の日本海を味わった。主役はノドグロ。#日本海通2026 #石川の旬"
-      }
-    },
-    {
-      "id": "amadai",
-      "name": "アマダイ",
-      "category": "discovery",
-      "trend": "up",
-      "percentile": 22,
-      "microcopy": "うろこ焼きで旨味が際立つ、隠れた実力派。",
-      "share": {
-        "badgeLabel": "2026 アマダイ通",
-        "text": "2026年の日本海を味わった。主役はアマダイ。#日本海通2026 #石川の旬"
-      }
-    },
-    {
-      "id": "kawahagi",
-      "name": "カワハギ",
-      "category": "discovery",
-      "trend": "flat",
-      "percentile": 41,
-      "microcopy": "肝と合わせると印象が変わる、通好みの魚。",
-      "share": {
-        "badgeLabel": "2026 カワハギ通",
-        "text": "2026年の日本海を味わった。主役はカワハギ。#日本海通2026 #石川の旬"
-      }
-    },
-    {
-      "id": "maaji",
-      "name": "真アジ",
+      "id": "brand_5600",
+      "name": "カタクチイワシ",
       "category": "trend",
-      "trend": "down",
-      "percentile": 55,
-      "microcopy": "時期を選べば驚くほど濃い旨味を感じられる。",
+      "trend": "up",
+      "percentile": 2.05,
+      "microcopy": "直近5年平均の構成比は 2.05%。旬のピークは 1月。",
       "share": {
-        "badgeLabel": "2026 真アジ通",
-        "text": "2026年の日本海を味わった。主役は真アジ。#日本海通2026 #石川の旬"
+        "badgeLabel": "2026 カタクチイワシ通",
+        "text": "2026年の日本海の魚『カタクチイワシ』に注目。#日本海通2026 #石川の旬"
       }
     },
     {
-      "id": "mutsu",
-      "name": "ムツ",
+      "id": "brand_8100",
+      "name": "ニギス",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 1.87,
+      "microcopy": "直近5年平均の構成比は 1.87%。旬のピークは 6月。",
+      "share": {
+        "badgeLabel": "2026 ニギス通",
+        "text": "2026年の日本海の魚『ニギス』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_77800",
+      "name": "アマエビ(ホッコクアカエビ)",
+      "category": "classic",
+      "trend": "flat",
+      "percentile": 1.52,
+      "microcopy": "直近5年平均の構成比は 1.52%。旬のピークは 6月。",
+      "share": {
+        "badgeLabel": "2026 アマエビ(ホッコクアカエビ)通",
+        "text": "2026年の日本海の魚『アマエビ(ホッコクアカエビ)』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_46000",
+      "name": "その他フグ類",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 1.46,
+      "microcopy": "直近5年平均の構成比は 1.46%。旬のピークは 5月。",
+      "share": {
+        "badgeLabel": "2026 その他フグ類通",
+        "text": "2026年の日本海の魚『その他フグ類』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_25100",
+      "name": "シイラ",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 1.38,
+      "microcopy": "直近5年平均の構成比は 1.38%。旬のピークは 11月。",
+      "share": {
+        "badgeLabel": "2026 シイラ通",
+        "text": "2026年の日本海の魚『シイラ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_41700",
+      "name": "アカガレイ",
+      "category": "classic",
+      "trend": "flat",
+      "percentile": 1.09,
+      "microcopy": "直近5年平均の構成比は 1.09%。旬のピークは 3月。",
+      "share": {
+        "badgeLabel": "2026 アカガレイ通",
+        "text": "2026年の日本海の魚『アカガレイ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_23430",
+      "name": "コゾクラ(ブリ)",
       "category": "discovery",
       "trend": "up",
-      "percentile": 35,
-      "microcopy": "煮付けでも焼きでも旨味が崩れない深海系。",
+      "percentile": 0.89,
+      "microcopy": "直近5年平均の構成比は 0.89%。旬のピークは 9月。",
       "share": {
-        "badgeLabel": "2026 ムツ通",
-        "text": "2026年の日本海を味わった。主役はムツ。#日本海通2026 #石川の旬"
+        "badgeLabel": "2026 コゾクラ(ブリ)通",
+        "text": "2026年の日本海の魚『コゾクラ(ブリ)』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_5200",
+      "name": "ウルメイワシ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.74,
+      "microcopy": "直近5年平均の構成比は 0.74%。旬のピークは 6月。",
+      "share": {
+        "badgeLabel": "2026 ウルメイワシ通",
+        "text": "2026年の日本海の魚『ウルメイワシ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_11100",
+      "name": "マダラ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.73,
+      "microcopy": "直近5年平均の構成比は 0.73%。旬のピークは 2月。",
+      "share": {
+        "badgeLabel": "2026 マダラ通",
+        "text": "2026年の日本海の魚『マダラ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_27400",
+      "name": "マダイ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.71,
+      "microcopy": "直近5年平均の構成比は 0.71%。旬のピークは 5月。",
+      "share": {
+        "badgeLabel": "2026 マダイ通",
+        "text": "2026年の日本海の魚『マダイ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_45300",
+      "name": "ウマヅラハギ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.59,
+      "microcopy": "直近5年平均の構成比は 0.59%。旬のピークは 1月。",
+      "share": {
+        "badgeLabel": "2026 ウマヅラハギ通",
+        "text": "2026年の日本海の魚『ウマヅラハギ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_66100",
+      "name": "サザエ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.55,
+      "microcopy": "直近5年平均の構成比は 0.55%。旬のピークは 7月。",
+      "share": {
+        "badgeLabel": "2026 サザエ通",
+        "text": "2026年の日本海の魚『サザエ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_36100",
+      "name": "マルソウダ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.47,
+      "microcopy": "直近5年平均の構成比は 0.47%。旬のピークは 11月。",
+      "share": {
+        "badgeLabel": "2026 マルソウダ通",
+        "text": "2026年の日本海の魚『マルソウダ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_34000",
+      "name": "ハタハタ",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 0.47,
+      "microcopy": "直近5年平均の構成比は 0.47%。旬のピークは 6月。",
+      "share": {
+        "badgeLabel": "2026 ハタハタ通",
+        "text": "2026年の日本海の魚『ハタハタ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_80100",
+      "name": "加能ガニ(ズワイガニ雄)",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.44,
+      "microcopy": "直近5年平均の構成比は 0.45%。旬のピークは 11月。",
+      "share": {
+        "badgeLabel": "2026 加能ガニ(ズワイガニ雄)通",
+        "text": "2026年の日本海の魚『加能ガニ(ズワイガニ雄)』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_15200",
+      "name": "ヤナギバチメ(ウスメバル)",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 0.38,
+      "microcopy": "直近5年平均の構成比は 0.38%。旬のピークは 4月。",
+      "share": {
+        "badgeLabel": "2026 ヤナギバチメ(ウスメバル)通",
+        "text": "2026年の日本海の魚『ヤナギバチメ(ウスメバル)』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_80160",
+      "name": "香箱ガニ(ズワイガニ雌)",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 0.38,
+      "microcopy": "直近5年平均の構成比は 0.38%。旬のピークは 11月。",
+      "share": {
+        "badgeLabel": "2026 香箱ガニ(ズワイガニ雌)通",
+        "text": "2026年の日本海の魚『香箱ガニ(ズワイガニ雌)』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_18300",
+      "name": "ホッケ",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 0.37,
+      "microcopy": "直近5年平均の構成比は 0.37%。旬のピークは 5月。",
+      "share": {
+        "badgeLabel": "2026 ホッケ通",
+        "text": "2026年の日本海の魚『ホッケ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_31100",
+      "name": "アカカマス",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 0.35,
+      "microcopy": "直近5年平均の構成比は 0.35%。旬のピークは 10月。",
+      "share": {
+        "badgeLabel": "2026 アカカマス通",
+        "text": "2026年の日本海の魚『アカカマス』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_19400",
+      "name": "スズキ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.3,
+      "microcopy": "直近5年平均の構成比は 0.30%。旬のピークは 12月。",
+      "share": {
+        "badgeLabel": "2026 スズキ通",
+        "text": "2026年の日本海の魚『スズキ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_61300",
+      "name": "アオリイカ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.28,
+      "microcopy": "直近5年平均の構成比は 0.28%。旬のピークは 11月。",
+      "share": {
+        "badgeLabel": "2026 アオリイカ通",
+        "text": "2026年の日本海の魚『アオリイカ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_12000",
+      "name": "トビウオ類",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 0.24,
+      "microcopy": "直近5年平均の構成比は 0.24%。旬のピークは 6月。",
+      "share": {
+        "badgeLabel": "2026 トビウオ類通",
+        "text": "2026年の日本海の魚『トビウオ類』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_37020",
+      "name": "メジ(クロマグロ)",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 0.24,
+      "microcopy": "直近5年平均の構成比は 0.24%。旬のピークは 2月。",
+      "share": {
+        "badgeLabel": "2026 メジ(クロマグロ)通",
+        "text": "2026年の日本海の魚『メジ(クロマグロ)』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_23200",
+      "name": "ヒラマサ",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 0.23,
+      "microcopy": "直近5年平均の構成比は 0.23%。旬のピークは 5月。",
+      "share": {
+        "badgeLabel": "2026 ヒラマサ通",
+        "text": "2026年の日本海の魚『ヒラマサ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_78000",
+      "name": "ガスエビ(トゲザコエビ)",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 0.23,
+      "microcopy": "直近5年平均の構成比は 0.23%。旬のピークは 5月。",
+      "share": {
+        "badgeLabel": "2026 ガスエビ(トゲザコエビ)通",
+        "text": "2026年の日本海の魚『ガスエビ(トゲザコエビ)』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_41300",
+      "name": "ソウハチ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.23,
+      "microcopy": "直近5年平均の構成比は 0.23%。旬のピークは 3月。",
+      "share": {
+        "badgeLabel": "2026 ソウハチ通",
+        "text": "2026年の日本海の魚『ソウハチ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_64100",
+      "name": "マダコ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.22,
+      "microcopy": "直近5年平均の構成比は 0.22%。旬のピークは 7月。",
+      "share": {
+        "badgeLabel": "2026 マダコ通",
+        "text": "2026年の日本海の魚『マダコ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_27200",
+      "name": "キダイ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.21,
+      "microcopy": "直近5年平均の構成比は 0.21%。旬のピークは 9月。",
+      "share": {
+        "badgeLabel": "2026 キダイ通",
+        "text": "2026年の日本海の魚『キダイ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_70350",
+      "name": "イワガキ",
+      "category": "classic",
+      "trend": "flat",
+      "percentile": 0.17,
+      "microcopy": "直近5年平均の構成比は 0.17%。旬のピークは 7月。",
+      "share": {
+        "badgeLabel": "2026 イワガキ通",
+        "text": "2026年の日本海の魚『イワガキ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_19600",
+      "name": "ノドグロ(アカムツ)",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 0.17,
+      "microcopy": "直近5年平均の構成比は 0.17%。旬のピークは 9月。",
+      "share": {
+        "badgeLabel": "2026 ノドグロ(アカムツ)通",
+        "text": "2026年の日本海の魚『ノドグロ(アカムツ)』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_28700",
+      "name": "メジナ",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 0.14,
+      "microcopy": "直近5年平均の構成比は 0.14%。旬のピークは 12月。",
+      "share": {
+        "badgeLabel": "2026 メジナ通",
+        "text": "2026年の日本海の魚『メジナ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_64300",
+      "name": "ミズダコ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.14,
+      "microcopy": "直近5年平均の構成比は 0.14%。旬のピークは 6月。",
+      "share": {
+        "badgeLabel": "2026 ミズダコ通",
+        "text": "2026年の日本海の魚『ミズダコ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_33100",
+      "name": "ノロゲンゲ",
+      "category": "classic",
+      "trend": "flat",
+      "percentile": 0.13,
+      "microcopy": "直近5年平均の構成比は 0.14%。旬のピークは 10月。",
+      "share": {
+        "badgeLabel": "2026 ノロゲンゲ通",
+        "text": "2026年の日本海の魚『ノロゲンゲ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_92100",
+      "name": "マナマコ",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 0.13,
+      "microcopy": "直近5年平均の構成比は 0.13%。旬のピークは 3月。",
+      "share": {
+        "badgeLabel": "2026 マナマコ通",
+        "text": "2026年の日本海の魚『マナマコ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_11600",
+      "name": "アンコウ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.13,
+      "microcopy": "直近5年平均の構成比は 0.13%。旬のピークは 10月。",
+      "share": {
+        "badgeLabel": "2026 アンコウ通",
+        "text": "2026年の日本海の魚『アンコウ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_61200",
+      "name": "ヤリイカ",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 0.12,
+      "microcopy": "直近5年平均の構成比は 0.12%。旬のピークは 10月。",
+      "share": {
+        "badgeLabel": "2026 ヤリイカ通",
+        "text": "2026年の日本海の魚『ヤリイカ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_14900",
+      "name": "アカラバチメ(ハツメ)",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 0.12,
+      "microcopy": "直近5年平均の構成比は 0.12%。旬のピークは 5月。",
+      "share": {
+        "badgeLabel": "2026 アカラバチメ(ハツメ)通",
+        "text": "2026年の日本海の魚『アカラバチメ(ハツメ)』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_27300",
+      "name": "チダイ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.12,
+      "microcopy": "直近5年平均の構成比は 0.12%。旬のピークは 5月。",
+      "share": {
+        "badgeLabel": "2026 チダイ通",
+        "text": "2026年の日本海の魚『チダイ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_41600",
+      "name": "ヒレグロ",
+      "category": "classic",
+      "trend": "flat",
+      "percentile": 0.11,
+      "microcopy": "直近5年平均の構成比は 0.11%。旬のピークは 4月。",
+      "share": {
+        "badgeLabel": "2026 ヒレグロ通",
+        "text": "2026年の日本海の魚『ヒレグロ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_75100",
+      "name": "カニ類",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.11,
+      "microcopy": "直近5年平均の構成比は 0.11%。旬のピークは 4月。",
+      "share": {
+        "badgeLabel": "2026 カニ類通",
+        "text": "2026年の日本海の魚『カニ類』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_61100",
+      "name": "ケンサキイカ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.11,
+      "microcopy": "直近5年平均の構成比は 0.11%。旬のピークは 7月。",
+      "share": {
+        "badgeLabel": "2026 ケンサキイカ通",
+        "text": "2026年の日本海の魚『ケンサキイカ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_40100",
+      "name": "ヒラメ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.11,
+      "microcopy": "直近5年平均の構成比は 0.11%。旬のピークは 4月。",
+      "share": {
+        "badgeLabel": "2026 ヒラメ通",
+        "text": "2026年の日本海の魚『ヒラメ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_22300",
+      "name": "アカアマダイ",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 0.11,
+      "microcopy": "直近5年平均の構成比は 0.11%。旬のピークは 7月。",
+      "share": {
+        "badgeLabel": "2026 アカアマダイ通",
+        "text": "2026年の日本海の魚『アカアマダイ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_27100",
+      "name": "クロダイ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.1,
+      "microcopy": "直近5年平均の構成比は 0.10%。旬のピークは 5月。",
+      "share": {
+        "badgeLabel": "2026 クロダイ通",
+        "text": "2026年の日本海の魚『クロダイ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_41500",
+      "name": "ムシガレイ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.1,
+      "microcopy": "直近5年平均の構成比は 0.10%。旬のピークは 10月。",
+      "share": {
+        "badgeLabel": "2026 ムシガレイ通",
+        "text": "2026年の日本海の魚『ムシガレイ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_68000",
+      "name": "バイ類",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.08,
+      "microcopy": "直近5年平均の構成比は 0.08%。旬のピークは 6月。",
+      "share": {
+        "badgeLabel": "2026 バイ類通",
+        "text": "2026年の日本海の魚『バイ類』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_41900",
+      "name": "マガレイ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.08,
+      "microcopy": "直近5年平均の構成比は 0.08%。旬のピークは 6月。",
+      "share": {
+        "badgeLabel": "2026 マガレイ通",
+        "text": "2026年の日本海の魚『マガレイ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_68200",
+      "name": "エッチュウバイ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.08,
+      "microcopy": "直近5年平均の構成比は 0.08%。旬のピークは 4月。",
+      "share": {
+        "badgeLabel": "2026 エッチュウバイ通",
+        "text": "2026年の日本海の魚『エッチュウバイ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_37000",
+      "name": "クロマグロ",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 0.07,
+      "microcopy": "直近5年平均の構成比は 0.07%。旬のピークは 6月。",
+      "share": {
+        "badgeLabel": "2026 クロマグロ通",
+        "text": "2026年の日本海の魚『クロマグロ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_29100",
+      "name": "イシダイ",
+      "category": "classic",
+      "trend": "flat",
+      "percentile": 0.07,
+      "microcopy": "直近5年平均の構成比は 0.07%。旬のピークは 5月。",
+      "share": {
+        "badgeLabel": "2026 イシダイ通",
+        "text": "2026年の日本海の魚『イシダイ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_68600",
+      "name": "エゾボラモトキ",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 0.06,
+      "microcopy": "直近5年平均の構成比は 0.06%。旬のピークは 11月。",
+      "share": {
+        "badgeLabel": "2026 エゾボラモトキ通",
+        "text": "2026年の日本海の魚『エゾボラモトキ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_20000",
+      "name": "ナメラバチメ(キジハタ)",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.06,
+      "microcopy": "直近5年平均の構成比は 0.06%。旬のピークは 7月。",
+      "share": {
+        "badgeLabel": "2026 ナメラバチメ(キジハタ)通",
+        "text": "2026年の日本海の魚『ナメラバチメ(キジハタ)』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_41000",
+      "name": "その他のカレイ科",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.05,
+      "microcopy": "直近5年平均の構成比は 0.05%。旬のピークは 2月。",
+      "share": {
+        "badgeLabel": "2026 その他のカレイ科通",
+        "text": "2026年の日本海の魚『その他のカレイ科』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_37300",
+      "name": "カジキ類",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 0.05,
+      "microcopy": "直近5年平均の構成比は 0.05%。旬のピークは 9月。",
+      "share": {
+        "badgeLabel": "2026 カジキ類通",
+        "text": "2026年の日本海の魚『カジキ類』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_97100",
+      "name": "ワカメ",
+      "category": "classic",
+      "trend": "flat",
+      "percentile": 0.05,
+      "microcopy": "直近5年平均の構成比は 0.05%。旬のピークは 4月。",
+      "share": {
+        "badgeLabel": "2026 ワカメ通",
+        "text": "2026年の日本海の魚『ワカメ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_5300",
+      "name": "コノシロ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.04,
+      "microcopy": "直近5年平均の構成比は 0.05%。旬のピークは 6月。",
+      "share": {
+        "badgeLabel": "2026 コノシロ通",
+        "text": "2026年の日本海の魚『コノシロ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_78200",
+      "name": "シロガス(クロザコエビ)",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 0.04,
+      "microcopy": "直近5年平均の構成比は 0.04%。旬のピークは 4月。",
+      "share": {
+        "badgeLabel": "2026 シロガス(クロザコエビ)通",
+        "text": "2026年の日本海の魚『シロガス(クロザコエビ)』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_9110",
+      "name": "サーモントラウト",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 0.04,
+      "microcopy": "直近5年平均の構成比は 0.04%。旬のピークは 5月。",
+      "share": {
+        "badgeLabel": "2026 サーモントラウト通",
+        "text": "2026年の日本海の魚『サーモントラウト』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_17210",
+      "name": "ホウボウ",
+      "category": "classic",
+      "trend": "flat",
+      "percentile": 0.04,
+      "microcopy": "直近5年平均の構成比は 0.04%。旬のピークは 4月。",
+      "share": {
+        "badgeLabel": "2026 ホウボウ通",
+        "text": "2026年の日本海の魚『ホウボウ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_42000",
+      "name": "マコガレイ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.04,
+      "microcopy": "直近5年平均の構成比は 0.04%。旬のピークは 5月。",
+      "share": {
+        "badgeLabel": "2026 マコガレイ通",
+        "text": "2026年の日本海の魚『マコガレイ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_14500",
+      "name": "メバル",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.04,
+      "microcopy": "直近5年平均の構成比は 0.04%。旬のピークは 3月。",
+      "share": {
+        "badgeLabel": "2026 メバル通",
+        "text": "2026年の日本海の魚『メバル』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_12700",
+      "name": "サヨリ",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 0.04,
+      "microcopy": "直近5年平均の構成比は 0.04%。旬のピークは 4月。",
+      "share": {
+        "badgeLabel": "2026 サヨリ通",
+        "text": "2026年の日本海の魚『サヨリ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_17220",
+      "name": "カナガシラ",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 0.03,
+      "microcopy": "直近5年平均の構成比は 0.03%。旬のピークは 9月。",
+      "share": {
+        "badgeLabel": "2026 カナガシラ通",
+        "text": "2026年の日本海の魚『カナガシラ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_42300",
+      "name": "ヤナギムシガレイ",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 0.03,
+      "microcopy": "直近5年平均の構成比は 0.03%。旬のピークは 9月。",
+      "share": {
+        "badgeLabel": "2026 ヤナギムシガレイ通",
+        "text": "2026年の日本海の魚『ヤナギムシガレイ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_3000",
+      "name": "エイ類",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.02,
+      "microcopy": "直近5年平均の構成比は 0.03%。旬のピークは 10月。",
+      "share": {
+        "badgeLabel": "2026 エイ類通",
+        "text": "2026年の日本海の魚『エイ類』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_42100",
+      "name": "ババガレイ",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 0.02,
+      "microcopy": "直近5年平均の構成比は 0.02%。旬のピークは 5月。",
+      "share": {
+        "badgeLabel": "2026 ババガレイ通",
+        "text": "2026年の日本海の魚『ババガレイ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_15500",
+      "name": "カサゴ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.02,
+      "microcopy": "直近5年平均の構成比は 0.02%。旬のピークは 5月。",
+      "share": {
+        "badgeLabel": "2026 カサゴ通",
+        "text": "2026年の日本海の魚『カサゴ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_13600",
+      "name": "マトウダイ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.02,
+      "microcopy": "直近5年平均の構成比は 0.02%。旬のピークは 3月。",
+      "share": {
+        "badgeLabel": "2026 マトウダイ通",
+        "text": "2026年の日本海の魚『マトウダイ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_35100",
+      "name": "タチウオ",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 0.02,
+      "microcopy": "直近5年平均の構成比は 0.02%。旬のピークは 6月。",
+      "share": {
+        "badgeLabel": "2026 タチウオ通",
+        "text": "2026年の日本海の魚『タチウオ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_21400",
+      "name": "チカメキントキ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.02,
+      "microcopy": "直近5年平均の構成比は 0.02%。旬のピークは 8月。",
+      "share": {
+        "badgeLabel": "2026 チカメキントキ通",
+        "text": "2026年の日本海の魚『チカメキントキ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_36500",
+      "name": "ゴマサバ",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 0.02,
+      "microcopy": "直近5年平均の構成比は 0.02%。旬のピークは 7月。",
+      "share": {
+        "badgeLabel": "2026 ゴマサバ通",
+        "text": "2026年の日本海の魚『ゴマサバ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_65000",
+      "name": "アワビ類",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.01,
+      "microcopy": "直近5年平均の構成比は 0.01%。旬のピークは 7月。",
+      "share": {
+        "badgeLabel": "2026 アワビ類通",
+        "text": "2026年の日本海の魚『アワビ類』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_21800",
+      "name": "シロギス",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.01,
+      "microcopy": "直近5年平均の構成比は 0.01%。旬のピークは 6月。",
+      "share": {
+        "badgeLabel": "2026 シロギス通",
+        "text": "2026年の日本海の魚『シロギス』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_70300",
+      "name": "マガキ",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 0.01,
+      "microcopy": "直近5年平均の構成比は 0.01%。旬のピークは 3月。",
+      "share": {
+        "badgeLabel": "2026 マガキ通",
+        "text": "2026年の日本海の魚『マガキ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_36300",
+      "name": "カツオ",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 0.01,
+      "microcopy": "直近5年平均の構成比は 0.01%。旬のピークは 11月。",
+      "share": {
+        "badgeLabel": "2026 カツオ通",
+        "text": "2026年の日本海の魚『カツオ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_38100",
+      "name": "メダイ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.01,
+      "microcopy": "直近5年平均の構成比は 0.01%。旬のピークは 3月。",
+      "share": {
+        "badgeLabel": "2026 メダイ通",
+        "text": "2026年の日本海の魚『メダイ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_46200",
+      "name": "トラフグ",
+      "category": "classic",
+      "trend": "flat",
+      "percentile": 0.01,
+      "microcopy": "直近5年平均の構成比は 0.01%。旬のピークは 5月。",
+      "share": {
+        "badgeLabel": "2026 トラフグ通",
+        "text": "2026年の日本海の魚『トラフグ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_64200",
+      "name": "イイダコ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.01,
+      "microcopy": "直近5年平均の構成比は 0.01%。旬のピークは 4月。",
+      "share": {
+        "badgeLabel": "2026 イイダコ通",
+        "text": "2026年の日本海の魚『イイダコ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_60600",
+      "name": "ホタルイカ",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 0.01,
+      "microcopy": "直近5年平均の構成比は 0.01%。旬のピークは 4月。",
+      "share": {
+        "badgeLabel": "2026 ホタルイカ通",
+        "text": "2026年の日本海の魚『ホタルイカ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_9000",
+      "name": "サケ",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 0.01,
+      "microcopy": "直近5年平均の構成比は 0.01%。旬のピークは 11月。",
+      "share": {
+        "badgeLabel": "2026 サケ通",
+        "text": "2026年の日本海の魚『サケ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_77600",
+      "name": "ボタンエビ(トヤマエビ)",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 0.01,
+      "microcopy": "直近5年平均の構成比は 0.01%。旬のピークは 10月。",
+      "share": {
+        "badgeLabel": "2026 ボタンエビ(トヤマエビ)通",
+        "text": "2026年の日本海の魚『ボタンエビ(トヤマエビ)』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_77700",
+      "name": "シマエビ(モロトゲアカエビ)",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 0.01,
+      "microcopy": "直近5年平均の構成比は 0.01%。旬のピークは 7月。",
+      "share": {
+        "badgeLabel": "2026 シマエビ(モロトゲアカエビ)通",
+        "text": "2026年の日本海の魚『シマエビ(モロトゲアカエビ)』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_9500",
+      "name": "サクラマス",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.01,
+      "microcopy": "直近5年平均の構成比は 0.01%。旬のピークは 4月。",
+      "share": {
+        "badgeLabel": "2026 サクラマス通",
+        "text": "2026年の日本海の魚『サクラマス』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_32000",
+      "name": "コブダイ",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 0.0,
+      "microcopy": "直近5年平均の構成比は 0.00%。旬のピークは 6月。",
+      "share": {
+        "badgeLabel": "2026 コブダイ通",
+        "text": "2026年の日本海の魚『コブダイ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_18200",
+      "name": "アイナメ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.0,
+      "microcopy": "直近5年平均の構成比は 0.00%。旬のピークは 5月。",
+      "share": {
+        "badgeLabel": "2026 アイナメ通",
+        "text": "2026年の日本海の魚『アイナメ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_60900",
+      "name": "ソデイカ",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 0.0,
+      "microcopy": "直近5年平均の構成比は 0.00%。旬のピークは 12月。",
+      "share": {
+        "badgeLabel": "2026 ソデイカ通",
+        "text": "2026年の日本海の魚『ソデイカ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_71400",
+      "name": "コタマガイ",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 0.0,
+      "microcopy": "直近5年平均の構成比は 0.00%。旬のピークは 7月。",
+      "share": {
+        "badgeLabel": "2026 コタマガイ通",
+        "text": "2026年の日本海の魚『コタマガイ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_2000",
+      "name": "サメ類",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 0.0,
+      "microcopy": "直近5年平均の構成比は 0.00%。旬のピークは 2月。",
+      "share": {
+        "badgeLabel": "2026 サメ類通",
+        "text": "2026年の日本海の魚『サメ類』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_72300",
+      "name": "トリガイ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.0,
+      "microcopy": "直近5年平均の構成比は 0.00%。旬のピークは 5月。",
+      "share": {
+        "badgeLabel": "2026 トリガイ通",
+        "text": "2026年の日本海の魚『トリガイ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_29400",
+      "name": "ウミタナゴ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.0,
+      "microcopy": "直近5年平均の構成比は 0.00%。旬のピークは 4月。",
+      "share": {
+        "badgeLabel": "2026 ウミタナゴ通",
+        "text": "2026年の日本海の魚『ウミタナゴ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_97500",
+      "name": "ノリ",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 0.0,
+      "microcopy": "直近5年平均の構成比は 0.00%。旬のピークは 1月。",
+      "share": {
+        "badgeLabel": "2026 ノリ通",
+        "text": "2026年の日本海の魚『ノリ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_97101",
+      "name": "ワカメ(乾)",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 0.0,
+      "microcopy": "直近5年平均の構成比は 0.00%。旬のピークは 4月。",
+      "share": {
+        "badgeLabel": "2026 ワカメ(乾)通",
+        "text": "2026年の日本海の魚『ワカメ(乾)』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_80600",
+      "name": "ガザミ",
+      "category": "trend",
+      "trend": "up",
+      "percentile": 0.0,
+      "microcopy": "直近5年平均の構成比は 0.00%。旬のピークは 10月。",
+      "share": {
+        "badgeLabel": "2026 ガザミ通",
+        "text": "2026年の日本海の魚『ガザミ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_70100",
+      "name": "アカガイ",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 0.0,
+      "microcopy": "直近5年平均の構成比は 0.00%。旬のピークは 4月。",
+      "share": {
+        "badgeLabel": "2026 アカガイ通",
+        "text": "2026年の日本海の魚『アカガイ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_92000",
+      "name": "マナマコ科",
+      "category": "classic",
+      "trend": "flat",
+      "percentile": 0.0,
+      "microcopy": "直近5年平均の構成比は 0.00%。旬のピークは 3月。",
+      "share": {
+        "badgeLabel": "2026 マナマコ科通",
+        "text": "2026年の日本海の魚『マナマコ科』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_11200",
+      "name": "スケトウダラ",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 0.0,
+      "microcopy": "直近5年平均の構成比は 0.00%。旬のピークは 5月。",
+      "share": {
+        "badgeLabel": "2026 スケトウダラ通",
+        "text": "2026年の日本海の魚『スケトウダラ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_76100",
+      "name": "クルマエビ",
+      "category": "classic",
+      "trend": "down",
+      "percentile": 0.0,
+      "microcopy": "直近5年平均の構成比は 0.00%。旬のピークは 2月。",
+      "share": {
+        "badgeLabel": "2026 クルマエビ通",
+        "text": "2026年の日本海の魚『クルマエビ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_71300",
+      "name": "チョウセンハマグリ",
+      "category": "discovery",
+      "trend": "up",
+      "percentile": 0.0,
+      "microcopy": "直近5年平均の構成比は 0.00%。旬のピークは 5月。",
+      "share": {
+        "badgeLabel": "2026 チョウセンハマグリ通",
+        "text": "2026年の日本海の魚『チョウセンハマグリ』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_90000",
+      "name": "ウニ類",
+      "category": "classic",
+      "trend": "flat",
+      "percentile": 0.0,
+      "microcopy": "直近5年平均の構成比は 0.00%。旬のピークは 6月。",
+      "share": {
+        "badgeLabel": "2026 ウニ類通",
+        "text": "2026年の日本海の魚『ウニ類』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_8900",
+      "name": "カラフトマス",
+      "category": "classic",
+      "trend": "flat",
+      "percentile": 0.0,
+      "microcopy": "直近5年平均の構成比は 0.00%。旬のピークは 1月。",
+      "share": {
+        "badgeLabel": "2026 カラフトマス通",
+        "text": "2026年の日本海の魚『カラフトマス』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_37010",
+      "name": "シワカ(クロマグロ)",
+      "category": "classic",
+      "trend": "flat",
+      "percentile": 0.0,
+      "microcopy": "直近5年平均の構成比は 0.00%。旬のピークは 1月。",
+      "share": {
+        "badgeLabel": "2026 シワカ(クロマグロ)通",
+        "text": "2026年の日本海の魚『シワカ(クロマグロ)』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_37030",
+      "name": "シビコ(クロマグロ)",
+      "category": "classic",
+      "trend": "flat",
+      "percentile": 0.0,
+      "microcopy": "直近5年平均の構成比は 0.00%。旬のピークは 1月。",
+      "share": {
+        "badgeLabel": "2026 シビコ(クロマグロ)通",
+        "text": "2026年の日本海の魚『シビコ(クロマグロ)』に注目。#日本海通2026 #石川の旬"
+      }
+    },
+    {
+      "id": "brand_92200",
+      "name": "オキナマコ",
+      "category": "classic",
+      "trend": "flat",
+      "percentile": 0.0,
+      "microcopy": "直近5年平均の構成比は 0.00%。旬のピークは 1月。",
+      "share": {
+        "badgeLabel": "2026 オキナマコ通",
+        "text": "2026年の日本海の魚『オキナマコ』に注目。#日本海通2026 #石川の旬"
       }
     }
-  ]
+  ],
+  "featured": [
+    {
+      "id": "brand_97500",
+      "name": "ノリ",
+      "score": 0.9998,
+      "reason": "low_share=0.00 growth=4311.4% seasonality=6.71"
+    },
+    {
+      "id": "brand_32000",
+      "name": "コブダイ",
+      "score": 0.9995,
+      "reason": "low_share=0.00 growth=472.1% seasonality=3.60"
+    },
+    {
+      "id": "brand_17220",
+      "name": "カナガシラ",
+      "score": 0.9956,
+      "reason": "low_share=0.03 growth=450.8% seasonality=4.20"
+    },
+    {
+      "id": "brand_12700",
+      "name": "サヨリ",
+      "score": 0.9945,
+      "reason": "low_share=0.04 growth=368.3% seasonality=4.54"
+    },
+    {
+      "id": "brand_11200",
+      "name": "スケトウダラ",
+      "score": 0.9571,
+      "reason": "low_share=0.00 growth=265.8% seasonality=2.96"
+    },
+    {
+      "id": "brand_77700",
+      "name": "シマエビ(モロトゲアカエビ)",
+      "score": 0.932,
+      "reason": "low_share=0.01 growth=141.6% seasonality=5.32"
+    },
+    {
+      "id": "brand_42300",
+      "name": "ヤナギムシガレイ",
+      "score": 0.918,
+      "reason": "low_share=0.03 growth=135.6% seasonality=3.69"
+    },
+    {
+      "id": "brand_42100",
+      "name": "ババガレイ",
+      "score": 0.9175,
+      "reason": "low_share=0.02 growth=386.9% seasonality=2.51"
+    },
+    {
+      "id": "brand_37020",
+      "name": "メジ(クロマグロ)",
+      "score": 0.9159,
+      "reason": "low_share=0.24 growth=215.8% seasonality=2.89"
+    },
+    {
+      "id": "brand_37300",
+      "name": "カジキ類",
+      "score": 0.9067,
+      "reason": "low_share=0.05 growth=131.2% seasonality=6.20"
+    },
+    {
+      "id": "brand_14900",
+      "name": "アカラバチメ(ハツメ)",
+      "score": 0.9048,
+      "reason": "low_share=0.12 growth=2092.3% seasonality=2.54"
+    },
+    {
+      "id": "brand_37000",
+      "name": "クロマグロ",
+      "score": 0.8992,
+      "reason": "low_share=0.07 growth=128.2% seasonality=6.08"
+    },
+    {
+      "id": "brand_15200",
+      "name": "ヤナギバチメ(ウスメバル)",
+      "score": 0.8989,
+      "reason": "low_share=0.38 growth=200.9% seasonality=2.94"
+    },
+    {
+      "id": "brand_22300",
+      "name": "アカアマダイ",
+      "score": 0.8923,
+      "reason": "low_share=0.11 growth=147.6% seasonality=3.06"
+    },
+    {
+      "id": "brand_36300",
+      "name": "カツオ",
+      "score": 0.8914,
+      "reason": "low_share=0.01 growth=118.7% seasonality=4.70"
+    },
+    {
+      "id": "brand_77600",
+      "name": "ボタンエビ(トヤマエビ)",
+      "score": 0.8812,
+      "reason": "low_share=0.01 growth=112.6% seasonality=3.50"
+    },
+    {
+      "id": "brand_18300",
+      "name": "ホッケ",
+      "score": 0.8729,
+      "reason": "low_share=0.37 growth=157.9% seasonality=3.10"
+    },
+    {
+      "id": "brand_97101",
+      "name": "ワカメ(乾)",
+      "score": 0.8687,
+      "reason": "low_share=0.00 growth=105.0% seasonality=7.18"
+    },
+    {
+      "id": "brand_23430",
+      "name": "コゾクラ(ブリ)",
+      "score": 0.8662,
+      "reason": "low_share=0.89 growth=953.6% seasonality=7.75"
+    },
+    {
+      "id": "brand_19600",
+      "name": "ノドグロ(アカムツ)",
+      "score": 0.8622,
+      "reason": "low_share=0.17 growth=324.9% seasonality=2.09"
+    },
+    {
+      "id": "brand_71300",
+      "name": "チョウセンハマグリ",
+      "score": 0.86,
+      "reason": "low_share=0.00 growth=100.0% seasonality=12.00"
+    },
+    {
+      "id": "brand_70100",
+      "name": "アカガイ",
+      "score": 0.8599,
+      "reason": "low_share=0.00 growth=100.0% seasonality=8.37"
+    }
+  ],
+  "meta": {
+    "percentile_definition": "5y_avg_annual_share_percent_2dp_sum_100_00",
+    "source_years": [
+      2021,
+      2022,
+      2023,
+      2024,
+      2025
+    ]
+  }
 }

@@ -74,6 +74,106 @@ h3 {
   gap: 8px;
 }
 
+.fish-chip-list-shell {
+  position: relative;
+}
+
+.fish-chip-list-collapsed {
+  max-height: 236px;
+  overflow: hidden;
+}
+
+.fish-list-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 92px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 0 0 8px;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 16, 25, 0) 0%,
+    rgba(8, 16, 25, 0.84) 70%,
+    rgba(8, 16, 25, 0.98) 100%
+  );
+}
+
+.fish-list-expand-button {
+  pointer-events: auto;
+  border-radius: 10px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-color: rgba(246, 194, 111, 0.9);
+  background: rgba(17, 32, 47, 0.95);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+}
+
+.fish-list-collapse-row {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.fish-list-collapse-button {
+  border-radius: 10px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-color: rgba(99, 210, 255, 0.75);
+  background: rgba(11, 27, 41, 0.9);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.24);
+}
+
+.fish-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fish-search-wrap {
+  position: relative;
+  display: inline-block;
+  width: min(320px, 100%);
+}
+
+.fish-search-input {
+  width: 100%;
+  height: 40px;
+  padding: 8px 40px 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(8, 16, 25, 0.72);
+  color: #f8f6f2;
+  outline: none;
+}
+
+.fish-search-input::placeholder {
+  color: rgba(248, 246, 242, 0.7);
+}
+
+.fish-search-input:focus {
+  border-color: rgba(99, 210, 255, 0.9);
+  box-shadow: 0 0 0 2px rgba(99, 210, 255, 0.2);
+}
+
+.fish-search-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
 .chip-active {
   background: rgba(246, 194, 111, 0.35);
   border-color: rgba(246, 194, 111, 0.9);
@@ -318,18 +418,103 @@ textarea {
   position: relative;
   margin-top: 8px;
   width: 100%;
-  min-height: 220px;
+  aspect-ratio: 16 / 9;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.22);
   background: rgba(8, 16, 25, 0.52);
   overflow: hidden;
 }
 
+.frame-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border: 2px solid rgba(246, 194, 111, 0.9);
+  border-radius: 12px;
+  z-index: 2;
+}
+
+.frame-flow {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(8px);
+}
+
+.frame-flow-a {
+  width: 62%;
+  height: 18%;
+  left: -10%;
+  top: 22%;
+  border: 2px solid rgba(99, 210, 255, 0.45);
+  transform: rotate(-8deg);
+}
+
+.frame-flow-b {
+  width: 70%;
+  height: 20%;
+  right: -16%;
+  bottom: 18%;
+  border: 2px solid rgba(246, 194, 111, 0.4);
+  transform: rotate(-7deg);
+}
+
+.frame-fish-badge {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(246, 194, 111, 0.85);
+  background: rgba(8, 16, 25, 0.72);
+  color: #f8f6f2;
+  font-weight: 700;
+  font-size: 13px;
+  z-index: 3;
+}
+
+.frame-chart-card {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: min(45%, 180px);
+  min-height: 84px;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(99, 210, 255, 0.85);
+  background: rgba(8, 16, 25, 0.74);
+  color: #f6f3ec;
+  z-index: 3;
+}
+
+.frame-chart-card p {
+  margin: 0 0 4px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.frame-chart-card small {
+  font-size: 11px;
+  opacity: 0.78;
+}
+
+.frame-chart-card svg {
+  width: 100%;
+  height: 54px;
+}
+
+.frame-chart-card polyline {
+  fill: none;
+  stroke: rgba(99, 210, 255, 0.95);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
 .camera-preview,
 .captured-preview {
   width: 100%;
-  min-height: 220px;
-  max-height: 320px;
+  height: 100%;
   object-fit: cover;
   display: block;
   background: rgba(0, 0, 0, 0.35);
@@ -340,10 +525,32 @@ textarea {
   left: 50%;
   bottom: 10px;
   transform: translateX(-50%);
-  background: rgba(246, 194, 111, 0.92);
-  color: #1a1c1f;
-  border-color: rgba(246, 194, 111, 1);
-  font-weight: 700;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.24);
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  z-index: 6;
+}
+
+.capture-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  background: rgba(10, 20, 32, 0.4);
+  display: grid;
+  place-items: center;
+}
+
+.capture-icon-inner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(246, 194, 111, 0.98);
 }
 
 .hidden-canvas {
@@ -444,5 +651,22 @@ textarea {
 
   .season-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .frame-chart-card {
+    width: 52%;
+  }
+
+  .fish-list-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .fish-chip-list-collapsed {
+    max-height: 246px;
+  }
+
+  .fish-list-fade {
+    height: 102px;
   }
 }

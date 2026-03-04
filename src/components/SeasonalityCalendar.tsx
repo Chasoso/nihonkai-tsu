@@ -47,14 +47,17 @@ export function SeasonalityCalendar({
     }
 
     if (selectedFishId && seasonalityById.has(selectedFishId)) {
-      setCalendarFishId(selectedFishId);
+      setCalendarFishId((prev) => (prev === selectedFishId ? prev : selectedFishId));
       return;
     }
 
-    if (!calendarFishId || !seasonalityById.has(calendarFishId)) {
-      setCalendarFishId(selectableFish[0].id);
-    }
-  }, [selectedFishId, selectableFish, seasonalityById, calendarFishId]);
+    setCalendarFishId((prev) => {
+      if (prev && seasonalityById.has(prev)) {
+        return prev;
+      }
+      return selectableFish[0].id;
+    });
+  }, [selectedFishId, selectableFish, seasonalityById]);
 
   const currentMonth = monthInJst();
   const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
@@ -132,7 +135,11 @@ export function SeasonalityCalendar({
           魚種を選択
           <select
             value={calendarFishId ?? ""}
-            onChange={(event) => setCalendarFishId(event.target.value)}
+            onChange={(event) => {
+              const nextFishId = event.target.value;
+              setCalendarFishId(nextFishId);
+              onSelectMainFish(nextFishId);
+            }}
             disabled={!selectableFish.length}
           >
             {selectableFish.map((fish) => (

@@ -60,7 +60,9 @@ export function ProgressBoardVoronoi({
             name: item.name,
             category: item.category,
             percentile: item.percentile,
-            weight: Math.max(1, 100 - item.percentile)
+            // Use percentile itself as area weight.
+            // Keep a tiny epsilon only to avoid zero-value layout instability.
+            weight: item.percentile + 0.0001
           }))
       }))
     };
