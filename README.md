@@ -1,7 +1,7 @@
 # nihonkai-tsu
 
-React + TypeScript + Vite で作成した、1ページ体験型ブランドサイト（MVP）です。  
-データは `public/data/2026.json` を fetch で読み込み、称号履歴は `localStorage` に保存します。
+React + TypeScript + Vite の既存プロトタイプです。  
+今回のMVP改修で「画像をもとにX投稿文を生成する機能」を追加しています。
 
 ## セットアップ
 
@@ -21,86 +21,133 @@ npm run dev
 npm run build
 ```
 
-## GitHub Pages デプロイ（簡易）
+## 追加したMVP機能
 
-1. `vite.config.ts` の `base` をリポジトリ名付きに設定（例: `"/nihonkai-tsu/"`）。
-2. ビルドを実行:
+- 既存の撮影/画像選択導線を維持
+- 投稿画像は従来どおりフレーム付きで生成
+- AI解析用はフレーム合成前の元画像を使用
+- AI送信用画像はフロントで縮小/圧縮してから送信
+- 魚種選択UIを追加
+- X投稿用の短文を1案のみ生成
+- 生成失敗時はテンプレート文へフォールバック
+- 生成文コピーとX投稿導線を追加
 
-```bash
-npm run build
-```
-
-3. 生成された `dist/` を GitHub Pages に公開（`gh-pages` ブランチ or Actions）。
-
-GitHub Actions 例（概略）:
-- `actions/setup-node`
-- `npm ci`
-- `npm run build`
-- `actions/upload-pages-artifact` + `actions/deploy-pages`
-
-## 主な構成
-
-- `src/types.ts`: 型定義
-- `src/lib/data.ts`: JSON読み込み
-- `src/lib/storage.ts`: localStorage処理
-- `src/lib/progress.ts`: 上位N%進捗計算
-- `src/components/*`: 画面コンポーネント
-- `public/data/2026.json`: 2026年度データ
-
-## データ生成（Web公開前のローカル事前作成）
-
-`data/2025.12.18.xlsx` から、公開用の `public/data/landings_5y.json` を生成できます。
-
-### 前提
-
-- Python 3.x がローカル環境に入っていること
-- 入力ファイル: `data/2025.12.18.xlsx`
-- 魚種定義ファイル: `public/data/2026.json`
-
-### 実行方法
+## フロント環境変数（`.env`）
 
 ```bash
-npm run generate:data
+VITE_POST_TEXT_API_URL=https://<your-api-domain>/api/generate-post-text
+VITE_AI_POST_TEXT_ENABLED=true
+VITE_AI_IMAGE_MAX_EDGE_PX=512
+VITE_AI_IMAGE_QUALITY=0.68
+VITE_AI_CACHE_TTL_MS=180000
 ```
 
-同等コマンド（直接実行）:
+## バックエンド（AWS Lambda推奨）
+
+追加ファイル:
+
+- `backend/lambda/generate-post-text.mjs`
+
+想定エンドポイント:
+
+- `POST /api/generate-post-text`
+
+### Lambda環境変数
 
 ```bash
-python scripts/generate_public_data.py
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_MAX_OUTPUT_TOKENS=120
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX_REQUESTS=8
+ALLOW_ORIGIN=https://<your-github-pages-domain>
+POST_TEXT_MODE=live
+TEST_MODE_FIXED_TEXT=テストモード: 今日は魚料理を楽しみました。#変わる海を味わう
 ```
 
-### オプション
+`POST_TEXT_MODE` の切替:
 
-```bash
-python scripts/generate_public_data.py --xlsx data/2025.12.18.xlsx --fish-data public/data/2026.json --out public/data/landings_5y.json --years 5
-```
+- `live`: OpenAI API を呼び出す本番モード
+- `test`: Lambda内で `TEST_MODE_FIXED_TEXT` を固定返却するテストモード（OpenAI APIを呼ばない）
 
-### 補足
+### Lambdaデプロイ手順（最小）
 
-- スクリプト: `scripts/generate_public_data.py`
-- 直近 `--years` 年（デフォルト5年）を集計対象にします
-- 出力JSONの単位は `kg` です
+1. API Gateway + Lambda で `POST /api/generate-post-text` を作成
+2. CORS を有効化（`POST,OPTIONS`）
+3. Lambdaに `backend/lambda/generate-post-text.mjs` を配置
+4. 上記環境変数を設定
+5. フロントの `VITE_POST_TEXT_API_URL` にAPI URLを設定
 
-### 2026.json の同時出力
+## GitHub Pagesデプロイ
 
-`npm run generate:data` では、次の2ファイルを同時に更新します。
+1. `vite.config.ts` の `base` をリポジトリに合わせる
+2. `npm run build` を実行
+3. `dist/` を GitHub Pages に公開（Actions推奨）
 
-- `public/data/landings_5y.json`
-- `public/data/2026.json`
+## Lambda自動デプロイ（GitHub Actions）
 
-直接実行時（最新オプション）:
+追加済みワークフロー:
 
-```bash
-python scripts/generate_public_data.py --xlsx data/2025.12.18.xlsx --template-2026 public/data/2026.json --out-landings public/data/landings_5y.json --out-2026 public/data/2026.json --years 5
-```
+- `.github/workflows/deploy-lambda.yml`
 
-### 新しい生成仕様（全魚種ベース）
+`main` への push で `backend/lambda/**` が変更されたときに自動デプロイします。  
+手動実行は `workflow_dispatch` を使います。
 
-現在の `scripts/generate_public_data.py` は以下の仕様で出力します。
+この workflow は以下を実行します。
 
-- Excel の `銘柄CD/銘柄名` を広く取り込み、`fish` 配列を新規生成（汎用カテゴリ行を除外）
-- `public/data/2026.json` と `public/data/landings_5y.json` を同時に更新
-- `percentile` は「直近5年平均年計の構成比(%)」を整数化し、合計100に補正
-- `featured`（通向け魚）を別ロジック（低シェア + 成長率 + 季節性）で抽出して出力
+1. Lambda関数の存在確認
+2. 未作成なら新規作成
+3. 関数コードを更新
+4. 環境変数をActionsから反映
 
-実行後のログには `Fish count` と `Percentile sum` が表示されます。
+初回デプロイの既定値は **テストモード**（`POST_TEXT_MODE=test`）です。
+
+### GitHub 側の設定
+
+Repository Variables:
+
+- `AWS_REGION`（例: `ap-northeast-1`）
+- `LAMBDA_FUNCTION_NAME`
+- `LAMBDA_ARCHITECTURE`（任意。既定: `x86_64`）
+- `LAMBDA_TIMEOUT`（任意。既定: `10`）
+- `LAMBDA_MEMORY_SIZE`（任意。既定: `256`）
+- `ALLOW_ORIGIN`（任意。既定: `*`）
+- `OPENAI_MODEL`（任意。既定: `gpt-4o-mini`）
+- `OPENAI_MAX_OUTPUT_TOKENS`（任意。既定: `120`）
+- `RATE_LIMIT_WINDOW_MS`（任意。既定: `60000`）
+- `RATE_LIMIT_MAX_REQUESTS`（任意。既定: `8`）
+- `LAMBDA_POST_TEXT_MODE`（任意。既定: `test`）
+- `TEST_MODE_FIXED_TEXT`（任意。テスト時の固定返却文）
+
+Repository Secrets:
+
+- `AWS_ROLE_TO_ASSUME`（OIDCでAssumeするIAM Role ARN）
+- `LAMBDA_EXECUTION_ROLE_ARN`（Lambda実行ロールARN。関数新規作成時に使用）
+- `OPENAI_API_KEY`（本番モードで使用）
+
+### AWS 側の前提
+
+- Lambda関数を作成済みである必要はありません（workflow が未作成時に作成）
+- 関数のハンドラは `index.handler`（workflow で `index.mjs` を配置）
+- GitHub OIDC を信頼する IAM Role を用意し、最低限以下を許可:
+  - `lambda:CreateFunction`
+  - `lambda:UpdateFunctionCode`
+  - `lambda:UpdateFunctionConfiguration`
+  - `lambda:GetFunction`
+
+## コスト最適化方針
+
+- AI送信画像を **512px以下** に縮小
+- JPEG圧縮して通信量と推論コストを削減
+- 画像は1枚のみ送信
+- 出力は短文1案のみ
+- `max_output_tokens` を小さく設定
+- フレーム付き画像をAIに送らない
+- 同一条件の短時間再生成はフロントキャッシュで再利用
+- API障害/レート制限時はテンプレート文にフォールバック
+
+## 注意
+
+- OpenAI APIキーはクライアントへ置かないでください
+- APIキーや秘密情報をGitにコミットしないでください
+- ログには画像本体を保存しない設計にしてください

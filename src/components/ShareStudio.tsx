@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import type { Fish, LandingsData, LandingSpecies } from "../types";
+import { generatePostText, getFallbackPostText, type AiInputImagePayload } from "../lib/postText";
 
 interface ShareStudioProps {
   fish: Fish | null;
+  fishTypeOptions: string[];
   landings: LandingsData;
   openComposerNonce: number;
   onOpenXIntent: (finalText: string, imageFile: File | null) => Promise<boolean> | boolean;
@@ -11,6 +13,24 @@ interface ShareStudioProps {
 }
 
 type FrameOption = "none" | "nihonkai";
+
+const DEFAULT_MAX_AI_IMAGE_EDGE_PX = 512;
+const DEFAULT_AI_IMAGE_QUALITY = 0.68;
+const DEFAULT_AI_CACHE_TTL_MS = 180_000;
+const DEFAULT_AI_API_URL = "/api/generate-post-text";
+
+function toNumber(value: unknown, fallback: number): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function envFlag(value: unknown, fallback: boolean): boolean {
+  if (typeof value !== "string") return fallback;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "true" || normalized === "1") return true;
+  if (normalized === "false" || normalized === "0") return false;
+  return fallback;
+}
 
 function drawRoundedRect(
   ctx: CanvasRenderingContext2D,
@@ -75,12 +95,6 @@ function drawFlowBackground(ctx: CanvasRenderingContext2D, width: number, height
   ctx.bezierCurveTo(width * 0.24, height * 0.58, width * 0.52, height * 0.88, width * 0.80, height * 0.70);
   ctx.bezierCurveTo(width * 0.90, height * 0.64, width * 0.96, height * 0.70, width, height * 0.65);
   ctx.stroke();
-
-  const blobGradient = ctx.createRadialGradient(width * 0.88, height * 0.20, 10, width * 0.88, height * 0.20, width * 0.25);
-  blobGradient.addColorStop(0, "rgba(99, 210, 255, 0.22)");
-  blobGradient.addColorStop(1, "rgba(99, 210, 255, 0)");
-  ctx.fillStyle = blobGradient;
-  ctx.fillRect(width * 0.63, 0, width * 0.37, height * 0.45);
 }
 
 function drawFishTitle(ctx: CanvasRenderingContext2D, width: number, height: number, fishName: string) {
@@ -97,7 +111,7 @@ function drawFishTitle(ctx: CanvasRenderingContext2D, width: number, height: num
   ctx.stroke();
 
   ctx.fillStyle = "#f8f6f2";
-  ctx.font = `700 ${Math.max(14, width * 0.035)}px \"Hiragino Sans\", \"Yu Gothic\", sans-serif`;
+  ctx.font = `700 ${Math.max(14, width * 0.035)}px "Hiragino Sans", "Yu Gothic", sans-serif`;
   ctx.textBaseline = "middle";
   ctx.fillText(fishName, pad + width * 0.025, pad + panelHeight / 2);
   ctx.restore();
@@ -119,12 +133,12 @@ function drawTrendChart(ctx: CanvasRenderingContext2D, width: number, height: nu
   ctx.stroke();
 
   ctx.fillStyle = "#f6f3ec";
-  ctx.font = `600 ${Math.max(11, width * 0.021)}px \"Hiragino Sans\", \"Yu Gothic\", sans-serif`;
-  ctx.fillText("過去2年の漁獲量推移", x + boxWidth * 0.07, y + boxHeight * 0.18);
+  ctx.font = `600 ${Math.max(11, width * 0.021)}px "Hiragino Sans", "Yu Gothic", sans-serif`;
+  ctx.fillText("直近2年の漁獲量推移", x + boxWidth * 0.07, y + boxHeight * 0.18);
 
   if (!series.length) {
     ctx.fillStyle = "rgba(246, 243, 236, 0.75)";
-    ctx.font = `500 ${Math.max(10, width * 0.018)}px \"Hiragino Sans\", \"Yu Gothic\", sans-serif`;
+    ctx.font = `500 ${Math.max(10, width * 0.018)}px "Hiragino Sans", "Yu Gothic", sans-serif`;
     ctx.fillText("データなし", x + boxWidth * 0.07, y + boxHeight * 0.56);
     ctx.restore();
     return;
@@ -161,7 +175,7 @@ function drawTrendChart(ctx: CanvasRenderingContext2D, width: number, height: nu
   ctx.stroke();
 
   ctx.fillStyle = "rgba(246, 243, 236, 0.85)";
-  ctx.font = `500 ${Math.max(9, width * 0.016)}px \"Hiragino Sans\", \"Yu Gothic\", sans-serif`;
+  ctx.font = `500 ${Math.max(9, width * 0.016)}px "Hiragino Sans", "Yu Gothic", sans-serif`;
   ctx.fillText(`max ${Math.round(max)} ${unit}`, chartX, chartY + chartH + boxHeight * 0.16);
   ctx.restore();
 }
@@ -182,7 +196,30 @@ async function loadFileImage(file: File): Promise<HTMLImageElement> {
   });
 }
 
-async function composeFramedImage(file: File, fish: Fish, landings: LandingsData): Promise<File> {
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
+}
+
+async function sha256Hex(buffer: ArrayBuffer): Promise<string> {
+  if (!globalThis.crypto?.subtle) {
+    return `size-${buffer.byteLength}`;
+  }
+
+  const hash = await globalThis.crypto.subtle.digest("SHA-256", buffer);
+  const bytes = new Uint8Array(hash);
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+export async function buildShareImage(file: File, fish: Fish, landings: LandingsData): Promise<File> {
   const img = await loadFileImage(file);
   const canvas = document.createElement("canvas");
   canvas.width = img.naturalWidth || img.width;
@@ -194,7 +231,6 @@ async function composeFramedImage(file: File, fish: Fish, landings: LandingsData
   }
 
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
   drawFlowBackground(ctx, canvas.width, canvas.height);
   drawFishTitle(ctx, canvas.width, canvas.height, fish.name);
 
@@ -224,15 +260,60 @@ async function composeFramedImage(file: File, fish: Fish, landings: LandingsData
   return new File([blob], `${base}_framed.jpg`, { type: "image/jpeg" });
 }
 
-export function ShareStudio({ fish, landings, openComposerNonce, onOpenXIntent, onComplete }: ShareStudioProps) {
+export async function buildAiInputImage(file: File, maxEdgePx: number, quality: number): Promise<AiInputImagePayload> {
+  const img = await loadFileImage(file);
+  const srcW = img.naturalWidth || img.width;
+  const srcH = img.naturalHeight || img.height;
+
+  const scale = Math.min(1, maxEdgePx / Math.max(srcW, srcH));
+  const targetW = Math.max(1, Math.round(srcW * scale));
+  const targetH = Math.max(1, Math.round(srcH * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = targetW;
+  canvas.height = targetH;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    throw new Error("failed_to_get_canvas_context");
+  }
+
+  ctx.drawImage(img, 0, 0, targetW, targetH);
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+  if (!blob) {
+    throw new Error("failed_to_encode_image");
+  }
+
+  const buffer = await blob.arrayBuffer();
+  return {
+    imageBase64: arrayBufferToBase64(buffer),
+    mimeType: "image/jpeg",
+    imageHash: await sha256Hex(buffer),
+    width: targetW,
+    height: targetH
+  };
+}
+
+export function ShareStudio({
+  fish,
+  fishTypeOptions,
+  landings,
+  openComposerNonce,
+  onOpenXIntent,
+  onComplete
+}: ShareStudioProps) {
   const [composerOpen, setComposerOpen] = useState(false);
-  const [userComment, setUserComment] = useState("");
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
   const [frameOption, setFrameOption] = useState<FrameOption>("nihonkai");
+  const [selectedFishType, setSelectedFishType] = useState("");
+  const [generatedText, setGeneratedText] = useState("");
+  const [generationNote, setGenerationNote] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -240,17 +321,19 @@ export function ShareStudio({ fish, landings, openComposerNonce, onOpenXIntent, 
   const streamRef = useRef<MediaStream | null>(null);
   const lastOpenNonceRef = useRef(openComposerNonce);
 
-  const fixedTemplate = fish?.share.text ?? "";
-  const finalText = useMemo(() => {
-    if (!fish) return "";
-    if (!userComment.trim()) return fixedTemplate;
-    return `${userComment.trim()}\n\n${fixedTemplate}`;
-  }, [fish, userComment, fixedTemplate]);
+  const aiApiUrl = String(import.meta.env.VITE_POST_TEXT_API_URL ?? DEFAULT_AI_API_URL);
+  const aiEnabled = envFlag(import.meta.env.VITE_AI_POST_TEXT_ENABLED, true);
+  const aiMaxEdgePx = toNumber(import.meta.env.VITE_AI_IMAGE_MAX_EDGE_PX, DEFAULT_MAX_AI_IMAGE_EDGE_PX);
+  const aiImageQuality = toNumber(import.meta.env.VITE_AI_IMAGE_QUALITY, DEFAULT_AI_IMAGE_QUALITY);
+  const aiCacheTtlMs = toNumber(import.meta.env.VITE_AI_CACHE_TTL_MS, DEFAULT_AI_CACHE_TTL_MS);
+  const tone = "friendly";
+
   const previewSeries = useMemo(() => {
     if (!fish) return [];
     const species = landings.species.find((item) => item.id === fish.id);
     return getTwoYearMonthlySeries(species);
   }, [fish, landings]);
+
   const previewPolyline = useMemo(() => {
     if (!previewSeries.length) return "";
     const min = Math.min(...previewSeries);
@@ -285,7 +368,15 @@ export function ShareStudio({ fish, landings, openComposerNonce, onOpenXIntent, 
     lastOpenNonceRef.current = openComposerNonce;
     if (!fish) return;
     setComposerOpen(true);
-  }, [openComposerNonce]);
+  }, [openComposerNonce, fish]);
+
+  useEffect(() => {
+    if (fish?.name) {
+      setSelectedFishType(fish.name);
+    } else {
+      setSelectedFishType("");
+    }
+  }, [fish?.name]);
 
   const stopCamera = () => {
     if (!streamRef.current) return;
@@ -301,16 +392,24 @@ export function ShareStudio({ fish, landings, openComposerNonce, onOpenXIntent, 
     }
 
     setSelectedImageFile(file);
+    setGeneratedText("");
+    setGenerationNote(null);
+    setCopied(false);
     if (!file) return;
     setSelectedImageUrl(URL.createObjectURL(file));
   };
 
   const resetComposer = () => {
-    setUserComment("");
     setCameraError(null);
     setFrameOption("nihonkai");
     updateSelectedImage(null);
+    setGeneratedText("");
+    setGenerationNote(null);
+    setCopied(false);
     stopCamera();
+    if (fish?.name) {
+      setSelectedFishType(fish.name);
+    }
   };
 
   const openComposer = () => {
@@ -330,7 +429,7 @@ export function ShareStudio({ fish, landings, openComposerNonce, onOpenXIntent, 
 
     try {
       if (!navigator.mediaDevices?.getUserMedia) {
-        setCameraError("このブラウザではカメラ機能を利用できません。");
+        setCameraError("このブラウザではカメラを利用できません。");
         return;
       }
 
@@ -347,7 +446,7 @@ export function ShareStudio({ fish, landings, openComposerNonce, onOpenXIntent, 
         setCameraReady(true);
       }
     } catch {
-      setCameraError("カメラにアクセスできませんでした。権限設定を確認してください。");
+      setCameraError("カメラにアクセスできませんでした。権限設定をご確認ください。");
       setCameraReady(false);
     }
   };
@@ -393,17 +492,64 @@ export function ShareStudio({ fish, landings, openComposerNonce, onOpenXIntent, 
     event.target.value = "";
   };
 
-  const handleSubmit = async () => {
-    if (!fish) return;
+  const handleGeneratePostText = async () => {
+    const fishType = selectedFishType.trim() || fish?.name || "魚料理";
+
+    setIsGenerating(true);
+    setCopied(false);
+    try {
+      if (!selectedImageFile) {
+        setGeneratedText(getFallbackPostText(fishType));
+        setGenerationNote("画像未選択のためテンプレート文を表示しています。");
+        return;
+      }
+
+      const aiImage = await buildAiInputImage(selectedImageFile, aiMaxEdgePx, aiImageQuality);
+      const result = await generatePostText({
+        apiUrl: aiApiUrl,
+        image: aiImage,
+        fishType,
+        tone,
+        enabled: aiEnabled,
+        cacheTtlMs: aiCacheTtlMs
+      });
+
+      setGeneratedText(result.text);
+      if (result.fallbackUsed) {
+        setGenerationNote("AI生成に失敗したためテンプレート文を表示しています。");
+      } else {
+        setGenerationNote("AI生成した投稿文です。");
+      }
+    } catch {
+      setGeneratedText(getFallbackPostText(fishType));
+      setGenerationNote("生成処理に失敗したためテンプレート文を表示しています。");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleCopyText = async () => {
+    if (!generatedText) return;
+    try {
+      await navigator.clipboard.writeText(generatedText);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  const handleOpenXPost = async () => {
+    if (!fish || !generatedText) return;
 
     setIsSubmitting(true);
     try {
       let imageToPost = selectedImageFile;
       if (imageToPost && frameOption === "nihonkai") {
-        imageToPost = await composeFramedImage(imageToPost, fish, landings);
+        imageToPost = await buildShareImage(imageToPost, fish, landings);
       }
 
-      const posted = await onOpenXIntent(finalText, imageToPost);
+      const posted = await onOpenXIntent(generatedText, imageToPost);
       if (!posted) return;
 
       onComplete();
@@ -417,7 +563,7 @@ export function ShareStudio({ fish, landings, openComposerNonce, onOpenXIntent, 
     <section id="share-studio" className="section">
       <h2>Share Studio</h2>
       <div className="actions">
-        <p>選択中の魚: {fish ? fish.name : "未選択"}</p>
+        <p>対象の魚: {fish ? fish.name : "未選択"}</p>
         <button onClick={openComposer} disabled={!fish}>
           Xに投稿する
         </button>
@@ -433,27 +579,28 @@ export function ShareStudio({ fish, landings, openComposerNonce, onOpenXIntent, 
             <p>対象の魚: {fish?.name}</p>
 
             <label>
-              コメント
-              <textarea
-                value={userComment}
-                onChange={(event) => setUserComment(event.target.value)}
-                placeholder="コメントを入力してください"
-                disabled={!fish || isSubmitting}
-              />
+              魚種
+              <select
+                value={selectedFishType}
+                onChange={(event) => setSelectedFishType(event.target.value)}
+                disabled={isGenerating || isSubmitting}
+              >
+                {fishTypeOptions.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+                <option value="その他">その他</option>
+              </select>
             </label>
-
-            <div className="fixed-template">
-              <p>固定テンプレート</p>
-              <pre>{fixedTemplate || "魚を選ぶと表示されます"}</pre>
-            </div>
 
             <div className="camera-area">
               <p>画像</p>
               <div className="actions">
-                <button onClick={startCamera} disabled={isSubmitting}>
+                <button onClick={startCamera} disabled={isGenerating || isSubmitting}>
                   カメラ起動
                 </button>
-                <button onClick={handlePickImageClick} disabled={isSubmitting}>
+                <button onClick={handlePickImageClick} disabled={isGenerating || isSubmitting}>
                   画像を選択
                 </button>
               </div>
@@ -462,7 +609,7 @@ export function ShareStudio({ fish, landings, openComposerNonce, onOpenXIntent, 
                 ref={fileInputRef}
                 className="hidden-file-input"
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,.jpg,.jpeg,.png"
                 onChange={handlePickImage}
               />
 
@@ -482,7 +629,7 @@ export function ShareStudio({ fish, landings, openComposerNonce, onOpenXIntent, 
                   <button
                     className="capture-button-in-frame"
                     onClick={capturePhoto}
-                    disabled={isSubmitting}
+                    disabled={isGenerating || isSubmitting}
                     aria-label="撮影する"
                   >
                     <span className="capture-icon">
@@ -497,7 +644,7 @@ export function ShareStudio({ fish, landings, openComposerNonce, onOpenXIntent, 
                     <div className="frame-flow frame-flow-b" />
                     <div className="frame-fish-badge">{fish?.name ?? ""}</div>
                     <div className="frame-chart-card">
-                      <p>過去2年の漁獲量推移</p>
+                      <p>直近2年の漁獲量推移</p>
                       {previewPolyline ? (
                         <svg viewBox="0 0 240 100" preserveAspectRatio="none">
                           <polyline points={previewPolyline} />
@@ -520,7 +667,7 @@ export function ShareStudio({ fish, landings, openComposerNonce, onOpenXIntent, 
                     name="post-frame"
                     checked={frameOption === "nihonkai"}
                     onChange={() => setFrameOption("nihonkai")}
-                    disabled={isSubmitting}
+                    disabled={isGenerating || isSubmitting}
                   />
                   Nihonkai-tsu フレーム
                 </label>
@@ -530,21 +677,40 @@ export function ShareStudio({ fish, landings, openComposerNonce, onOpenXIntent, 
                     name="post-frame"
                     checked={frameOption === "none"}
                     onChange={() => setFrameOption("none")}
-                    disabled={isSubmitting}
+                    disabled={isGenerating || isSubmitting}
                   />
                   フレームなし
                 </label>
               </div>
-              <p className="frame-note">フレームには左上に魚名、右下に過去2年の漁獲量推移が表示されます。</p>
+              <p className="frame-note">投稿画像にはフレームを重ねます。AI解析には元画像のみを送信します。</p>
+            </div>
+
+            <div className="ai-generate-area">
+              <button
+                onClick={handleGeneratePostText}
+                disabled={isGenerating || isSubmitting || !selectedFishType.trim()}
+              >
+                {isGenerating ? "投稿文を生成中..." : "投稿文を作る"}
+              </button>
+
+              {generatedText ? (
+                <div className="generated-text-panel">
+                  <p className="generated-text-label">生成結果</p>
+                  <pre>{generatedText}</pre>
+                  {generationNote ? <p className="generated-note">{generationNote}</p> : null}
+                  <div className="actions">
+                    <button onClick={handleCopyText} disabled={isGenerating || isSubmitting}>
+                      {copied ? "コピー済み" : "コピー"}
+                    </button>
+                    <button onClick={handleOpenXPost} disabled={isGenerating || isSubmitting}>
+                      {isSubmitting ? "投稿中..." : "X投稿へ"}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <canvas ref={canvasRef} className="hidden-canvas" />
-
-            <div className="actions">
-              <button onClick={handleSubmit} disabled={!fish || isSubmitting}>
-                {isSubmitting ? "投稿中..." : "投稿する"}
-              </button>
-            </div>
           </div>
         </div>
       ) : null}

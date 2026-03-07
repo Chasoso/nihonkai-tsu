@@ -1,0 +1,131 @@
+name: Deploy Lambda
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/lambda/**"
+      - ".github/workflows/deploy-lambda.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: lambda-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      LAMBDA_FUNCTION_NAME: ${{ vars.LAMBDA_FUNCTION_NAME }}
+      LAMBDA_EXECUTION_ROLE_ARN: ${{ secrets.LAMBDA_EXECUTION_ROLE_ARN }}
+      LAMBDA_ARCHITECTURE: ${{ vars.LAMBDA_ARCHITECTURE }}
+      LAMBDA_TIMEOUT: ${{ vars.LAMBDA_TIMEOUT }}
+      LAMBDA_MEMORY_SIZE: ${{ vars.LAMBDA_MEMORY_SIZE }}
+      ALLOW_ORIGIN: ${{ vars.ALLOW_ORIGIN }}
+      OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+      OPENAI_MAX_OUTPUT_TOKENS: ${{ vars.OPENAI_MAX_OUTPUT_TOKENS }}
+      RATE_LIMIT_WINDOW_MS: ${{ vars.RATE_LIMIT_WINDOW_MS }}
+      RATE_LIMIT_MAX_REQUESTS: ${{ vars.RATE_LIMIT_MAX_REQUESTS }}
+      LAMBDA_POST_TEXT_MODE: ${{ vars.LAMBDA_POST_TEXT_MODE }}
+      TEST_MODE_FIXED_TEXT: ${{ vars.TEST_MODE_FIXED_TEXT }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      LAMBDA_HANDLER_FILE: generate-post-text.mjs
+      LAMBDA_ZIP: lambda.zip
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate required settings
+        run: |
+          test -n "${AWS_REGION}" || (echo "AWS_REGION is not set (Repository Variable)." && exit 1)
+          test -n "${LAMBDA_FUNCTION_NAME}" || (echo "LAMBDA_FUNCTION_NAME is not set (Repository Variable)." && exit 1)
+          test -n "${LAMBDA_EXECUTION_ROLE_ARN}" || (echo "LAMBDA_EXECUTION_ROLE_ARN is not set (Repository Secret)." && exit 1)
+
+      - name: Package Lambda artifact
+        working-directory: backend/lambda
+        run: |
+          cp "${LAMBDA_HANDLER_FILE}" index.mjs
+          zip -r "../../${LAMBDA_ZIP}" index.mjs
+
+      - name: Ensure Lambda exists (create if missing)
+        run: |
+          set -euo pipefail
+          if aws lambda get-function --function-name "${LAMBDA_FUNCTION_NAME}" >/dev/null 2>&1; then
+            echo "Lambda function already exists: ${LAMBDA_FUNCTION_NAME}"
+          else
+            ARCH="${LAMBDA_ARCHITECTURE:-x86_64}"
+            TIMEOUT="${LAMBDA_TIMEOUT:-10}"
+            MEMORY="${LAMBDA_MEMORY_SIZE:-256}"
+            aws lambda create-function \
+              --function-name "${LAMBDA_FUNCTION_NAME}" \
+              --runtime nodejs20.x \
+              --handler index.handler \
+              --architectures "${ARCH}" \
+              --timeout "${TIMEOUT}" \
+              --memory-size "${MEMORY}" \
+              --role "${LAMBDA_EXECUTION_ROLE_ARN}" \
+              --zip-file "fileb://${LAMBDA_ZIP}"
+            aws lambda wait function-active --function-name "${LAMBDA_FUNCTION_NAME}"
+          fi
+
+      - name: Deploy function code
+        run: |
+          aws lambda update-function-code \
+            --function-name "${LAMBDA_FUNCTION_NAME}" \
+            --zip-file "fileb://${LAMBDA_ZIP}"
+
+      - name: Wait until function update completes
+        run: |
+          aws lambda wait function-updated \
+            --function-name "${LAMBDA_FUNCTION_NAME}"
+
+      - name: Apply Lambda environment variables (default: test mode)
+        run: |
+          set -euo pipefail
+          POST_TEXT_MODE="${LAMBDA_POST_TEXT_MODE:-test}"
+          EFFECTIVE_OPENAI_MODEL="${OPENAI_MODEL:-gpt-4o-mini}"
+          EFFECTIVE_MAX_OUTPUT="${OPENAI_MAX_OUTPUT_TOKENS:-120}"
+          EFFECTIVE_RATE_WINDOW="${RATE_LIMIT_WINDOW_MS:-60000}"
+          EFFECTIVE_RATE_MAX="${RATE_LIMIT_MAX_REQUESTS:-8}"
+          EFFECTIVE_ALLOW_ORIGIN="${ALLOW_ORIGIN:-*}"
+          EFFECTIVE_TEST_TEXT="${TEST_MODE_FIXED_TEXT:-テストモード: 今日は魚料理を楽しみました。#変わる海を味わう}"
+
+          jq -n \
+            --arg openaiApiKey "${OPENAI_API_KEY}" \
+            --arg openaiModel "${EFFECTIVE_OPENAI_MODEL}" \
+            --arg openaiMaxOutputTokens "${EFFECTIVE_MAX_OUTPUT}" \
+            --arg rateLimitWindowMs "${EFFECTIVE_RATE_WINDOW}" \
+            --arg rateLimitMaxRequests "${EFFECTIVE_RATE_MAX}" \
+            --arg allowOrigin "${EFFECTIVE_ALLOW_ORIGIN}" \
+            --arg postTextMode "${POST_TEXT_MODE}" \
+            --arg testModeFixedText "${EFFECTIVE_TEST_TEXT}" \
+            '{Variables:{
+              OPENAI_API_KEY:$openaiApiKey,
+              OPENAI_MODEL:$openaiModel,
+              OPENAI_MAX_OUTPUT_TOKENS:$openaiMaxOutputTokens,
+              RATE_LIMIT_WINDOW_MS:$rateLimitWindowMs,
+              RATE_LIMIT_MAX_REQUESTS:$rateLimitMaxRequests,
+              ALLOW_ORIGIN:$allowOrigin,
+              POST_TEXT_MODE:$postTextMode,
+              TEST_MODE_FIXED_TEXT:$testModeFixedText
+            }}' > lambda-env.json
+
+          aws lambda update-function-configuration \
+            --function-name "${LAMBDA_FUNCTION_NAME}" \
+            --environment file://lambda-env.json
+
+      - name: Wait until configuration update completes
+        run: |
+          aws lambda wait function-updated \
+            --function-name "${LAMBDA_FUNCTION_NAME}"

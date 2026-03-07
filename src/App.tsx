@@ -177,6 +177,7 @@ export default function App() {
       <section ref={shareRef}>
         <ShareStudio
           fish={selectedFish}
+          fishTypeOptions={data.fish.map((item) => item.name)}
           landings={landings}
           openComposerNonce={openShareComposerNonce}
           onOpenXIntent={async (finalText, imageFile) => {
