@@ -90,7 +90,7 @@ jobs:
           aws lambda wait function-updated \
             --function-name "${LAMBDA_FUNCTION_NAME}"
 
-      - name: Apply Lambda environment variables (default: test mode)
+      - name: "Apply Lambda environment variables (default: test mode)"
         run: |
           set -euo pipefail
           POST_TEXT_MODE="${LAMBDA_POST_TEXT_MODE:-test}"
