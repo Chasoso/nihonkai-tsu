@@ -44,7 +44,6 @@ export default function App() {
   const seasonPanelRef = useRef<HTMLElement | null>(null);
   const progressPanelRef = useRef<HTMLElement | null>(null);
   const aboutPanelRef = useRef<HTMLElement | null>(null);
-  const shareRef = useRef<HTMLElement | null>(null);
   const historyRef = useRef<HTMLElement | null>(null);
   const toastTimerRef = useRef<number | null>(null);
   const overlayTimerRef = useRef<number | null>(null);
@@ -177,10 +176,7 @@ export default function App() {
 
   const openFishForShare = (fish: Fish) => {
     setSelectedFish(fish);
-    navigateToPanel("fish");
-    window.setTimeout(() => {
-      shareRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 220);
+    setOpenShareComposerNonce((prev) => prev + 1);
   };
 
   if (error) {
@@ -295,7 +291,7 @@ export default function App() {
               ) : null}
             </section>
 
-            <section ref={shareRef}>
+            <section>
               <ShareStudio
                 fish={selectedFish}
                 fishTypeOptions={data.fish.map((item) => item.name)}
