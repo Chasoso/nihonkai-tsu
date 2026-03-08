@@ -179,14 +179,12 @@ jobs:
             }}' > lambda-env.json
 
           EFFECTIVE_RUNTIME="${LAMBDA_RUNTIME:-nodejs24.x}"
-          EFFECTIVE_ARCH="${LAMBDA_ARCHITECTURE:-x86_64}"
           EFFECTIVE_TIMEOUT="${LAMBDA_TIMEOUT:-10}"
           EFFECTIVE_MEMORY="${LAMBDA_MEMORY_SIZE:-256}"
 
           aws lambda update-function-configuration \
             --function-name "${LAMBDA_FUNCTION_NAME}" \
             --runtime "${EFFECTIVE_RUNTIME}" \
-            --architectures "${EFFECTIVE_ARCH}" \
             --timeout "${EFFECTIVE_TIMEOUT}" \
             --memory-size "${EFFECTIVE_MEMORY}" \
             --environment file://lambda-env.json
