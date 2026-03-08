@@ -30,6 +30,7 @@ jobs:
       DAILY_LIMIT_TABLE_NAME: ${{ vars.DAILY_LIMIT_TABLE_NAME }}
       DAILY_LIMIT_MAX_PER_DAY: ${{ vars.DAILY_LIMIT_MAX_PER_DAY }}
       LAMBDA_ARCHITECTURE: ${{ vars.LAMBDA_ARCHITECTURE }}
+      LAMBDA_RUNTIME: ${{ vars.LAMBDA_RUNTIME }}
       LAMBDA_TIMEOUT: ${{ vars.LAMBDA_TIMEOUT }}
       LAMBDA_MEMORY_SIZE: ${{ vars.LAMBDA_MEMORY_SIZE }}
       ALLOW_ORIGIN: ${{ vars.ALLOW_ORIGIN }}
@@ -104,11 +105,12 @@ jobs:
             echo "Lambda function already exists: ${LAMBDA_FUNCTION_NAME}"
           else
             ARCH="${LAMBDA_ARCHITECTURE:-x86_64}"
+            RUNTIME="${LAMBDA_RUNTIME:-nodejs24.x}"
             TIMEOUT="${LAMBDA_TIMEOUT:-10}"
             MEMORY="${LAMBDA_MEMORY_SIZE:-256}"
             aws lambda create-function \
               --function-name "${LAMBDA_FUNCTION_NAME}" \
-              --runtime nodejs20.x \
+              --runtime "${RUNTIME}" \
               --handler index.handler \
               --architectures "${ARCH}" \
               --timeout "${TIMEOUT}" \
@@ -176,8 +178,17 @@ jobs:
               DAILY_LIMIT_MAX_PER_DAY:$dailyLimitMaxPerDay
             }}' > lambda-env.json
 
+          EFFECTIVE_RUNTIME="${LAMBDA_RUNTIME:-nodejs24.x}"
+          EFFECTIVE_ARCH="${LAMBDA_ARCHITECTURE:-x86_64}"
+          EFFECTIVE_TIMEOUT="${LAMBDA_TIMEOUT:-10}"
+          EFFECTIVE_MEMORY="${LAMBDA_MEMORY_SIZE:-256}"
+
           aws lambda update-function-configuration \
             --function-name "${LAMBDA_FUNCTION_NAME}" \
+            --runtime "${EFFECTIVE_RUNTIME}" \
+            --architectures "${EFFECTIVE_ARCH}" \
+            --timeout "${EFFECTIVE_TIMEOUT}" \
+            --memory-size "${EFFECTIVE_MEMORY}" \
             --environment file://lambda-env.json
 
       - name: Wait until configuration update completes
