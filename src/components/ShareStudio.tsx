@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
+import { createPortal } from "react-dom";
 import type { Fish, LandingsData, LandingSpecies } from "../types";
 import { generatePostText, getFallbackPostText, type AiInputImagePayload } from "../lib/postText";
 
@@ -569,7 +570,7 @@ export function ShareStudio({
         </button>
       </div>
 
-      {composerOpen ? (
+      {composerOpen && typeof document !== "undefined" ? createPortal(
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="X投稿ポップアップ">
           <div className="modal x-post-modal">
             <button className="close-button" onClick={closeComposer} aria-label="閉じる">
@@ -713,7 +714,7 @@ export function ShareStudio({
             <canvas ref={canvasRef} className="hidden-canvas" />
           </div>
         </div>
-      ) : null}
+      , document.body) : null}
     </section>
   );
 }
