@@ -164,26 +164,19 @@ DynamoDB テーブル定義（GitHub 管理）:
 
 - `infra/dynamodb/daily-limit-table.json`
 
-## Actions による DynamoDB / WAF 自動化
+## Actions による DynamoDB 自動化
 
 `deploy-lambda.yml` で以下を自動実行します。
 
 1. DynamoDB テーブルが無ければ作成
 2. TTL（`expiresAt`）を有効化
 3. 日次上限設定を含む Lambda 環境変数を反映
-4. AWS WAF（Web ACL の作成/更新 + API Stage への関連付け）を実行
-
-WAF テンプレート（GitHub 管理）:
-
-- `infra/waf/web-acl-template.json`
+4. API Gateway / Lambda のデプロイを実行
 
 追加の Repository Variables:
 
 - `DAILY_LIMIT_TABLE_NAME`（任意）
 - `DAILY_LIMIT_MAX_PER_DAY`（任意）
-- `WAF_ENABLE`（`true` / `false`）
-- `WAF_WEB_ACL_NAME`（任意）
-- `WAF_RATE_LIMIT`（任意、IP あたり5分間の上限リクエスト数）
 
 OIDC デプロイロールに必要な追加 IAM 権限:
 
@@ -191,12 +184,6 @@ OIDC デプロイロールに必要な追加 IAM 権限:
 - `dynamodb:CreateTable`
 - `dynamodb:UpdateTimeToLive`
 - `dynamodb:DescribeTimeToLive`
-- `wafv2:ListWebACLs`
-- `wafv2:CreateWebACL`
-- `wafv2:GetWebACL`
-- `wafv2:UpdateWebACL`
-- `wafv2:GetWebACLForResource`
-- `wafv2:AssociateWebACL`
 
 ## API Gateway 自動デプロイ（Actions）
 
