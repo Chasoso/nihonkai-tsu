@@ -44,4 +44,14 @@ describe("BadgeHistory", () => {
     render(<BadgeHistory badges={[]} fishList={fishList} year={2026} />);
     expect(screen.queryByRole("list")).not.toBeInTheDocument();
   });
+
+  it("fishList に存在しない fishId はフォールバックラベルで表示する", () => {
+    const badges: BadgeRecord[] = [
+      { year: 2026, fishId: "unknown", category: "不明", earnedAt: "2026-03-03T09:00:00.000Z" }
+    ];
+
+    render(<BadgeHistory badges={badges} fishList={fishList} year={2026} />);
+
+    expect(screen.getByText(/2026 unknown/)).toBeInTheDocument();
+  });
 });

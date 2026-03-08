@@ -48,4 +48,15 @@ describe("FishModal", () => {
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it("trend=down と trend=flat でも描画できる", () => {
+    const fishDown: Fish = { ...fishFixture, id: "madai", name: "マダイ", trend: "down" };
+    const fishFlat: Fish = { ...fishFixture, id: "aji", name: "アジ", trend: "flat" };
+
+    const { rerender } = render(<FishModal fish={fishDown} onClose={() => undefined} onSelectForShare={() => undefined} />);
+    expect(screen.getByRole("heading", { level: 3, name: "マダイ" })).toBeInTheDocument();
+
+    rerender(<FishModal fish={fishFlat} onClose={() => undefined} onSelectForShare={() => undefined} />);
+    expect(screen.getByRole("heading", { level: 3, name: "アジ" })).toBeInTheDocument();
+  });
 });
