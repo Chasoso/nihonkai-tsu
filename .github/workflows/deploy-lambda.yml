@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "backend/lambda/**"
+      - "infra/dynamodb/**"
+      - "infra/waf/**"
       - ".github/workflows/deploy-lambda.yml"
   workflow_dispatch:
 
@@ -26,6 +28,11 @@ jobs:
       API_NAME: ${{ vars.API_NAME }}
       API_ROUTE_PATH: ${{ vars.API_ROUTE_PATH }}
       API_STAGE_NAME: ${{ vars.API_STAGE_NAME }}
+      DAILY_LIMIT_TABLE_NAME: ${{ vars.DAILY_LIMIT_TABLE_NAME }}
+      DAILY_LIMIT_MAX_PER_DAY: ${{ vars.DAILY_LIMIT_MAX_PER_DAY }}
+      WAF_WEB_ACL_NAME: ${{ vars.WAF_WEB_ACL_NAME }}
+      WAF_RATE_LIMIT: ${{ vars.WAF_RATE_LIMIT }}
+      WAF_ENABLE: ${{ vars.WAF_ENABLE }}
       LAMBDA_ARCHITECTURE: ${{ vars.LAMBDA_ARCHITECTURE }}
       LAMBDA_TIMEOUT: ${{ vars.LAMBDA_TIMEOUT }}
       LAMBDA_MEMORY_SIZE: ${{ vars.LAMBDA_MEMORY_SIZE }}
@@ -54,6 +61,35 @@ jobs:
           test -n "${AWS_REGION}" || (echo "AWS_REGION is not set (Repository Variable)." && exit 1)
           test -n "${LAMBDA_FUNCTION_NAME}" || (echo "LAMBDA_FUNCTION_NAME is not set (Repository Variable)." && exit 1)
           test -n "${LAMBDA_EXECUTION_ROLE_ARN}" || (echo "LAMBDA_EXECUTION_ROLE_ARN is not set (Repository Secret)." && exit 1)
+
+      - name: Ensure DynamoDB table exists (create if missing)
+        run: |
+          set -euo pipefail
+          EFFECTIVE_TABLE_NAME="${DAILY_LIMIT_TABLE_NAME:-nihonkai-post-text-daily-limit}"
+
+          if aws dynamodb describe-table --table-name "${EFFECTIVE_TABLE_NAME}" >/dev/null 2>&1; then
+            echo "DynamoDB table already exists: ${EFFECTIVE_TABLE_NAME}"
+          else
+            jq --arg tableName "${EFFECTIVE_TABLE_NAME}" '. + {TableName:$tableName}' infra/dynamodb/daily-limit-table.json > ddb-create.json
+            aws dynamodb create-table --cli-input-json file://ddb-create.json >/dev/null
+            aws dynamodb wait table-exists --table-name "${EFFECTIVE_TABLE_NAME}"
+            echo "Created DynamoDB table: ${EFFECTIVE_TABLE_NAME}"
+          fi
+
+          set +e
+          TTL_OUTPUT=$(aws dynamodb update-time-to-live \
+            --table-name "${EFFECTIVE_TABLE_NAME}" \
+            --time-to-live-specification "Enabled=true,AttributeName=expiresAt" 2>&1)
+          TTL_STATUS=$?
+          set -e
+          if [ "${TTL_STATUS}" -ne 0 ]; then
+            if echo "${TTL_OUTPUT}" | grep -qi "TimeToLive is already enabled"; then
+              echo "TTL already enabled."
+            else
+              echo "${TTL_OUTPUT}"
+              exit 1
+            fi
+          fi
 
       - name: Package Lambda artifact
         working-directory: backend/lambda
@@ -113,6 +149,8 @@ jobs:
             --arg allowOrigin "${EFFECTIVE_ALLOW_ORIGIN}" \
             --arg postTextMode "${POST_TEXT_MODE}" \
             --arg testModeFixedText "${EFFECTIVE_TEST_TEXT}" \
+            --arg dailyLimitTableName "${DAILY_LIMIT_TABLE_NAME:-nihonkai-post-text-daily-limit}" \
+            --arg dailyLimitMaxPerDay "${DAILY_LIMIT_MAX_PER_DAY:-2000}" \
             '{Variables:{
               OPENAI_API_KEY:$openaiApiKey,
               OPENAI_MODEL:$openaiModel,
@@ -121,7 +159,9 @@ jobs:
               RATE_LIMIT_MAX_REQUESTS:$rateLimitMaxRequests,
               ALLOW_ORIGIN:$allowOrigin,
               POST_TEXT_MODE:$postTextMode,
-              TEST_MODE_FIXED_TEXT:$testModeFixedText
+              TEST_MODE_FIXED_TEXT:$testModeFixedText,
+              DAILY_LIMIT_TABLE_NAME:$dailyLimitTableName,
+              DAILY_LIMIT_MAX_PER_DAY:$dailyLimitMaxPerDay
             }}' > lambda-env.json
 
           aws lambda update-function-configuration \
@@ -235,3 +275,63 @@ jobs:
       - name: Show invoke URL
         run: |
           echo "API Gateway invoke URL: ${{ steps.apigw.outputs.invoke_url }}"
+
+      - name: Ensure AWS WAF Web ACL and association
+        run: |
+          set -euo pipefail
+
+          EFFECTIVE_WAF_ENABLE="$(echo "${WAF_ENABLE:-true}" | tr '[:upper:]' '[:lower:]')"
+          if [ "${EFFECTIVE_WAF_ENABLE}" = "false" ] || [ "${EFFECTIVE_WAF_ENABLE}" = "0" ]; then
+            echo "WAF setup is disabled by WAF_ENABLE=${WAF_ENABLE}"
+            exit 0
+          fi
+
+          EFFECTIVE_WAF_NAME="${WAF_WEB_ACL_NAME:-nihonkai-post-text-waf}"
+          EFFECTIVE_WAF_LIMIT="${WAF_RATE_LIMIT:-1000}"
+          API_ID="${{ steps.apigw.outputs.api_id }}"
+          EFFECTIVE_STAGE_NAME="${API_STAGE_NAME:-\$default}"
+          RESOURCE_ARN="arn:aws:apigateway:${AWS_REGION}::/apis/${API_ID}/stages/${EFFECTIVE_STAGE_NAME}"
+
+          jq \
+            --arg name "${EFFECTIVE_WAF_NAME}" \
+            --arg metric "${EFFECTIVE_WAF_NAME}" \
+            --argjson limit "${EFFECTIVE_WAF_LIMIT}" \
+            '.Name=$name
+            | .VisibilityConfig.MetricName=$metric
+            | .Rules[0].Statement.RateBasedStatement.Limit=$limit
+            | .Rules[0].VisibilityConfig.MetricName=($metric + "-rate-limit")' \
+            infra/waf/web-acl-template.json > waf-web-acl.json
+
+          WEB_ACL_ID=$(aws wafv2 list-web-acls --scope REGIONAL --query "WebACLs[?Name=='${EFFECTIVE_WAF_NAME}'].Id | [0]" --output text)
+          if [ -z "${WEB_ACL_ID}" ] || [ "${WEB_ACL_ID}" = "None" ]; then
+            CREATE_OUTPUT=$(aws wafv2 create-web-acl --scope REGIONAL --region "${AWS_REGION}" --cli-input-json file://waf-web-acl.json)
+            WEB_ACL_ARN=$(echo "${CREATE_OUTPUT}" | jq -r '.Summary.ARN')
+            WEB_ACL_ID=$(echo "${CREATE_OUTPUT}" | jq -r '.Summary.Id')
+            echo "Created Web ACL: ${EFFECTIVE_WAF_NAME}"
+          else
+            GET_OUTPUT=$(aws wafv2 get-web-acl --scope REGIONAL --region "${AWS_REGION}" --id "${WEB_ACL_ID}" --name "${EFFECTIVE_WAF_NAME}")
+            WEB_ACL_ARN=$(echo "${GET_OUTPUT}" | jq -r '.WebACL.ARN')
+            LOCK_TOKEN=$(echo "${GET_OUTPUT}" | jq -r '.LockToken')
+            jq -c '.DefaultAction' waf-web-acl.json > waf-default-action.json
+            jq -c '.VisibilityConfig' waf-web-acl.json > waf-visibility-config.json
+            jq -c '.Rules' waf-web-acl.json > waf-rules.json
+
+            aws wafv2 update-web-acl \
+              --scope REGIONAL \
+              --region "${AWS_REGION}" \
+              --id "${WEB_ACL_ID}" \
+              --name "${EFFECTIVE_WAF_NAME}" \
+              --lock-token "${LOCK_TOKEN}" \
+              --default-action file://waf-default-action.json \
+              --visibility-config file://waf-visibility-config.json \
+              --rules file://waf-rules.json >/dev/null
+            echo "Updated Web ACL: ${EFFECTIVE_WAF_NAME}"
+          fi
+
+          CURRENT_WEB_ACL=$(aws wafv2 get-web-acl-for-resource --region "${AWS_REGION}" --resource-arn "${RESOURCE_ARN}" --query "WebACL.ARN" --output text 2>/dev/null || true)
+          if [ "${CURRENT_WEB_ACL}" != "${WEB_ACL_ARN}" ]; then
+            aws wafv2 associate-web-acl --region "${AWS_REGION}" --web-acl-arn "${WEB_ACL_ARN}" --resource-arn "${RESOURCE_ARN}"
+            echo "Associated Web ACL to API stage."
+          else
+            echo "Web ACL already associated."
+          fi

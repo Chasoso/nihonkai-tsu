@@ -1,0 +1,33 @@
+{
+  "Name": "placeholder",
+  "Scope": "REGIONAL",
+  "Description": "WAF for nihonkai-tsu API Gateway",
+  "DefaultAction": {
+    "Allow": {}
+  },
+  "VisibilityConfig": {
+    "SampledRequestsEnabled": true,
+    "CloudWatchMetricsEnabled": true,
+    "MetricName": "nihonkaiTsuWebAcl"
+  },
+  "Rules": [
+    {
+      "Name": "RateLimitRule",
+      "Priority": 1,
+      "Action": {
+        "Block": {}
+      },
+      "Statement": {
+        "RateBasedStatement": {
+          "Limit": 1000,
+          "AggregateKeyType": "IP"
+        }
+      },
+      "VisibilityConfig": {
+        "SampledRequestsEnabled": true,
+        "CloudWatchMetricsEnabled": true,
+        "MetricName": "rateLimitRule"
+      }
+    }
+  ]
+}

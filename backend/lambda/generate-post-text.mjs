@@ -1,3 +1,5 @@
+import { DynamoDBClient, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
+
 const DEFAULT_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 const DEFAULT_MAX_OUTPUT_TOKENS = Number(process.env.OPENAI_MAX_OUTPUT_TOKENS || "120");
 const DEFAULT_RATE_LIMIT_WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS || "60000");
@@ -6,6 +8,10 @@ const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN || "*";
 const POST_TEXT_MODE = String(process.env.POST_TEXT_MODE || "live").toLowerCase();
 const TEST_MODE_FIXED_TEXT =
   process.env.TEST_MODE_FIXED_TEXT || "テストモード: 今日は魚料理を楽しみました。#変わる海を味わう";
+const DAILY_LIMIT_TABLE_NAME = process.env.DAILY_LIMIT_TABLE_NAME || "";
+const DAILY_LIMIT_MAX_PER_DAY = Number(process.env.DAILY_LIMIT_MAX_PER_DAY || "0");
+
+const ddbClient = DAILY_LIMIT_TABLE_NAME ? new DynamoDBClient({}) : null;
 
 const rateLimitStore = new Map();
 
@@ -40,6 +46,59 @@ function checkRateLimit(clientKey) {
   recent.push(now);
   rateLimitStore.set(clientKey, recent);
   return true;
+}
+
+function getJstDayKey(date = new Date()) {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  });
+  return formatter.format(date);
+}
+
+function getEpochSecondsAfterDays(days) {
+  return Math.floor((Date.now() + days * 24 * 60 * 60 * 1000) / 1000);
+}
+
+async function incrementDailyCounterOrReject(dayKey) {
+  if (!ddbClient || !DAILY_LIMIT_TABLE_NAME || DAILY_LIMIT_MAX_PER_DAY <= 0) {
+    return { allowed: true, count: null };
+  }
+
+  try {
+    const result = await ddbClient.send(
+      new UpdateItemCommand({
+        TableName: DAILY_LIMIT_TABLE_NAME,
+        Key: {
+          pk: { S: dayKey }
+        },
+        UpdateExpression: "SET #cnt = if_not_exists(#cnt, :zero) + :inc, #ttl = :ttl",
+        ConditionExpression: "attribute_not_exists(#cnt) OR #cnt < :limit",
+        ExpressionAttributeNames: {
+          "#cnt": "count",
+          "#ttl": "expiresAt"
+        },
+        ExpressionAttributeValues: {
+          ":zero": { N: "0" },
+          ":inc": { N: "1" },
+          ":limit": { N: String(DAILY_LIMIT_MAX_PER_DAY) },
+          ":ttl": { N: String(getEpochSecondsAfterDays(3)) }
+        },
+        ReturnValues: "UPDATED_NEW"
+      })
+    );
+    return {
+      allowed: true,
+      count: Number(result?.Attributes?.count?.N ?? "0")
+    };
+  } catch (error) {
+    if (error?.name === "ConditionalCheckFailedException") {
+      return { allowed: false, count: null };
+    }
+    throw error;
+  }
 }
 
 function extractOutputText(jsonResponse) {
@@ -89,28 +148,38 @@ export const handler = async (event) => {
     "unknown";
 
   try {
+    const body = typeof event?.body === "string" ? JSON.parse(event.body) : event?.body || {};
+    const imageBase64 = String(body.imageBase64 || "");
+    const mimeType = String(body.mimeType || "image/jpeg");
+    const fishType = String(body.fishType || "").trim() || "魚料理";
+    const tone = String(body.tone || "friendly");
+
     if (!checkRateLimit(clientKey)) {
       return json(429, {
-        generatedText: fallbackText("魚料理"),
+        generatedText: fallbackText(fishType),
         fallbackUsed: true,
         errorMessage: "rate_limited"
+      });
+    }
+
+    const dayKey = getJstDayKey();
+    const dailyResult = await incrementDailyCounterOrReject(dayKey);
+    if (!dailyResult.allowed) {
+      return json(429, {
+        generatedText: fallbackText(fishType),
+        fallbackUsed: true,
+        errorMessage: "daily_limit_exceeded"
       });
     }
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       return json(200, {
-        generatedText: fallbackText("魚料理"),
+        generatedText: fallbackText(fishType),
         fallbackUsed: true,
         errorMessage: "server_key_missing"
       });
     }
-
-    const body = typeof event?.body === "string" ? JSON.parse(event.body) : event?.body || {};
-    const imageBase64 = String(body.imageBase64 || "");
-    const mimeType = String(body.mimeType || "image/jpeg");
-    const fishType = String(body.fishType || "").trim() || "魚料理";
-    const tone = String(body.tone || "friendly");
 
     if (POST_TEXT_MODE === "test") {
       return json(200, {

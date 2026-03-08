@@ -152,6 +152,52 @@ Repository Secrets:
 - APIキーや秘密情報をGitにコミットしないでください
 - ログには画像本体を保存しない設計にしてください
 
+## Daily Limit（JST）+ DynamoDB
+
+Lambda は DynamoDB を使って、JST（日次）の実行上限を制御します。
+
+- `DAILY_LIMIT_TABLE_NAME`: DynamoDB テーブル名（workflow 既定: `nihonkai-post-text-daily-limit`）
+- `DAILY_LIMIT_MAX_PER_DAY`: 1日あたり上限回数（例: `2000`）
+- 上限超過時: `429` / `errorMessage: "daily_limit_exceeded"`
+
+DynamoDB テーブル定義（GitHub 管理）:
+
+- `infra/dynamodb/daily-limit-table.json`
+
+## Actions による DynamoDB / WAF 自動化
+
+`deploy-lambda.yml` で以下を自動実行します。
+
+1. DynamoDB テーブルが無ければ作成
+2. TTL（`expiresAt`）を有効化
+3. 日次上限設定を含む Lambda 環境変数を反映
+4. AWS WAF（Web ACL の作成/更新 + API Stage への関連付け）を実行
+
+WAF テンプレート（GitHub 管理）:
+
+- `infra/waf/web-acl-template.json`
+
+追加の Repository Variables:
+
+- `DAILY_LIMIT_TABLE_NAME`（任意）
+- `DAILY_LIMIT_MAX_PER_DAY`（任意）
+- `WAF_ENABLE`（`true` / `false`）
+- `WAF_WEB_ACL_NAME`（任意）
+- `WAF_RATE_LIMIT`（任意、IP あたり5分間の上限リクエスト数）
+
+OIDC デプロイロールに必要な追加 IAM 権限:
+
+- `dynamodb:DescribeTable`
+- `dynamodb:CreateTable`
+- `dynamodb:UpdateTimeToLive`
+- `dynamodb:DescribeTimeToLive`
+- `wafv2:ListWebACLs`
+- `wafv2:CreateWebACL`
+- `wafv2:GetWebACL`
+- `wafv2:UpdateWebACL`
+- `wafv2:GetWebACLForResource`
+- `wafv2:AssociateWebACL`
+
 ## API Gateway 自動デプロイ（Actions）
 
 `deploy-lambda.yml` は Lambda だけでなく API Gateway (HTTP API) も自動作成/更新します。
