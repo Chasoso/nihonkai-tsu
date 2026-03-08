@@ -150,14 +150,14 @@ jobs:
             API_ID=$(aws apigatewayv2 create-api \
               --name "${EFFECTIVE_API_NAME}" \
               --protocol-type HTTP \
-              --cors-configuration "AllowOrigins=${EFFECTIVE_ALLOW_ORIGIN},AllowMethods=POST,AllowMethods=OPTIONS,AllowHeaders=content-type,MaxAge=600" \
+              --cors-configuration "AllowOrigins=${EFFECTIVE_ALLOW_ORIGIN},AllowMethods=POST,OPTIONS,AllowHeaders=content-type,MaxAge=600" \
               --query "ApiId" \
               --output text)
             echo "Created API Gateway HTTP API: ${EFFECTIVE_API_NAME} (${API_ID})"
           else
             aws apigatewayv2 update-api \
               --api-id "${API_ID}" \
-              --cors-configuration "AllowOrigins=${EFFECTIVE_ALLOW_ORIGIN},AllowMethods=POST,AllowMethods=OPTIONS,AllowHeaders=content-type,MaxAge=600" >/dev/null
+              --cors-configuration "AllowOrigins=${EFFECTIVE_ALLOW_ORIGIN},AllowMethods=POST,OPTIONS,AllowHeaders=content-type,MaxAge=600" >/dev/null
             echo "Using existing API Gateway HTTP API: ${EFFECTIVE_API_NAME} (${API_ID})"
           fi
 

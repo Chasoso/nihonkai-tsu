@@ -17,6 +17,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      VITE_POST_TEXT_API_URL: ${{ vars.VITE_POST_TEXT_API_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
