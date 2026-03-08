@@ -1,210 +1,165 @@
 # nihonkai-tsu
 
-React + TypeScript + Vite の既存プロトタイプです。  
-今回のMVP改修で「画像をもとにX投稿文を生成する機能」を追加しています。
+石川県の魚の魅力を伝える、React + TypeScript 製のプロトタイプです。  
+画像撮影とフレーム付き投稿体験に加えて、画像と魚種をもとに X 投稿文を生成できます（MVP）。
 
-## セットアップ
+## サービスの使い方
+
+### 1. 閲覧者向け（GitHub Pages）
+
+1. GitHub Pages を開く
+2. 主役魚や「今年の魚」「旬カレンダー」「Progress Board+通履歴」を閲覧
+3. `Share Studio` で写真を撮影/選択
+4. 魚種を選択して「投稿文を作る」を押す
+5. 生成文をコピー、または X 投稿導線から投稿
+
+### 2. 投稿文生成の動作モード
+
+- `test` モード: Lambda 内で固定文を返す（OpenAI API を呼ばない）
+- `live` モード: OpenAI API を呼んで投稿文を生成
+
+モードは Lambda 環境変数 `POST_TEXT_MODE` で切り替えます。
+
+## このリポジトリについて
+
+### 目的
+
+- 既存の「撮影 → 画像確認 → 投稿」導線を維持したまま AI 投稿文生成を追加する
+- フレーム付き投稿画像と AI 解析画像（フレームなし）を分離する
+- 低コスト・最小構成・壊れにくさを優先する
+
+### アーキテクチャ
+
+- フロントエンド: GitHub Pages（React / Vite）
+- バックエンド: AWS Lambda + API Gateway（HTTP API）
+- AI: OpenAI Responses API
+- 日次上限: DynamoDB（JST 日次カウンタ）
+
+`docs/architecture.drawio` に構成図を管理しています。
+
+### 主要ディレクトリとファイル
+
+- `src/`: フロントエンド本体
+- `src/components/`: 画面コンポーネント（ShareStudio, カレンダー, Progress Board など）
+- `src/lib/`: ロジック層（データ読込、進捗計算、投稿文API呼び出しなど）
+- `backend/lambda/generate-post-text.mjs`: 投稿文生成 Lambda
+- `infra/dynamodb/daily-limit-table.json`: 日次上限テーブル定義
+- `.github/workflows/deploy-pages.yml`: Pages デプロイ
+- `.github/workflows/deploy-lambda.yml`: Lambda / API Gateway / DynamoDB デプロイ
+- `public/data/`: 公開データ JSON
+- `scripts/generate_public_data.py`: 公開データ生成スクリプト
+
+## 構築手順
+
+### 構築手順の概要
+
+1. ローカルで起動確認する（`npm run dev`）
+2. GitHub Pages のデプロイを設定する（`deploy-pages.yml`）
+3. AWS 側を準備する（OIDC ロール、Lambda 実行ロール）
+4. `deploy-lambda.yml` で Lambda / API Gateway / DynamoDB を自動作成・更新する
+5. フロントエンドの API URL 変数を設定して本番導線を有効化する
+
+### 詳細 1: ローカル開発
+
+前提:
+
+- Node.js 20 系
+- npm
+- （任意）データ再生成時のみ Python 3
+
+手順:
 
 ```bash
-npm install
-```
-
-## 開発起動
-
-```bash
+npm ci
 npm run dev
 ```
 
-## ビルド
+ビルド確認:
 
 ```bash
 npm run build
 ```
 
-## 追加したMVP機能
-
-- 既存の撮影/画像選択導線を維持
-- 投稿画像は従来どおりフレーム付きで生成
-- AI解析用はフレーム合成前の元画像を使用
-- AI送信用画像はフロントで縮小/圧縮してから送信
-- 魚種選択UIを追加
-- X投稿用の短文を1案のみ生成
-- 生成失敗時はテンプレート文へフォールバック
-- 生成文コピーとX投稿導線を追加
-
-## フロント環境変数（`.env`）
+公開データ再生成（任意）:
 
 ```bash
-VITE_POST_TEXT_API_URL=https://<your-api-domain>/api/generate-post-text
-VITE_AI_POST_TEXT_ENABLED=true
-VITE_AI_IMAGE_MAX_EDGE_PX=512
-VITE_AI_IMAGE_QUALITY=0.68
-VITE_AI_CACHE_TTL_MS=180000
+npm run generate:data
 ```
 
-## バックエンド（AWS Lambda推奨）
+### 詳細 2: GitHub Pages デプロイ
 
-追加ファイル:
+`main` ブランチ push で `.github/workflows/deploy-pages.yml` が実行されます。  
+この workflow は `VITE_POST_TEXT_API_URL` を環境変数として注入してビルドします。
 
-- `backend/lambda/generate-post-text.mjs`
+Repository Variables（Pages 側）:
 
-想定エンドポイント:
+- `VITE_POST_TEXT_API_URL`: 例 `https://xxxx.execute-api.ap-northeast-1.amazonaws.com/api/generate-post-text`
 
-- `POST /api/generate-post-text`
+### 詳細 3: Lambda / API Gateway / DynamoDB デプロイ
 
-### Lambda環境変数
+`main` への push（`backend/lambda/**`, `infra/dynamodb/**`, workflow 自体の変更）または手動実行で  
+`.github/workflows/deploy-lambda.yml` が動きます。
 
-```bash
-OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-4o-mini
-OPENAI_MAX_OUTPUT_TOKENS=120
-RATE_LIMIT_WINDOW_MS=60000
-RATE_LIMIT_MAX_REQUESTS=8
-ALLOW_ORIGIN=https://<your-github-pages-domain>
-POST_TEXT_MODE=live
-TEST_MODE_FIXED_TEXT=テストモード: 今日は魚料理を楽しみました。#変わる海を味わう
-```
+この workflow が実施すること:
 
-`POST_TEXT_MODE` の切替:
+1. DynamoDB テーブルがなければ作成
+2. TTL（`expiresAt`）有効化
+3. Lambda 関数がなければ新規作成
+4. Lambda コード更新
+5. Lambda 環境変数更新（初期値は `test` モード）
+6. API Gateway HTTP API / route / stage を作成または更新
+7. API Gateway から Lambda 呼び出し権限を設定
 
-- `live`: OpenAI API を呼び出す本番モード
-- `test`: Lambda内で `TEST_MODE_FIXED_TEXT` を固定返却するテストモード（OpenAI APIを呼ばない）
+## GitHub 設定値
 
-### Lambdaデプロイ手順（最小）
+### Repository Secrets
 
-1. API Gateway + Lambda で `POST /api/generate-post-text` を作成
-2. CORS を有効化（`POST,OPTIONS`）
-3. Lambdaに `backend/lambda/generate-post-text.mjs` を配置
-4. 上記環境変数を設定
-5. フロントの `VITE_POST_TEXT_API_URL` にAPI URLを設定
+- `AWS_ROLE_TO_ASSUME`: GitHub Actions が OIDC で Assume する IAM ロール ARN
+- `LAMBDA_EXECUTION_ROLE_ARN`: Lambda 実行ロール ARN
+- `OPENAI_API_KEY`: OpenAI API キー（live モードで使用）
 
-## GitHub Pagesデプロイ
-
-1. `vite.config.ts` の `base` をリポジトリに合わせる
-2. `npm run build` を実行
-3. `dist/` を GitHub Pages に公開（Actions推奨）
-
-## Lambda自動デプロイ（GitHub Actions）
-
-追加済みワークフロー:
-
-- `.github/workflows/deploy-lambda.yml`
-
-`main` への push で `backend/lambda/**` が変更されたときに自動デプロイします。  
-手動実行は `workflow_dispatch` を使います。
-
-この workflow は以下を実行します。
-
-1. Lambda関数の存在確認
-2. 未作成なら新規作成
-3. 関数コードを更新
-4. 環境変数をActionsから反映
-
-初回デプロイの既定値は **テストモード**（`POST_TEXT_MODE=test`）です。
-
-### GitHub 側の設定
-
-Repository Variables:
+### Repository Variables
 
 - `AWS_REGION`（例: `ap-northeast-1`）
 - `LAMBDA_FUNCTION_NAME`
-- `LAMBDA_ARCHITECTURE`（任意。既定: `x86_64`）
-- `LAMBDA_TIMEOUT`（任意。既定: `10`）
-- `LAMBDA_MEMORY_SIZE`（任意。既定: `256`）
-- `ALLOW_ORIGIN`（任意。既定: `*`）
-- `OPENAI_MODEL`（任意。既定: `gpt-4o-mini`）
-- `OPENAI_MAX_OUTPUT_TOKENS`（任意。既定: `120`）
-- `RATE_LIMIT_WINDOW_MS`（任意。既定: `60000`）
-- `RATE_LIMIT_MAX_REQUESTS`（任意。既定: `8`）
-- `LAMBDA_POST_TEXT_MODE`（任意。既定: `test`）
-- `TEST_MODE_FIXED_TEXT`（任意。テスト時の固定返却文）
+- `LAMBDA_ARCHITECTURE`（例: `x86_64`）
+- `LAMBDA_TIMEOUT`（例: `10`）
+- `LAMBDA_MEMORY_SIZE`（例: `256`）
+- `ALLOW_ORIGIN`（GitHub Pages の URL 推奨）
+- `OPENAI_MODEL`（例: `gpt-4o-mini`）
+- `OPENAI_MAX_OUTPUT_TOKENS`（例: `120`）
+- `RATE_LIMIT_WINDOW_MS`（例: `60000`）
+- `RATE_LIMIT_MAX_REQUESTS`（例: `8`）
+- `LAMBDA_POST_TEXT_MODE`（`test` or `live`）
+- `TEST_MODE_FIXED_TEXT`（test モード返却文）
+- `DAILY_LIMIT_TABLE_NAME`（例: `nihonkai-post-text-daily-limit`）
+- `DAILY_LIMIT_MAX_PER_DAY`（例: `2000`）
+- `API_NAME`（未設定時: `${LAMBDA_FUNCTION_NAME}-http-api`）
+- `API_ROUTE_PATH`（未設定時: `/api/generate-post-text`）
+- `API_STAGE_NAME`（未設定時: `$default`）
 
-Repository Secrets:
+## IAM 権限（デプロイロール）
 
-- `AWS_ROLE_TO_ASSUME`（OIDCでAssumeするIAM Role ARN）
-- `LAMBDA_EXECUTION_ROLE_ARN`（Lambda実行ロールARN。関数新規作成時に使用）
-- `OPENAI_API_KEY`（本番モードで使用）
+`AWS_ROLE_TO_ASSUME` には少なくとも次の操作権限が必要です。
 
-### AWS 側の前提
+- Lambda: `CreateFunction`, `GetFunction`, `UpdateFunctionCode`, `UpdateFunctionConfiguration`, `AddPermission`, `GetPolicy`
+- API Gateway v2: `GET`, `POST`, `PATCH`
+- DynamoDB: `DescribeTable`, `CreateTable`, `UpdateTimeToLive`, `DescribeTimeToLive`
+- IAM: `PassRole`（`LAMBDA_EXECUTION_ROLE_ARN` を渡すため）
+- STS: `GetCallerIdentity`
 
-- Lambda関数を作成済みである必要はありません（workflow が未作成時に作成）
-- 関数のハンドラは `index.handler`（workflow で `index.mjs` を配置）
-- GitHub OIDC を信頼する IAM Role を用意し、最低限以下を許可:
-  - `lambda:CreateFunction`
-  - `lambda:UpdateFunctionCode`
-  - `lambda:UpdateFunctionConfiguration`
-  - `lambda:GetFunction`
+## コスト最適化方針（実装済み）
 
-## コスト最適化方針
+- AI 送信画像はフレームなしで生成
+- 画像をフロントで縮小（長辺 512px 以下）・JPEG 圧縮して送信
+- 出力は 1 案、短文（`max_output_tokens` 小さめ）
+- レート制限 + JST 日次上限（DynamoDB）
+- 失敗時はテンプレート文へフォールバック
+- 同一条件の短時間再生成はフロントの簡易キャッシュで再利用
 
-- AI送信画像を **512px以下** に縮小
-- JPEG圧縮して通信量と推論コストを削減
-- 画像は1枚のみ送信
-- 出力は短文1案のみ
-- `max_output_tokens` を小さく設定
-- フレーム付き画像をAIに送らない
-- 同一条件の短時間再生成はフロントキャッシュで再利用
-- API障害/レート制限時はテンプレート文にフォールバック
+## セキュリティ注意点
 
-## 注意
+- OpenAI API キーをクライアントへ置かない
+- API キー・機密情報を Git にコミットしない
+- CORS の `ALLOW_ORIGIN` は `*` ではなく公開 URL を指定推奨
 
-- OpenAI APIキーはクライアントへ置かないでください
-- APIキーや秘密情報をGitにコミットしないでください
-- ログには画像本体を保存しない設計にしてください
-
-## Daily Limit（JST）+ DynamoDB
-
-Lambda は DynamoDB を使って、JST（日次）の実行上限を制御します。
-
-- `DAILY_LIMIT_TABLE_NAME`: DynamoDB テーブル名（workflow 既定: `nihonkai-post-text-daily-limit`）
-- `DAILY_LIMIT_MAX_PER_DAY`: 1日あたり上限回数（例: `2000`）
-- 上限超過時: `429` / `errorMessage: "daily_limit_exceeded"`
-
-DynamoDB テーブル定義（GitHub 管理）:
-
-- `infra/dynamodb/daily-limit-table.json`
-
-## Actions による DynamoDB 自動化
-
-`deploy-lambda.yml` で以下を自動実行します。
-
-1. DynamoDB テーブルが無ければ作成
-2. TTL（`expiresAt`）を有効化
-3. 日次上限設定を含む Lambda 環境変数を反映
-4. API Gateway / Lambda のデプロイを実行
-
-追加の Repository Variables:
-
-- `DAILY_LIMIT_TABLE_NAME`（任意）
-- `DAILY_LIMIT_MAX_PER_DAY`（任意）
-
-OIDC デプロイロールに必要な追加 IAM 権限:
-
-- `dynamodb:DescribeTable`
-- `dynamodb:CreateTable`
-- `dynamodb:UpdateTimeToLive`
-- `dynamodb:DescribeTimeToLive`
-
-## API Gateway 自動デプロイ（Actions）
-
-`deploy-lambda.yml` は Lambda だけでなく API Gateway (HTTP API) も自動作成/更新します。
-
-- API 名: `API_NAME`（未設定時: `${LAMBDA_FUNCTION_NAME}-http-api`）
-- ルート: `API_ROUTE_PATH`（未設定時: `/api/generate-post-text`）
-- ステージ: `API_STAGE_NAME`（未設定時: `$default`）
-- CORS origin: `ALLOW_ORIGIN`
-
-追加で設定する Repository Variables:
-
-- `API_NAME`（任意）
-- `API_ROUTE_PATH`（任意）
-- `API_STAGE_NAME`（任意）
-
-OIDCでAssumeするデプロイロールに必要な追加権限:
-
-- `apigateway:GET`
-- `apigateway:POST`
-- `apigateway:PATCH`
-- `lambda:AddPermission`
-- `lambda:GetPolicy`
-- `sts:GetCallerIdentity`
