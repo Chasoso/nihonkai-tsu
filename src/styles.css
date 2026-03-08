@@ -11,12 +11,149 @@
 body {
   margin: 0;
   min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .app-shell {
-  max-width: 1040px;
+  min-height: 100vh;
+}
+
+.horizontal-app {
+  position: relative;
+  display: block;
+  --panel-peek: clamp(24px, 9vw, 170px);
+  --panel-gap: 18px;
+}
+
+.top-nav {
+  position: fixed;
+  top: 10px;
+  right: 12px;
+  z-index: 60;
+}
+
+.hamburger-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  font-size: 24px;
+  line-height: 1;
+  padding: 0;
+  background: rgba(7, 14, 24, 0.92);
+}
+
+.menu-drawer {
+  position: fixed;
+  top: 62px;
+  right: 12px;
+  z-index: 60;
+  width: min(260px, calc(100vw - 24px));
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(8, 16, 25, 0.96);
+  display: grid;
+  gap: 8px;
+}
+
+.menu-drawer button {
+  border-radius: 10px;
+  text-align: left;
+  padding: 10px 12px;
+}
+
+.panel-track {
+  display: flex;
+  gap: var(--panel-gap);
+  padding: 0 var(--panel-peek) 14px;
+  overflow-x: auto;
+  overflow-y: visible;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scroll-padding-left: var(--panel-peek);
+  align-items: flex-start;
+}
+
+.page-panel {
+  position: relative;
+  flex: 0 0 calc(100vw - (var(--panel-peek) * 2));
+  width: calc(100vw - (var(--panel-peek) * 2));
+  min-height: 520px;
+  height: auto;
+  overflow-y: visible;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  padding: 10px 6px 96px;
+  transition: filter 180ms ease, opacity 180ms ease;
+}
+
+.panel-active {
+  opacity: 1;
+  filter: none;
+}
+
+.panel-inactive {
+  opacity: 0.72;
+  filter: brightness(0.62) saturate(0.78);
+}
+
+.panel-inner {
+  width: min(1040px, 100%);
   margin: 0 auto;
-  padding: 24px 16px 96px;
+}
+
+.persistent-header {
+  padding: 16px 14px 8px;
+  border-bottom: none;
+  background: transparent;
+}
+
+.persistent-header .hero {
+  margin-bottom: 12px;
+}
+
+.snap-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 4px 0 2px;
+  opacity: 0.92;
+}
+
+.snap-hint p {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+.snap-arrow {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.snap-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+
+.snap-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.snap-dot-active {
+  width: 18px;
+  background: rgba(246, 194, 111, 0.92);
 }
 
 .section {
@@ -684,11 +821,33 @@ textarea {
 
 @media (max-width: 720px) {
   .app-shell {
-    padding: 18px 12px 88px;
+    height: 100vh;
+  }
+
+  .horizontal-app {
+    --panel-peek: 10px;
+    --panel-gap: 8px;
   }
 
   .hero {
     padding: 20px;
+  }
+
+  .page-panel {
+    flex-basis: calc(100vw - (var(--panel-peek) * 2));
+    width: calc(100vw - (var(--panel-peek) * 2));
+    padding: 12px 4px 88px;
+  }
+
+  .panel-track {
+    gap: var(--panel-gap);
+    padding: 0 var(--panel-peek) 10px;
+    scroll-padding-left: var(--panel-peek);
+  }
+
+  .panel-inactive {
+    opacity: 0.95;
+    filter: none;
   }
 
   .history-list li {
