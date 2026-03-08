@@ -1,17 +1,27 @@
 import { DynamoDBClient, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
+import { BedrockRuntimeClient, ConverseCommand } from "@aws-sdk/client-bedrock-runtime";
 
-const DEFAULT_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
-const DEFAULT_MAX_OUTPUT_TOKENS = Number(process.env.OPENAI_MAX_OUTPUT_TOKENS || "120");
+const AI_PROVIDER = String(process.env.AI_PROVIDER || "bedrock").toLowerCase();
+const POST_TEXT_MODE = String(process.env.POST_TEXT_MODE || "live").toLowerCase();
+const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN || "*";
+const TEST_MODE_FIXED_TEXT =
+  process.env.TEST_MODE_FIXED_TEXT || "テストモードです。今日は魚の旬を楽しみました。#変わる海を味わう";
+
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
+const OPENAI_MAX_OUTPUT_TOKENS = Number(process.env.OPENAI_MAX_OUTPUT_TOKENS || "120");
+
+const BEDROCK_REGION = process.env.BEDROCK_REGION || "us-east-1";
+const BEDROCK_MODEL_ID = process.env.BEDROCK_MODEL_ID || "amazon.nova-lite-v1:0";
+const BEDROCK_MAX_OUTPUT_TOKENS = Number(process.env.BEDROCK_MAX_OUTPUT_TOKENS || "120");
+
 const DEFAULT_RATE_LIMIT_WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS || "60000");
 const DEFAULT_RATE_LIMIT_MAX_REQUESTS = Number(process.env.RATE_LIMIT_MAX_REQUESTS || "8");
-const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN || "*";
-const POST_TEXT_MODE = String(process.env.POST_TEXT_MODE || "live").toLowerCase();
-const TEST_MODE_FIXED_TEXT =
-  process.env.TEST_MODE_FIXED_TEXT || "テストモード: 今日は魚料理を楽しみました。#変わる海を味わう";
+
 const DAILY_LIMIT_TABLE_NAME = process.env.DAILY_LIMIT_TABLE_NAME || "";
 const DAILY_LIMIT_MAX_PER_DAY = Number(process.env.DAILY_LIMIT_MAX_PER_DAY || "0");
 
 const ddbClient = DAILY_LIMIT_TABLE_NAME ? new DynamoDBClient({}) : null;
+const bedrockClient = new BedrockRuntimeClient({ region: BEDROCK_REGION });
 
 const rateLimitStore = new Map();
 
@@ -42,7 +52,6 @@ function checkRateLimit(clientKey) {
     rateLimitStore.set(clientKey, recent);
     return false;
   }
-
   recent.push(now);
   rateLimitStore.set(clientKey, recent);
   return true;
@@ -71,15 +80,10 @@ async function incrementDailyCounterOrReject(dayKey) {
     const result = await ddbClient.send(
       new UpdateItemCommand({
         TableName: DAILY_LIMIT_TABLE_NAME,
-        Key: {
-          pk: { S: dayKey }
-        },
+        Key: { pk: { S: dayKey } },
         UpdateExpression: "SET #cnt = if_not_exists(#cnt, :zero) + :inc, #ttl = :ttl",
         ConditionExpression: "attribute_not_exists(#cnt) OR #cnt < :limit",
-        ExpressionAttributeNames: {
-          "#cnt": "count",
-          "#ttl": "expiresAt"
-        },
+        ExpressionAttributeNames: { "#cnt": "count", "#ttl": "expiresAt" },
         ExpressionAttributeValues: {
           ":zero": { N: "0" },
           ":inc": { N: "1" },
@@ -89,10 +93,7 @@ async function incrementDailyCounterOrReject(dayKey) {
         ReturnValues: "UPDATED_NEW"
       })
     );
-    return {
-      allowed: true,
-      count: Number(result?.Attributes?.count?.N ?? "0")
-    };
+    return { allowed: true, count: Number(result?.Attributes?.count?.N ?? "0") };
   } catch (error) {
     if (error?.name === "ConditionalCheckFailedException") {
       return { allowed: false, count: null };
@@ -101,13 +102,27 @@ async function incrementDailyCounterOrReject(dayKey) {
   }
 }
 
-function extractOutputText(jsonResponse) {
+function buildPrompt(fishType, tone) {
+  return [
+    "あなたは石川県の魚の魅力を伝える案内人です。",
+    "入力画像は料理写真です。",
+    `魚種は「${fishType}」として扱ってください。`,
+    `トーン: ${tone || "friendly"}`,
+    "日本語で、X向け短文を1案のみ出力してください。",
+    "100〜140文字程度にしてください。",
+    "親しみやすく、観光客向けに読める表現にしてください。",
+    "誇張表現は避けてください。",
+    "画像から断定できない店名・場所・食べ方などは書かないでください。",
+    "ハッシュタグは最大2個まで。",
+    "出力は本文のみ。説明文は不要です。"
+  ].join("\n");
+}
+
+function extractOpenAiText(jsonResponse) {
   if (typeof jsonResponse?.output_text === "string" && jsonResponse.output_text.trim()) {
     return jsonResponse.output_text.trim();
   }
-
   if (!Array.isArray(jsonResponse?.output)) return "";
-
   for (const item of jsonResponse.output) {
     if (!Array.isArray(item?.content)) continue;
     for (const content of item.content) {
@@ -119,20 +134,88 @@ function extractOutputText(jsonResponse) {
   return "";
 }
 
-function buildPrompt(fishType, tone) {
-  return [
-    "あなたは石川県の魚の魅力を伝える案内人です。",
-    "入力画像は料理写真です。",
-    `魚種は「${fishType}」です。魚種はこの値を優先して使ってください。`,
-    `文体トーン: ${tone || "friendly"}`,
-    "日本語で、X向け投稿文を1案だけ作成してください。",
-    "100〜140文字程度。",
-    "親しみやすく、観光客にも読みやすい表現。",
-    "誇張しない。",
-    "画像から断定できない店名・場所・食べ方は書かない。",
-    "ハッシュタグは最大2個。",
-    "出力は本文のみ。説明文は不要。"
-  ].join("\n");
+function extractBedrockText(response) {
+  const content = response?.output?.message?.content;
+  if (!Array.isArray(content)) return "";
+  for (const part of content) {
+    if (typeof part?.text === "string" && part.text.trim()) {
+      return part.text.trim();
+    }
+  }
+  return "";
+}
+
+function toBedrockImageFormat(mimeType) {
+  const lower = String(mimeType || "").toLowerCase();
+  if (lower.includes("png")) return "png";
+  return "jpeg";
+}
+
+async function generateViaOpenAi({ prompt, imageBase64, mimeType }) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("openai_key_missing");
+  }
+
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: OPENAI_MODEL,
+      max_output_tokens: OPENAI_MAX_OUTPUT_TOKENS,
+      input: [
+        {
+          role: "user",
+          content: [
+            { type: "input_text", text: prompt },
+            { type: "input_image", image_url: `data:${mimeType};base64,${imageBase64}`, detail: "low" }
+          ]
+        }
+      ]
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`openai_http_${response.status}`);
+  }
+
+  const openAiJson = await response.json();
+  return extractOpenAiText(openAiJson);
+}
+
+async function generateViaBedrock({ prompt, imageBase64, mimeType }) {
+  const imageBytes = Buffer.from(imageBase64, "base64");
+  const imageFormat = toBedrockImageFormat(mimeType);
+
+  const response = await bedrockClient.send(
+    new ConverseCommand({
+      modelId: BEDROCK_MODEL_ID,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { text: prompt },
+            {
+              image: {
+                format: imageFormat,
+                source: { bytes: imageBytes }
+              }
+            }
+          ]
+        }
+      ],
+      inferenceConfig: {
+        maxTokens: BEDROCK_MAX_OUTPUT_TOKENS,
+        temperature: 0.4,
+        topP: 0.9
+      }
+    })
+  );
+
+  return extractBedrockText(response);
 }
 
 export const handler = async (event) => {
@@ -155,11 +238,7 @@ export const handler = async (event) => {
     const tone = String(body.tone || "friendly");
 
     if (!checkRateLimit(clientKey)) {
-      return json(429, {
-        generatedText: fallbackText(fishType),
-        fallbackUsed: true,
-        errorMessage: "rate_limited"
-      });
+      return json(429, { generatedText: fallbackText(fishType), fallbackUsed: true, errorMessage: "rate_limited" });
     }
 
     const dayKey = getJstDayKey();
@@ -169,15 +248,6 @@ export const handler = async (event) => {
         generatedText: fallbackText(fishType),
         fallbackUsed: true,
         errorMessage: "daily_limit_exceeded"
-      });
-    }
-
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return json(200, {
-        generatedText: fallbackText(fishType),
-        fallbackUsed: true,
-        errorMessage: "server_key_missing"
       });
     }
 
@@ -191,79 +261,47 @@ export const handler = async (event) => {
     }
 
     if (!imageBase64) {
-      return json(200, {
-        generatedText: fallbackText(fishType),
-        fallbackUsed: true,
-        errorMessage: "image_missing"
-      });
+      return json(200, { generatedText: fallbackText(fishType), fallbackUsed: true, errorMessage: "image_missing" });
     }
 
     const prompt = buildPrompt(fishType, tone);
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: DEFAULT_MODEL,
-        max_output_tokens: DEFAULT_MAX_OUTPUT_TOKENS,
-        input: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "input_text",
-                text: prompt
-              },
-              {
-                type: "input_image",
-                image_url: `data:${mimeType};base64,${imageBase64}`,
-                detail: "low"
-              }
-            ]
-          }
-        ]
-      })
-    });
+    const provider = AI_PROVIDER === "openai" ? "openai" : AI_PROVIDER === "bedrock" ? "bedrock" : "unsupported";
 
-    if (!response.ok) {
+    if (provider === "unsupported") {
       return json(200, {
         generatedText: fallbackText(fishType),
         fallbackUsed: true,
-        errorMessage: `openai_http_${response.status}`
+        errorMessage: "provider_not_supported"
       });
     }
 
-    const openAiJson = await response.json();
-    const generatedText = extractOutputText(openAiJson);
+    let generatedText = "";
+    try {
+      if (provider === "openai") {
+        generatedText = await generateViaOpenAi({ prompt, imageBase64, mimeType });
+      } else {
+        generatedText = await generateViaBedrock({ prompt, imageBase64, mimeType });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "provider_error";
+      return json(200, { generatedText: fallbackText(fishType), fallbackUsed: true, errorMessage: message });
+    }
+
     if (!generatedText) {
-      return json(200, {
-        generatedText: fallbackText(fishType),
-        fallbackUsed: true,
-        errorMessage: "empty_generation"
-      });
+      return json(200, { generatedText: fallbackText(fishType), fallbackUsed: true, errorMessage: "empty_generation" });
     }
 
     return json(200, {
       generatedText,
       fallbackUsed: false,
       errorMessage: null,
-      mode: "live"
+      mode: `live_${provider}`
     });
   } catch {
-    return json(200, {
-      generatedText: fallbackText("魚料理"),
-      fallbackUsed: true,
-      errorMessage: "server_error"
-    });
+    return json(200, { generatedText: fallbackText("魚料理"), fallbackUsed: true, errorMessage: "server_error" });
   } finally {
     const elapsedMs = Date.now() - startedAt;
-    console.log(
-      JSON.stringify({
-        event: "generate_post_text",
-        elapsedMs
-      })
-    );
+    console.log(JSON.stringify({ event: "generate_post_text", elapsedMs, aiProvider: AI_PROVIDER, bedrockRegion: BEDROCK_REGION }));
   }
 };
+

@@ -33,8 +33,12 @@ jobs:
       LAMBDA_TIMEOUT: ${{ vars.LAMBDA_TIMEOUT }}
       LAMBDA_MEMORY_SIZE: ${{ vars.LAMBDA_MEMORY_SIZE }}
       ALLOW_ORIGIN: ${{ vars.ALLOW_ORIGIN }}
+      AI_PROVIDER: ${{ vars.AI_PROVIDER }}
       OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
       OPENAI_MAX_OUTPUT_TOKENS: ${{ vars.OPENAI_MAX_OUTPUT_TOKENS }}
+      BEDROCK_REGION: ${{ vars.BEDROCK_REGION }}
+      BEDROCK_MODEL_ID: ${{ vars.BEDROCK_MODEL_ID }}
+      BEDROCK_MAX_OUTPUT_TOKENS: ${{ vars.BEDROCK_MAX_OUTPUT_TOKENS }}
       RATE_LIMIT_WINDOW_MS: ${{ vars.RATE_LIMIT_WINDOW_MS }}
       RATE_LIMIT_MAX_REQUESTS: ${{ vars.RATE_LIMIT_MAX_REQUESTS }}
       LAMBDA_POST_TEXT_MODE: ${{ vars.LAMBDA_POST_TEXT_MODE }}
@@ -129,8 +133,12 @@ jobs:
         run: |
           set -euo pipefail
           POST_TEXT_MODE="${LAMBDA_POST_TEXT_MODE:-test}"
+          EFFECTIVE_AI_PROVIDER="${AI_PROVIDER:-bedrock}"
           EFFECTIVE_OPENAI_MODEL="${OPENAI_MODEL:-gpt-4o-mini}"
           EFFECTIVE_MAX_OUTPUT="${OPENAI_MAX_OUTPUT_TOKENS:-120}"
+          EFFECTIVE_BEDROCK_REGION="${BEDROCK_REGION:-us-east-1}"
+          EFFECTIVE_BEDROCK_MODEL_ID="${BEDROCK_MODEL_ID:-amazon.nova-lite-v1:0}"
+          EFFECTIVE_BEDROCK_MAX_OUTPUT="${BEDROCK_MAX_OUTPUT_TOKENS:-120}"
           EFFECTIVE_RATE_WINDOW="${RATE_LIMIT_WINDOW_MS:-60000}"
           EFFECTIVE_RATE_MAX="${RATE_LIMIT_MAX_REQUESTS:-8}"
           EFFECTIVE_ALLOW_ORIGIN="${ALLOW_ORIGIN:-*}"
@@ -138,8 +146,12 @@ jobs:
 
           jq -n \
             --arg openaiApiKey "${OPENAI_API_KEY}" \
+            --arg aiProvider "${EFFECTIVE_AI_PROVIDER}" \
             --arg openaiModel "${EFFECTIVE_OPENAI_MODEL}" \
             --arg openaiMaxOutputTokens "${EFFECTIVE_MAX_OUTPUT}" \
+            --arg bedrockRegion "${EFFECTIVE_BEDROCK_REGION}" \
+            --arg bedrockModelId "${EFFECTIVE_BEDROCK_MODEL_ID}" \
+            --arg bedrockMaxOutputTokens "${EFFECTIVE_BEDROCK_MAX_OUTPUT}" \
             --arg rateLimitWindowMs "${EFFECTIVE_RATE_WINDOW}" \
             --arg rateLimitMaxRequests "${EFFECTIVE_RATE_MAX}" \
             --arg allowOrigin "${EFFECTIVE_ALLOW_ORIGIN}" \
@@ -149,8 +161,12 @@ jobs:
             --arg dailyLimitMaxPerDay "${DAILY_LIMIT_MAX_PER_DAY:-2000}" \
             '{Variables:{
               OPENAI_API_KEY:$openaiApiKey,
+              AI_PROVIDER:$aiProvider,
               OPENAI_MODEL:$openaiModel,
               OPENAI_MAX_OUTPUT_TOKENS:$openaiMaxOutputTokens,
+              BEDROCK_REGION:$bedrockRegion,
+              BEDROCK_MODEL_ID:$bedrockModelId,
+              BEDROCK_MAX_OUTPUT_TOKENS:$bedrockMaxOutputTokens,
               RATE_LIMIT_WINDOW_MS:$rateLimitWindowMs,
               RATE_LIMIT_MAX_REQUESTS:$rateLimitMaxRequests,
               ALLOW_ORIGIN:$allowOrigin,
