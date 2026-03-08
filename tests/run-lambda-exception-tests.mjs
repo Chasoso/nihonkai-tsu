@@ -1,4 +1,4 @@
-import assert from "node:assert/strict";
+ï»¿import assert from "node:assert/strict";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { BedrockRuntimeClient } from "@aws-sdk/client-bedrock-runtime";
 
@@ -62,7 +62,7 @@ async function runCase(name, fn, results) {
 async function main() {
   const results = [];
 
-  await runCase("OPTIONS‚Í204‚ğ•Ô‚·", async () => {
+  await runCase("OPTIONSã¯204ã‚’è¿”ã™", async () => {
     const snapshot = snapshotGlobals();
     try {
       const handler = await freshHandler({ POST_TEXT_MODE: "live", AI_PROVIDER: "bedrock" });
@@ -73,7 +73,7 @@ async function main() {
     }
   }, results);
 
-  await runCase("JSON•s³‚Éserver_error‚ÅƒtƒH[ƒ‹ƒoƒbƒN", async () => {
+  await runCase("JSONä¸æ­£æ™‚ã«invalid_jsonã§ãƒ•ã‚©ãƒ¼ãƒ«ãƒãƒƒã‚¯", async () => {
     const snapshot = snapshotGlobals();
     try {
       const handler = await freshHandler({ POST_TEXT_MODE: "live", AI_PROVIDER: "bedrock" });
@@ -81,17 +81,17 @@ async function main() {
       const body = JSON.parse(res.body);
       assert.equal(res.statusCode, 200);
       assert.equal(body.fallbackUsed, true);
-      assert.equal(body.errorMessage, "server_error");
+      assert.equal(body.errorMessage, "invalid_json");
     } finally {
       restoreGlobals(snapshot);
     }
   }, results);
 
-  await runCase("‰æ‘œ–¢w’è‚Éimage_missing‚ÅƒtƒH[ƒ‹ƒoƒbƒN", async () => {
+  await runCase("ç”»åƒæœªæŒ‡å®šæ™‚ã«image_missingã§ãƒ•ã‚©ãƒ¼ãƒ«ãƒãƒƒã‚¯", async () => {
     const snapshot = snapshotGlobals();
     try {
       const handler = await freshHandler({ POST_TEXT_MODE: "live", AI_PROVIDER: "bedrock" });
-      const res = await handler(eventOf({ fishType: "ƒuƒŠ" }));
+      const res = await handler(eventOf({ fishType: "ãƒ–ãƒª" }));
       const body = JSON.parse(res.body);
       assert.equal(res.statusCode, 200);
       assert.equal(body.errorMessage, "image_missing");
@@ -101,11 +101,11 @@ async function main() {
     }
   }, results);
 
-  await runCase("provider–¢‘Î‰’l‚Íprovider_not_supported", async () => {
+  await runCase("provideræœªå¯¾å¿œå€¤ã¯provider_not_supported", async () => {
     const snapshot = snapshotGlobals();
     try {
       const handler = await freshHandler({ POST_TEXT_MODE: "live", AI_PROVIDER: "invalid" });
-      const res = await handler(eventOf({ fishType: "ƒuƒŠ", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" }));
+      const res = await handler(eventOf({ fishType: "ãƒ–ãƒª", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" }));
       const body = JSON.parse(res.body);
       assert.equal(res.statusCode, 200);
       assert.equal(body.errorMessage, "provider_not_supported");
@@ -115,18 +115,18 @@ async function main() {
     }
   }, results);
 
-  await runCase("testƒ‚[ƒh‚ÍŒÅ’è•¶‚ğ•Ô‚·", async () => {
+  await runCase("testãƒ¢ãƒ¼ãƒ‰ã¯å›ºå®šæ–‡ã‚’è¿”ã™", async () => {
     const snapshot = snapshotGlobals();
     try {
       const handler = await freshHandler({
         POST_TEXT_MODE: "test",
-        TEST_MODE_FIXED_TEXT: "ŒÅ’èƒeƒLƒXƒg",
+        TEST_MODE_FIXED_TEXT: "å›ºå®šãƒ†ã‚­ã‚¹ãƒˆ",
         AI_PROVIDER: "bedrock"
       });
-      const res = await handler(eventOf({ fishType: "ƒuƒŠ" }));
+      const res = await handler(eventOf({ fishType: "ãƒ–ãƒª" }));
       const body = JSON.parse(res.body);
       assert.equal(res.statusCode, 200);
-      assert.equal(body.generatedText, "ŒÅ’èƒeƒLƒXƒg");
+      assert.equal(body.generatedText, "å›ºå®šãƒ†ã‚­ã‚¹ãƒˆ");
       assert.equal(body.fallbackUsed, false);
       assert.equal(body.mode, "test");
     } finally {
@@ -134,7 +134,7 @@ async function main() {
     }
   }, results);
 
-  await runCase("ƒŒ[ƒg§ŒÀ’´‰ß‚Å429", async () => {
+  await runCase("ãƒ¬ãƒ¼ãƒˆåˆ¶é™è¶…éã§429", async () => {
     const snapshot = snapshotGlobals();
     try {
       const handler = await freshHandler({
@@ -144,7 +144,7 @@ async function main() {
         RATE_LIMIT_WINDOW_MS: "60000",
         RATE_LIMIT_MAX_REQUESTS: "1"
       });
-      const ev = eventOf({ fishType: "ƒTƒƒ‰", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" }, "198.51.100.20");
+      const ev = eventOf({ fishType: "ã‚µãƒ¯ãƒ©", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" }, "198.51.100.20");
       const first = await handler(ev);
       const second = await handler(ev);
       assert.equal(first.statusCode, 200);
@@ -156,7 +156,7 @@ async function main() {
     }
   }, results);
 
-  await runCase("DynamoDB“úŸãŒÀ’´‰ß‚Å429", async () => {
+  await runCase("DynamoDBæ—¥æ¬¡ä¸Šé™è¶…éã§429", async () => {
     const snapshot = snapshotGlobals();
     try {
       DynamoDBClient.prototype.send = async () => {
@@ -170,7 +170,7 @@ async function main() {
         DAILY_LIMIT_TABLE_NAME: "dummy-table",
         DAILY_LIMIT_MAX_PER_DAY: "1"
       });
-      const res = await handler(eventOf({ fishType: "ƒuƒŠ", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" }));
+      const res = await handler(eventOf({ fishType: "ãƒ–ãƒª", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" }));
       const body = JSON.parse(res.body);
       assert.equal(res.statusCode, 429);
       assert.equal(body.errorMessage, "daily_limit_exceeded");
@@ -180,7 +180,7 @@ async function main() {
     }
   }, results);
 
-  await runCase("DynamoDBˆÙí‚àLambda‚Í—‚¿‚¸server_error", async () => {
+  await runCase("DynamoDBç•°å¸¸æ™‚ã‚‚Lambdaã¯è½ã¡ãšdaily_limit_check_failed", async () => {
     const snapshot = snapshotGlobals();
     try {
       DynamoDBClient.prototype.send = async () => {
@@ -192,17 +192,17 @@ async function main() {
         DAILY_LIMIT_TABLE_NAME: "dummy-table",
         DAILY_LIMIT_MAX_PER_DAY: "5"
       });
-      const res = await handler(eventOf({ fishType: "ƒuƒŠ", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" }));
+      const res = await handler(eventOf({ fishType: "ãƒ–ãƒª", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" }));
       const body = JSON.parse(res.body);
       assert.equal(res.statusCode, 200);
-      assert.equal(body.errorMessage, "server_error");
+      assert.equal(body.errorMessage, "daily_limit_check_failed");
       assert.equal(body.fallbackUsed, true);
     } finally {
       restoreGlobals(snapshot);
     }
   }, results);
 
-  await runCase("OpenAIƒL[–¢İ’è‚Íopenai_key_missing", async () => {
+  await runCase("OpenAIã‚­ãƒ¼æœªè¨­å®šæ™‚ã¯openai_key_missing", async () => {
     const snapshot = snapshotGlobals();
     try {
       const handler = await freshHandler({
@@ -210,7 +210,7 @@ async function main() {
         AI_PROVIDER: "openai",
         OPENAI_API_KEY: ""
       });
-      const res = await handler(eventOf({ fishType: "ƒmƒhƒOƒ", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" }));
+      const res = await handler(eventOf({ fishType: "ãƒãƒ‰ã‚°ãƒ­", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" }));
       const body = JSON.parse(res.body);
       assert.equal(res.statusCode, 200);
       assert.equal(body.errorMessage, "openai_key_missing");
@@ -220,7 +220,7 @@ async function main() {
     }
   }, results);
 
-  await runCase("OpenAI HTTPƒGƒ‰[‚ğopenai_http_XXX‚Å•Ô‚·", async () => {
+  await runCase("OpenAI HTTPã‚¨ãƒ©ãƒ¼ã‚’openai_http_XXXã§è¿”ã™", async () => {
     const snapshot = snapshotGlobals();
     try {
       globalThis.fetch = async () => ({ ok: false, status: 503 });
@@ -229,7 +229,7 @@ async function main() {
         AI_PROVIDER: "openai",
         OPENAI_API_KEY: "dummy-key"
       });
-      const res = await handler(eventOf({ fishType: "ƒuƒŠ", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" }));
+      const res = await handler(eventOf({ fishType: "ãƒ–ãƒª", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" }));
       const body = JSON.parse(res.body);
       assert.equal(res.statusCode, 200);
       assert.equal(body.errorMessage, "openai_http_503");
@@ -239,7 +239,7 @@ async function main() {
     }
   }, results);
 
-  await runCase("OpenAI‹ó‰“š‚Íempty_generation", async () => {
+  await runCase("OpenAIç©ºå¿œç­”ã¯empty_generation", async () => {
     const snapshot = snapshotGlobals();
     try {
       globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => ({ output: [] }) });
@@ -248,7 +248,7 @@ async function main() {
         AI_PROVIDER: "openai",
         OPENAI_API_KEY: "dummy-key"
       });
-      const res = await handler(eventOf({ fishType: "ƒuƒŠ", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" }));
+      const res = await handler(eventOf({ fishType: "ãƒ–ãƒª", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" }));
       const body = JSON.parse(res.body);
       assert.equal(res.statusCode, 200);
       assert.equal(body.errorMessage, "empty_generation");
@@ -258,7 +258,7 @@ async function main() {
     }
   }, results);
 
-  await runCase("OpenAI fetch—áŠO‚àƒtƒH[ƒ‹ƒoƒbƒN", async () => {
+  await runCase("OpenAI fetchä¾‹å¤–æ™‚ã‚‚ãƒ•ã‚©ãƒ¼ãƒ«ãƒãƒƒã‚¯", async () => {
     const snapshot = snapshotGlobals();
     try {
       globalThis.fetch = async () => {
@@ -269,7 +269,7 @@ async function main() {
         AI_PROVIDER: "openai",
         OPENAI_API_KEY: "dummy-key"
       });
-      const res = await handler(eventOf({ fishType: "ƒuƒŠ", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" }));
+      const res = await handler(eventOf({ fishType: "ãƒ–ãƒª", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" }));
       const body = JSON.parse(res.body);
       assert.equal(res.statusCode, 200);
       assert.equal(body.errorMessage, "network_down");
@@ -279,7 +279,7 @@ async function main() {
     }
   }, results);
 
-  await runCase("BedrockˆÙí‰“š(ƒeƒLƒXƒg‚È‚µ)‚Íempty_generation", async () => {
+  await runCase("Bedrockç•°å¸¸å¿œç­”(ãƒ†ã‚­ã‚¹ãƒˆãªã—)ã¯empty_generation", async () => {
     const snapshot = snapshotGlobals();
     try {
       BedrockRuntimeClient.prototype.send = async () => ({ output: { message: { content: [{ image: {} }] } } });
@@ -288,7 +288,7 @@ async function main() {
         AI_PROVIDER: "bedrock",
         BEDROCK_REGION: "us-east-1"
       });
-      const res = await handler(eventOf({ fishType: "ƒuƒŠ", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" }));
+      const res = await handler(eventOf({ fishType: "ãƒ–ãƒª", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" }));
       const body = JSON.parse(res.body);
       assert.equal(res.statusCode, 200);
       assert.equal(body.errorMessage, "empty_generation");
@@ -298,7 +298,7 @@ async function main() {
     }
   }, results);
 
-  await runCase("Bedrock—áŠO‚àƒtƒH[ƒ‹ƒoƒbƒN", async () => {
+  await runCase("Bedrockä¾‹å¤–æ™‚ã‚‚ãƒ•ã‚©ãƒ¼ãƒ«ãƒãƒƒã‚¯", async () => {
     const snapshot = snapshotGlobals();
     try {
       BedrockRuntimeClient.prototype.send = async () => {
@@ -309,7 +309,7 @@ async function main() {
         AI_PROVIDER: "bedrock",
         BEDROCK_REGION: "us-east-1"
       });
-      const res = await handler(eventOf({ fishType: "ƒuƒŠ", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" }));
+      const res = await handler(eventOf({ fishType: "ãƒ–ãƒª", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" }));
       const body = JSON.parse(res.body);
       assert.equal(res.statusCode, 200);
       assert.equal(body.errorMessage, "bedrock_throttled");
@@ -319,23 +319,23 @@ async function main() {
     }
   }, results);
 
-  await runCase("Bedrock³í‰“š‚Ílive_bedrock", async () => {
+  await runCase("Bedrockæ­£å¸¸å¿œç­”æ™‚ã¯live_bedrock", async () => {
     const snapshot = snapshotGlobals();
     try {
       BedrockRuntimeClient.prototype.send = async () => ({
-        output: { message: { content: [{ text: "–{“ú‚ÌƒuƒŠ‚Í‰‚ª‚Ì‚Á‚Ä‚¢‚ÄAŠC‚Ì‹Gß‚ğŠ´‚¶‚éˆêM‚Å‚µ‚½B#•Ï‚í‚éŠC‚ğ–¡‚í‚¤" }] } }
+        output: { message: { content: [{ text: "æœ¬æ—¥ã®ãƒ–ãƒªã¯è„‚ãŒã®ã£ã¦ã„ã¦ã€æµ·ã®å­£ç¯€ã‚’æ„Ÿã˜ã‚‹ä¸€çš¿ã§ã—ãŸã€‚#å¤‰ã‚ã‚‹æµ·ã‚’å‘³ã‚ã†" }] } }
       });
       const handler = await freshHandler({
         POST_TEXT_MODE: "live",
         AI_PROVIDER: "bedrock",
         BEDROCK_REGION: "us-east-1"
       });
-      const res = await handler(eventOf({ fishType: "ƒuƒŠ", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" }));
+      const res = await handler(eventOf({ fishType: "ãƒ–ãƒª", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" }));
       const body = JSON.parse(res.body);
       assert.equal(res.statusCode, 200);
       assert.equal(body.fallbackUsed, false);
       assert.equal(body.mode, "live_bedrock");
-      assert.match(body.generatedText, /ƒuƒŠ|ŠC/);
+      assert.match(body.generatedText, /ãƒ–ãƒª|æµ·/);
     } finally {
       restoreGlobals(snapshot);
     }
