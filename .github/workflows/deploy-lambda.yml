@@ -23,6 +23,9 @@ jobs:
       AWS_REGION: ${{ vars.AWS_REGION }}
       LAMBDA_FUNCTION_NAME: ${{ vars.LAMBDA_FUNCTION_NAME }}
       LAMBDA_EXECUTION_ROLE_ARN: ${{ secrets.LAMBDA_EXECUTION_ROLE_ARN }}
+      API_NAME: ${{ vars.API_NAME }}
+      API_ROUTE_PATH: ${{ vars.API_ROUTE_PATH }}
+      API_STAGE_NAME: ${{ vars.API_STAGE_NAME }}
       LAMBDA_ARCHITECTURE: ${{ vars.LAMBDA_ARCHITECTURE }}
       LAMBDA_TIMEOUT: ${{ vars.LAMBDA_TIMEOUT }}
       LAMBDA_MEMORY_SIZE: ${{ vars.LAMBDA_MEMORY_SIZE }}
@@ -129,3 +132,106 @@ jobs:
         run: |
           aws lambda wait function-updated \
             --function-name "${LAMBDA_FUNCTION_NAME}"
+
+      - name: Ensure API Gateway HTTP API exists and is configured
+        id: apigw
+        run: |
+          set -euo pipefail
+
+          EFFECTIVE_API_NAME="${API_NAME:-${LAMBDA_FUNCTION_NAME}-http-api}"
+          EFFECTIVE_ROUTE_PATH="${API_ROUTE_PATH:-/api/generate-post-text}"
+          EFFECTIVE_STAGE_NAME="${API_STAGE_NAME:-\$default}"
+          EFFECTIVE_ALLOW_ORIGIN="${ALLOW_ORIGIN:-*}"
+          ROUTE_KEY="POST ${EFFECTIVE_ROUTE_PATH}"
+          CLEAN_PATH="${EFFECTIVE_ROUTE_PATH#/}"
+
+          API_ID=$(aws apigatewayv2 get-apis --query "Items[?Name=='${EFFECTIVE_API_NAME}'].ApiId | [0]" --output text)
+          if [ -z "${API_ID}" ] || [ "${API_ID}" = "None" ]; then
+            API_ID=$(aws apigatewayv2 create-api \
+              --name "${EFFECTIVE_API_NAME}" \
+              --protocol-type HTTP \
+              --cors-configuration "AllowOrigins=${EFFECTIVE_ALLOW_ORIGIN},AllowMethods=POST,AllowMethods=OPTIONS,AllowHeaders=content-type,MaxAge=600" \
+              --query "ApiId" \
+              --output text)
+            echo "Created API Gateway HTTP API: ${EFFECTIVE_API_NAME} (${API_ID})"
+          else
+            aws apigatewayv2 update-api \
+              --api-id "${API_ID}" \
+              --cors-configuration "AllowOrigins=${EFFECTIVE_ALLOW_ORIGIN},AllowMethods=POST,AllowMethods=OPTIONS,AllowHeaders=content-type,MaxAge=600" >/dev/null
+            echo "Using existing API Gateway HTTP API: ${EFFECTIVE_API_NAME} (${API_ID})"
+          fi
+
+          LAMBDA_ARN=$(aws lambda get-function --function-name "${LAMBDA_FUNCTION_NAME}" --query "Configuration.FunctionArn" --output text)
+          INTEGRATION_URI="arn:aws:apigateway:${AWS_REGION}:lambda:path/2015-03-31/functions/${LAMBDA_ARN}/invocations"
+
+          INTEGRATION_ID=$(aws apigatewayv2 get-integrations --api-id "${API_ID}" --query "Items[?IntegrationUri=='${INTEGRATION_URI}'].IntegrationId | [0]" --output text)
+          if [ -z "${INTEGRATION_ID}" ] || [ "${INTEGRATION_ID}" = "None" ]; then
+            INTEGRATION_ID=$(aws apigatewayv2 create-integration \
+              --api-id "${API_ID}" \
+              --integration-type AWS_PROXY \
+              --payload-format-version "2.0" \
+              --integration-method POST \
+              --integration-uri "${INTEGRATION_URI}" \
+              --query "IntegrationId" \
+              --output text)
+            echo "Created integration: ${INTEGRATION_ID}"
+          fi
+
+          ROUTE_ID=$(aws apigatewayv2 get-routes --api-id "${API_ID}" --query "Items[?RouteKey=='${ROUTE_KEY}'].RouteId | [0]" --output text)
+          if [ -z "${ROUTE_ID}" ] || [ "${ROUTE_ID}" = "None" ]; then
+            aws apigatewayv2 create-route \
+              --api-id "${API_ID}" \
+              --route-key "${ROUTE_KEY}" \
+              --target "integrations/${INTEGRATION_ID}" >/dev/null
+            echo "Created route: ${ROUTE_KEY}"
+          else
+            aws apigatewayv2 update-route \
+              --api-id "${API_ID}" \
+              --route-id "${ROUTE_ID}" \
+              --target "integrations/${INTEGRATION_ID}" >/dev/null
+            echo "Updated route: ${ROUTE_KEY}"
+          fi
+
+          if aws apigatewayv2 get-stage --api-id "${API_ID}" --stage-name "${EFFECTIVE_STAGE_NAME}" >/dev/null 2>&1; then
+            aws apigatewayv2 update-stage \
+              --api-id "${API_ID}" \
+              --stage-name "${EFFECTIVE_STAGE_NAME}" \
+              --auto-deploy >/dev/null
+          else
+            aws apigatewayv2 create-stage \
+              --api-id "${API_ID}" \
+              --stage-name "${EFFECTIVE_STAGE_NAME}" \
+              --auto-deploy >/dev/null
+          fi
+
+          ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
+          SOURCE_ARN="arn:aws:execute-api:${AWS_REGION}:${ACCOUNT_ID}:${API_ID}/*/POST/${CLEAN_PATH}"
+          STATEMENT_ID=$(echo "apigw-${API_ID}-post-${CLEAN_PATH}" | tr '/' '-' | tr -cd '[:alnum:]-' | cut -c1-90)
+
+          set +e
+          ADD_PERMISSION_OUTPUT=$(aws lambda add-permission \
+            --function-name "${LAMBDA_FUNCTION_NAME}" \
+            --statement-id "${STATEMENT_ID}" \
+            --action "lambda:InvokeFunction" \
+            --principal apigateway.amazonaws.com \
+            --source-arn "${SOURCE_ARN}" 2>&1)
+          ADD_PERMISSION_STATUS=$?
+          set -e
+
+          if [ "${ADD_PERMISSION_STATUS}" -ne 0 ]; then
+            if echo "${ADD_PERMISSION_OUTPUT}" | grep -q "ResourceConflictException"; then
+              echo "Lambda invoke permission already exists."
+            else
+              echo "${ADD_PERMISSION_OUTPUT}"
+              exit 1
+            fi
+          fi
+
+          API_ENDPOINT=$(aws apigatewayv2 get-api --api-id "${API_ID}" --query "ApiEndpoint" --output text)
+          INVOKE_URL="${API_ENDPOINT}${EFFECTIVE_ROUTE_PATH}"
+          echo "api_id=${API_ID}" >> "${GITHUB_OUTPUT}"
+          echo "invoke_url=${INVOKE_URL}" >> "${GITHUB_OUTPUT}"
+
+      - name: Show invoke URL
+        run: |
+          echo "API Gateway invoke URL: ${{ steps.apigw.outputs.invoke_url }}"
