@@ -151,3 +151,27 @@ Repository Secrets:
 - OpenAI APIキーはクライアントへ置かないでください
 - APIキーや秘密情報をGitにコミットしないでください
 - ログには画像本体を保存しない設計にしてください
+
+## API Gateway 自動デプロイ（Actions）
+
+`deploy-lambda.yml` は Lambda だけでなく API Gateway (HTTP API) も自動作成/更新します。
+
+- API 名: `API_NAME`（未設定時: `${LAMBDA_FUNCTION_NAME}-http-api`）
+- ルート: `API_ROUTE_PATH`（未設定時: `/api/generate-post-text`）
+- ステージ: `API_STAGE_NAME`（未設定時: `$default`）
+- CORS origin: `ALLOW_ORIGIN`
+
+追加で設定する Repository Variables:
+
+- `API_NAME`（任意）
+- `API_ROUTE_PATH`（任意）
+- `API_STAGE_NAME`（任意）
+
+OIDCでAssumeするデプロイロールに必要な追加権限:
+
+- `apigateway:GET`
+- `apigateway:POST`
+- `apigateway:PATCH`
+- `lambda:AddPermission`
+- `lambda:GetPolicy`
+- `sts:GetCallerIdentity`
