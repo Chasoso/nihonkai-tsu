@@ -290,7 +290,8 @@ jobs:
           EFFECTIVE_WAF_LIMIT="${WAF_RATE_LIMIT:-1000}"
           API_ID="${{ steps.apigw.outputs.api_id }}"
           EFFECTIVE_STAGE_NAME="${API_STAGE_NAME:-\$default}"
-          RESOURCE_ARN="arn:aws:apigateway:${AWS_REGION}::/apis/${API_ID}/stages/${EFFECTIVE_STAGE_NAME}"
+          ARN_STAGE_NAME="${EFFECTIVE_STAGE_NAME//\$/%24}"
+          RESOURCE_ARN="arn:aws:apigateway:${AWS_REGION}::/apis/${API_ID}/stages/${ARN_STAGE_NAME}"
 
           jq \
             --arg name "${EFFECTIVE_WAF_NAME}" \
