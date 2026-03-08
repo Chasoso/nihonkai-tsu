@@ -1,4 +1,4 @@
-import { DynamoDBClient, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
+﻿import { DynamoDBClient, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
 import { BedrockRuntimeClient, ConverseCommand } from "@aws-sdk/client-bedrock-runtime";
 
 const AI_PROVIDER = String(process.env.AI_PROVIDER || "bedrock").toLowerCase();
@@ -24,6 +24,24 @@ const ddbClient = DAILY_LIMIT_TABLE_NAME ? new DynamoDBClient({}) : null;
 const bedrockClient = new BedrockRuntimeClient({ region: BEDROCK_REGION });
 
 const rateLimitStore = new Map();
+
+function logInfo(event, extra = {}) {
+  console.log(JSON.stringify({ level: "info", event, ...extra }));
+}
+
+function logError(event, error, extra = {}) {
+  const e = error instanceof Error ? error : new Error(String(error));
+  console.error(
+    JSON.stringify({
+      level: "error",
+      event,
+      errorName: e.name,
+      errorMessage: e.message,
+      stack: e.stack?.split("\n").slice(0, 3).join(" | "),
+      ...extra
+    })
+  );
+}
 
 function json(statusCode, body) {
   return {
@@ -224,32 +242,44 @@ export const handler = async (event) => {
   }
 
   const startedAt = Date.now();
+  const requestId = event?.requestContext?.requestId || "unknown";
   const clientKey =
     event?.requestContext?.http?.sourceIp ||
     event?.requestContext?.identity?.sourceIp ||
     event?.headers?.["x-forwarded-for"] ||
     "unknown";
 
+  let fishTypeForFallback = "魚料理";
+
   try {
-    const body = typeof event?.body === "string" ? JSON.parse(event.body) : event?.body || {};
+    let body;
+    try {
+      body = typeof event?.body === "string" ? JSON.parse(event.body) : event?.body || {};
+    } catch (parseError) {
+      logError("invalid_request_body", parseError, { requestId });
+      return json(200, {
+        generatedText: fallbackText(fishTypeForFallback),
+        fallbackUsed: true,
+        errorMessage: "invalid_json"
+      });
+    }
+
     const imageBase64 = String(body.imageBase64 || "");
     const mimeType = String(body.mimeType || "image/jpeg");
     const fishType = String(body.fishType || "").trim() || "魚料理";
     const tone = String(body.tone || "friendly");
+    fishTypeForFallback = fishType;
 
-    if (!checkRateLimit(clientKey)) {
-      return json(429, { generatedText: fallbackText(fishType), fallbackUsed: true, errorMessage: "rate_limited" });
-    }
-
-    const dayKey = getJstDayKey();
-    const dailyResult = await incrementDailyCounterOrReject(dayKey);
-    if (!dailyResult.allowed) {
-      return json(429, {
-        generatedText: fallbackText(fishType),
-        fallbackUsed: true,
-        errorMessage: "daily_limit_exceeded"
-      });
-    }
+    logInfo("generate_post_text_start", {
+      requestId,
+      postTextMode: POST_TEXT_MODE,
+      aiProvider: AI_PROVIDER,
+      hasImage: Boolean(imageBase64),
+      mimeType,
+      fishType,
+      dailyLimitEnabled: Boolean(DAILY_LIMIT_TABLE_NAME && DAILY_LIMIT_MAX_PER_DAY > 0),
+      bedrockRegion: BEDROCK_REGION
+    });
 
     if (POST_TEXT_MODE === "test") {
       return json(200, {
@@ -257,6 +287,31 @@ export const handler = async (event) => {
         fallbackUsed: false,
         errorMessage: null,
         mode: "test"
+      });
+    }
+
+    if (!checkRateLimit(clientKey)) {
+      return json(429, { generatedText: fallbackText(fishType), fallbackUsed: true, errorMessage: "rate_limited" });
+    }
+
+    let dailyResult;
+    try {
+      const dayKey = getJstDayKey();
+      dailyResult = await incrementDailyCounterOrReject(dayKey);
+    } catch (dailyError) {
+      logError("daily_limit_check_failed", dailyError, { requestId, dailyTable: DAILY_LIMIT_TABLE_NAME });
+      return json(200, {
+        generatedText: fallbackText(fishType),
+        fallbackUsed: true,
+        errorMessage: "daily_limit_check_failed"
+      });
+    }
+
+    if (!dailyResult.allowed) {
+      return json(429, {
+        generatedText: fallbackText(fishType),
+        fallbackUsed: true,
+        errorMessage: "daily_limit_exceeded"
       });
     }
 
@@ -282,8 +337,9 @@ export const handler = async (event) => {
       } else {
         generatedText = await generateViaBedrock({ prompt, imageBase64, mimeType });
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "provider_error";
+    } catch (providerError) {
+      const message = providerError instanceof Error ? providerError.message : "provider_error";
+      logError("provider_generation_failed", providerError, { requestId, provider });
       return json(200, { generatedText: fallbackText(fishType), fallbackUsed: true, errorMessage: message });
     }
 
@@ -297,11 +353,11 @@ export const handler = async (event) => {
       errorMessage: null,
       mode: `live_${provider}`
     });
-  } catch {
-    return json(200, { generatedText: fallbackText("魚料理"), fallbackUsed: true, errorMessage: "server_error" });
+  } catch (error) {
+    logError("handler_unexpected_error", error, { requestId, aiProvider: AI_PROVIDER, postTextMode: POST_TEXT_MODE });
+    return json(200, { generatedText: fallbackText(fishTypeForFallback), fallbackUsed: true, errorMessage: "server_error" });
   } finally {
     const elapsedMs = Date.now() - startedAt;
-    console.log(JSON.stringify({ event: "generate_post_text", elapsedMs, aiProvider: AI_PROVIDER, bedrockRegion: BEDROCK_REGION }));
+    logInfo("generate_post_text_end", { requestId, elapsedMs, aiProvider: AI_PROVIDER, bedrockRegion: BEDROCK_REGION });
   }
 };
-
