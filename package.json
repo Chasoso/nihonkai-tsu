@@ -7,7 +7,12 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "generate:data": "python scripts/generate_public_data.py"
+    "generate:data": "python scripts/generate_public_data.py",
+    "test:lambda": "node tests/run-lambda-exception-tests.mjs",
+    "test:lambda:coverage": "c8 --report-dir coverage/lambda --include \"backend/lambda/generate-post-text.mjs\" --reporter=text-summary --reporter=lcov --reporter=json-summary node tests/run-lambda-exception-tests.mjs",
+    "test:frontend": "vitest run",
+    "test:frontend:coverage": "vitest run --coverage",
+    "test:frontend:watch": "vitest"
   },
   "dependencies": {
     "d3": "^7.9.0",
@@ -17,13 +22,22 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1004.0",
+    "@aws-sdk/client-dynamodb": "^3.1004.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/d3": "^7.4.3",
     "@types/d3-hierarchy": "^3.1.7",
     "@types/node": "^22.10.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
+    "@vitest/coverage-v8": "^4.0.18",
+    "c8": "^11.0.0",
+    "jsdom": "^28.1.0",
     "typescript": "^5.6.3",
-    "vite": "^5.4.10"
+    "vite": "^5.4.10",
+    "vitest": "^4.0.18"
   }
 }

@@ -1,0 +1,5 @@
+# local-only test artifacts
+local-tests/
+.npm-cache/
+coverage/
+.nyc_output/
