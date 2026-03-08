@@ -11,7 +11,14 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary", "lcov"],
-      reportsDirectory: "coverage/frontend"
+      reportsDirectory: "coverage/frontend",
+      include: [
+        "src/components/Hero.tsx",
+        "src/components/FishSpotlight.tsx",
+        "src/components/FishModal.tsx",
+        "src/components/BadgeToast.tsx",
+        "src/components/BadgeHistory.tsx"
+      ]
     }
   }
 });
