@@ -60,14 +60,10 @@ export function SeasonalityCalendar({
   }, [selectedFishId, selectableFish, seasonalityById]);
 
   const currentMonth = monthInJst();
-  const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
-  const currentTopIds = useMemo(
-    () => getTopSeasonFishIdsByMonth(seasonalityList, currentMonth, TOP_SEASON_FISH_LIMIT),
-    [seasonalityList, currentMonth]
-  );
-  const nextTopIds = useMemo(
-    () => getTopSeasonFishIdsByMonth(seasonalityList, nextMonth, TOP_SEASON_FISH_LIMIT),
-    [seasonalityList, nextMonth]
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const selectedMonthTopIds = useMemo(
+    () => getTopSeasonFishIdsByMonth(seasonalityList, selectedMonth, TOP_SEASON_FISH_LIMIT),
+    [seasonalityList, selectedMonth]
   );
 
   const calendarSeasonality = calendarFishId ? seasonalityById.get(calendarFishId) ?? null : null;
@@ -91,43 +87,38 @@ export function SeasonalityCalendar({
 
   return (
     <section className="section seasonality-section" id="seasonality-calendar">
-      <h2>旬カレンダー</h2>
-      <p>
+      <h2 className="section-title">Season Calendar</h2>
+      <p className="section-lead">
         旬判定: 指数 {SEASON_THRESHOLD.toFixed(2)} 以上 / 集計期間:{" "}
         {landings.meta.range_years[0]}〜{landings.meta.range_years[landings.meta.range_years.length - 1]} / 単位:{" "}
         {landings.meta.unit}
       </p>
 
-      <div className="season-lists">
-        <section className="card season-card">
-          <h3>{currentMonth}月の旬の魚</h3>
-          <div className="chip-row">
-            {currentTopIds.map((fishId) => {
-              const fish = fishById.get(fishId);
-              return fish ? (
-                <button key={`current-${fishId}`} onClick={() => handleSelectFromSeasonList(fishId)}>
-                  {fish.name}
-                </button>
-              ) : null;
-            })}
-            {!currentTopIds.length ? <p>該当なし</p> : null}
-          </div>
-        </section>
+      <div className="season-month-tabs" role="tablist" aria-label="月選択">
+        {Array.from({ length: 12 }, (_, idx) => idx + 1).map((month) => (
+          <button
+            key={month}
+            className={month === selectedMonth ? "season-month-tab season-month-tab-active" : "season-month-tab"}
+            onClick={() => setSelectedMonth(month)}
+          >
+            {month}月
+          </button>
+        ))}
+      </div>
 
-        <section className="card season-card">
-          <h3>{nextMonth}月の旬の魚</h3>
-          <div className="chip-row">
-            {nextTopIds.map((fishId) => {
-              const fish = fishById.get(fishId);
-              return fish ? (
-                <button key={`next-${fishId}`} onClick={() => handleSelectFromSeasonList(fishId)}>
-                  {fish.name}
-                </button>
-              ) : null;
-            })}
-            {!nextTopIds.length ? <p>該当なし</p> : null}
-          </div>
-        </section>
+      <div className="card season-card">
+        <h3>{selectedMonth}月の旬の魚タグ</h3>
+        <div className="chip-row">
+          {selectedMonthTopIds.map((fishId) => {
+            const fish = fishById.get(fishId);
+            return fish ? (
+              <button key={`selected-${fishId}`} onClick={() => handleSelectFromSeasonList(fishId)}>
+                {fish.name}
+              </button>
+            ) : null;
+          })}
+          {!selectedMonthTopIds.length ? <p>該当なし</p> : null}
+        </div>
       </div>
 
       <div className="season-controls">

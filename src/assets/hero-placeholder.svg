@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-label="Sea and harbor placeholder">
+  <defs>
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#91c5f2"/>
+      <stop offset="58%" stop-color="#b7dcf7"/>
+      <stop offset="100%" stop-color="#d8edf9"/>
+    </linearGradient>
+    <linearGradient id="sea" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#4a89c8"/>
+      <stop offset="100%" stop-color="#1f4f88"/>
+    </linearGradient>
+    <linearGradient id="pier" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#8d7b68"/>
+      <stop offset="100%" stop-color="#5d4f42"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="520" fill="url(#sky)"/>
+  <rect y="520" width="1600" height="380" fill="url(#sea)"/>
+
+  <g opacity="0.65" fill="#ffffff">
+    <ellipse cx="180" cy="135" rx="120" ry="34"/>
+    <ellipse cx="430" cy="96" rx="92" ry="26"/>
+    <ellipse cx="1320" cy="138" rx="140" ry="38"/>
+  </g>
+
+  <g opacity="0.22" stroke="#ffffff" stroke-width="3" fill="none">
+    <path d="M0 620 C220 590 430 680 650 640 C900 590 1160 700 1600 640"/>
+    <path d="M0 690 C280 655 520 735 760 705 C1020 670 1290 760 1600 715"/>
+    <path d="M0 760 C220 730 430 810 690 790 C930 770 1220 840 1600 800"/>
+  </g>
+
+  <g opacity="0.8">
+    <path d="M1040 640 h370 l80 90 h-450 z" fill="url(#pier)"/>
+    <rect x="1170" y="570" width="44" height="72" fill="#f7fafc"/>
+    <polygon points="1192,514 1250,570 1134,570" fill="#f3c970"/>
+    <rect x="1266" y="586" width="36" height="56" fill="#f7fafc"/>
+    <polygon points="1284,538 1328,586 1240,586" fill="#f39a6d"/>
+    <rect x="1352" y="594" width="32" height="48" fill="#f7fafc"/>
+    <polygon points="1368,550 1406,594 1330,594" fill="#60a5d8"/>
+    <rect x="1108" y="580" width="6" height="56" fill="#f7fafc"/>
+    <rect x="1248" y="560" width="5" height="68" fill="#f7fafc"/>
+    <rect x="1332" y="568" width="5" height="64" fill="#f7fafc"/>
+  </g>
+
+  <g opacity="0.92">
+    <ellipse cx="895" cy="635" rx="110" ry="14" fill="#1e3f6a"/>
+    <path d="M790 635 h210 l-38 22 h-136 z" fill="#304e77"/>
+    <rect x="872" y="562" width="14" height="72" fill="#f7fafc"/>
+    <polygon points="879,515 942,562 816,562" fill="#f4e0a1"/>
+  </g>
+
+  <g opacity="0.85">
+    <ellipse cx="690" cy="680" rx="82" ry="10" fill="#1e3f6a"/>
+    <path d="M612 680 h154 l-26 16 h-102 z" fill="#35567f"/>
+    <rect x="672" y="634" width="12" height="44" fill="#f7fafc"/>
+    <polygon points="678,602 716,634 640,634" fill="#f2b776"/>
+  </g>
+</svg>

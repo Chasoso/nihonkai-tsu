@@ -3,3 +3,4 @@ local-tests/
 .npm-cache/
 coverage/
 .nyc_output/
+node_modules/
