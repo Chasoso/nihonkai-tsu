@@ -33,13 +33,19 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: lts/*
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
-      - name: Run frontend tests with coverage
+      - name: Build
+        run: npm run build
+
+      - name: Run frontend tests
+        run: npm run test:frontend
+
+      - name: Run frontend coverage
         run: npm run test:frontend:coverage
 
       - name: Upload frontend coverage artifact

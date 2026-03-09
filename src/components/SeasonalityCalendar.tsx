@@ -87,7 +87,7 @@ export function SeasonalityCalendar({
 
   return (
     <section className="section seasonality-section" id="seasonality-calendar">
-      <h2 className="section-title">Season Calendar</h2>
+      <h2 className="section-title">投稿ネタを探す（旬の魚）</h2>
       <p className="section-lead">
         旬判定: 指数 {SEASON_THRESHOLD.toFixed(2)} 以上 / 集計期間:{" "}
         {landings.meta.range_years[0]}〜{landings.meta.range_years[landings.meta.range_years.length - 1]} / 単位:{" "}

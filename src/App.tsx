@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+﻿import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Hero } from "./components/Hero";
 import { FishModal } from "./components/FishModal";
 import { ShareStudio } from "./components/ShareStudio";
@@ -16,7 +16,7 @@ type SectionKey = "featured" | "main" | "share" | "progress" | "about";
 function categoryLabel(category: string): string {
   if (category === "trend") return "旬";
   if (category === "discovery") return "発見";
-  if (category === "classic") return "王道";
+  if (category === "classic") return "定番";
   return category;
 }
 
@@ -48,11 +48,11 @@ function buildSeasonIndexByMonth(landings: LandingsData | null, fishId: string):
 
 function recommendDishes(fishName: string): string[] {
   const name = fishName.toLowerCase();
-  if (name.includes("イカ")) return ["刺身", "バター醤油炒め", "天ぷら"];
-  if (name.includes("エビ") || name.includes("ガニ")) return ["刺身", "塩ゆで", "味噌汁"];
-  if (name.includes("サバ") || name.includes("イワシ")) return ["塩焼き", "炙り刺し", "つみれ汁"];
-  if (name.includes("ブリ")) return ["刺身", "照り焼き", "しゃぶしゃぶ"];
-  if (name.includes("ノドグロ")) return ["塩焼き", "炙り寿司", "煮付け"];
+  if (name.includes("いか")) return ["刺身", "バター焼き", "天ぷら"];
+  if (name.includes("えび") || name.includes("かに")) return ["刺身", "塩ゆで", "唐揚げ"];
+  if (name.includes("さば") || name.includes("いわし")) return ["塩焼き", "炙り刺し", "つみれ汁"];
+  if (name.includes("ぶり")) return ["刺身", "照り焼き", "しゃぶしゃぶ"];
+  if (name.includes("のどぐろ")) return ["塩焼き", "炙り寿司", "煮付け"];
   return ["刺身", "塩焼き", "煮付け"];
 }
 
@@ -77,6 +77,7 @@ export default function App() {
   const historyRef = useRef<HTMLElement | null>(null);
   const toastTimerRef = useRef<number | null>(null);
   const overlayTimerRef = useRef<number | null>(null);
+  const postExperienceCountRef = useRef(0);
 
   useEffect(() => {
     Promise.all([fetchYearData(), fetchLandings5y()])
@@ -87,7 +88,7 @@ export default function App() {
           setSelectedFish(yearData.fish[0]);
         }
       })
-      .catch((e) => setError(e instanceof Error ? e.message : "データの読み込みに失敗しました"));
+      .catch((e) => setError(e instanceof Error ? e.message : "繝・・繧ｿ縺ｮ隱ｭ縺ｿ霎ｼ縺ｿ縺ｫ螟ｱ謨励＠縺ｾ縺励◆"));
   }, []);
 
   useEffect(() => {
@@ -158,6 +159,16 @@ export default function App() {
     shareRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  const startPostingFlow = () => {
+    setOpenShareComposerNonce((prev) => prev + 1);
+    shareRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const handlePostExperience = () => {
+    postExperienceCountRef.current += 1;
+    openToast(`謚慕ｨｿ菴馴ｨ薙ｒ險倬鹸縺励∪縺励◆・・縺ゅ↑縺溘〒${postExperienceCountRef.current}莉ｶ逶ｮ`);
+  };
+
   if (error) {
     return <main className="app-shell">Error: {error}</main>;
   }
@@ -172,14 +183,14 @@ export default function App() {
           <button className="brand-button" onClick={() => scrollToSection("featured")} aria-label="Nihonkai Tsu">
             Nihonkai Tsu
           </button>
-          <nav className="top-nav-links" aria-label="主要ナビゲーション">
+          <nav className="top-nav-links" aria-label="メインナビゲーション">
             <button onClick={() => scrollToSection("featured")}>Fish</button>
             <button onClick={() => scrollToSection("main")}>Calendar</button>
             <button onClick={() => scrollToSection("progress")}>Your Tsu</button>
             <button onClick={() => scrollToSection("about")}>About</button>
           </nav>
           <div className="top-nav-actions">
-            <button className="share-button" onClick={() => setOpenShareComposerNonce((prev) => prev + 1)}>
+            <button className="share-button" onClick={startPostingFlow}>
               Share
             </button>
             <button className="hamburger-button" onClick={() => setMenuOpen((prev) => !prev)} aria-label="メニュー">
@@ -201,10 +212,8 @@ export default function App() {
       <section className="persistent-header">
         <div className="panel-inner">
           <Hero
-            headline={data.theme.headline}
-            subline={data.theme.subline}
             year={data.year}
-            onExploreFish={() => scrollToSection("featured")}
+            onStartPost={startPostingFlow}
           />
         </div>
       </section>
@@ -216,7 +225,7 @@ export default function App() {
             {featuredFish.map((fish) => (
               <article key={fish.id} className="card featured-fish-card">
                 <div className="featured-fish-image" aria-hidden="true">
-                  🐟
+                  澄
                 </div>
                 <h3>{fish.name}</h3>
                 <p>{fish.microcopy}</p>
@@ -250,11 +259,18 @@ export default function App() {
                 if (fish) setSelectedFish(fish);
               }}
             />
+            <section className="card browse-post-cta">
+              <h3>ネタが決まったらそのまま投稿</h3>
+              <p>旬の魚を見つけたら、3ステップですぐ投稿できます。</p>
+              <button className="fish-detail-eat-button" onClick={startPostingFlow}>
+                この魚で投稿をはじめる
+              </button>
+            </section>
           </div>
           <aside className="card main-fish-detail">
             <h2 className="section-title">Fish Detail</h2>
             <div className="main-fish-detail-head">
-              <div className="main-fish-detail-image">🐟</div>
+              <div className="main-fish-detail-image">澄</div>
               <div>
                 <h3>{selectedFish.name}</h3>
                 <p>{selectedFish.microcopy}</p>
@@ -263,7 +279,7 @@ export default function App() {
             <div className="main-fish-detail-meta">
               <span>カテゴリ: {categoryLabel(selectedFish.category)}</span>
               <span>トレンド: {trendLabel(selectedFish.trend)}</span>
-              <span>レア帯: 上位{selectedFish.percentile}%</span>
+              <span>レア度: 上位 {selectedFish.percentile}%</span>
             </div>
             <section className="main-fish-detail-block">
               <h4>旬グラフ</h4>
@@ -271,7 +287,7 @@ export default function App() {
                 <>
                   <div className="season-mini-graph">
                     {seasonIndexByMonth.map((value, idx) => (
-                      <div key={idx} className="season-mini-bar-wrap" title={`${idx + 1}月 / 指数 ${value.toFixed(2)}`}>
+                      <div key={idx} className="season-mini-bar-wrap" title={`${idx + 1}譛・/ 謖・焚 ${value.toFixed(2)}`}>
                         <div
                           className={`season-mini-bar ${peakMonth === idx + 1 ? "season-mini-bar-peak" : ""}`}
                           style={{ height: `${Math.max(10, Math.min(100, value * 58))}%` }}
@@ -297,7 +313,7 @@ export default function App() {
             </section>
             <div className="main-fish-detail-actions">
               <button className="fish-detail-eat-button" onClick={() => openFishForShare(selectedFish)}>
-                食べた（投稿する）
+                食べたら投稿する
               </button>
             </div>
           </aside>
@@ -311,6 +327,7 @@ export default function App() {
             fishTypeOptions={data.fish.map((item) => item.name)}
             landings={landings}
             openComposerNonce={openShareComposerNonce}
+            onPostExperience={handlePostExperience}
             onOpenXIntent={async (finalText, imageFile) => {
               const canShareWithImage =
                 !!imageFile &&
@@ -341,9 +358,9 @@ export default function App() {
                 setOverlayVisible(true);
                 if (overlayTimerRef.current) window.clearTimeout(overlayTimerRef.current);
                 overlayTimerRef.current = window.setTimeout(() => setOverlayVisible(false), 1500);
-                openToast(`通を獲得しました: ${selectedFish.share.badgeLabel}`);
+                openToast(`騾壹ｒ迯ｲ蠕励＠縺ｾ縺励◆: ${selectedFish.share.badgeLabel}`);
               } else {
-                openToast(`すでに獲得済みです: ${selectedFish.share.badgeLabel}`);
+                openToast(`縺吶〒縺ｫ迯ｲ蠕玲ｸ医∩縺ｧ縺・ ${selectedFish.share.badgeLabel}`);
               }
             }}
           />
@@ -370,7 +387,7 @@ export default function App() {
         <div className="panel-inner">
           <section className="card">
             <h2>About</h2>
-            <p>「通」は知識の証明ではなく、行動履歴。味わい、投稿し、海の変化を追いかける。</p>
+            <p>このアプリは、石川の魚を撮って投稿する体験を通して、旬の変化を楽しむためのプロトタイプです。</p>
           </section>
         </div>
       </section>
@@ -409,3 +426,5 @@ export default function App() {
     </main>
   );
 }
+
+
