@@ -14,12 +14,19 @@ interface StepFlowHeaderProps {
 interface StepCardProps {
   step: ComposerStep;
   disabled: boolean;
+  ariaLabel: string;
   onClick: (step: ComposerStep) => void;
 }
 
-function StepCard({ step, disabled, onClick }: StepCardProps) {
+function StepCard({ step, disabled, ariaLabel, onClick }: StepCardProps) {
   return (
-    <button type="button" className="step-flow-hit" disabled={disabled} onClick={() => onClick(step)} />
+    <button
+      type="button"
+      className="step-flow-hit"
+      disabled={disabled}
+      aria-label={ariaLabel}
+      onClick={() => onClick(step)}
+    />
   );
 }
 
@@ -48,6 +55,7 @@ export function StepFlowHeader({ currentStep, step1Complete, step2Complete, onSt
     disabled: boolean;
     metaX: number;
     labelX: number;
+    ariaLabel: string;
   }> = [
     {
       step: 1,
@@ -56,7 +64,8 @@ export function StepFlowHeader({ currentStep, step1Complete, step2Complete, onSt
       iconAlt: photoAlt,
       disabled: false,
       metaX: 200,
-      labelX: 200
+      labelX: 200,
+      ariaLabel: "1/3 写真"
     },
     {
       step: 2,
@@ -65,7 +74,8 @@ export function StepFlowHeader({ currentStep, step1Complete, step2Complete, onSt
       iconAlt: confirmAlt,
       disabled: !step1Complete,
       metaX: 570,
-      labelX: 570
+      labelX: 570,
+      ariaLabel: "2/3 魚を確認"
     },
     {
       step: 3,
@@ -74,7 +84,8 @@ export function StepFlowHeader({ currentStep, step1Complete, step2Complete, onSt
       iconAlt: postAlt,
       disabled: !step2Complete,
       metaX: 970,
-      labelX: 970
+      labelX: 970,
+      ariaLabel: "3/3 投稿"
     }
   ];
 
@@ -122,6 +133,7 @@ export function StepFlowHeader({ currentStep, step1Complete, step2Complete, onSt
               key={item.step}
               step={item.step}
               disabled={item.disabled}
+              ariaLabel={item.ariaLabel}
               onClick={onStepChange}
             />
           ))}

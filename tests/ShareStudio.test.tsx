@@ -48,9 +48,9 @@ describe("ShareStudio", () => {
       />
     );
 
-    expect(await screen.findByText("1/3 Photo")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "2/3 Confirm fish" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "3/3 Post" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Generate post text" })).toBeDisabled();
+    expect(await screen.findByLabelText("1/3 写真")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "2/3 魚を確認" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "3/3 投稿" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "投稿文を生成する" })).toBeDisabled();
   });
 });
