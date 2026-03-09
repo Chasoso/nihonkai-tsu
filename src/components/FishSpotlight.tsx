@@ -13,11 +13,11 @@ function trendLabel(trend: Fish["trend"]) {
 
 export function FishSpotlight({ fish, onOpenDetail }: FishSpotlightProps) {
   return (
-    <section className="section" id="spotlight">
-      <h2>主役魚</h2>
+    <section className="section spotlight-section" id="spotlight">
+      <h2 className="section-title">Featured Fish</h2>
       <article className="card spotlight-card">
-        <h3>{fish.name}</h3>
-        <p>{fish.microcopy}</p>
+        <h3 className="spotlight-name">{fish.name}</h3>
+        <p className="spotlight-copy">{fish.microcopy}</p>
         <dl className="meta">
           <div>
             <dt>トレンド</dt>
@@ -28,7 +28,9 @@ export function FishSpotlight({ fish, onOpenDetail }: FishSpotlightProps) {
             <dd>上位{fish.percentile}%</dd>
           </div>
         </dl>
-        <button onClick={() => onOpenDetail(fish)}>詳しく見る</button>
+        <button className="spotlight-action" onClick={() => onOpenDetail(fish)}>
+          View
+        </button>
       </article>
     </section>
   );

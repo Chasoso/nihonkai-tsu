@@ -74,95 +74,100 @@ function getTwoYearMonthlySeries(species: LandingSpecies | undefined): number[] 
 }
 
 function drawFlowBackground(ctx: CanvasRenderingContext2D, width: number, height: number) {
-  const gradient = ctx.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, "rgba(99, 210, 255, 0.20)");
-  gradient.addColorStop(0.5, "rgba(92, 146, 196, 0.14)");
-  gradient.addColorStop(1, "rgba(246, 194, 111, 0.18)");
+  const gradient = ctx.createLinearGradient(0, 0, 0, height);
+  gradient.addColorStop(0, "rgba(255, 255, 255, 0.04)");
+  gradient.addColorStop(0.55, "rgba(9, 26, 45, 0.06)");
+  gradient.addColorStop(1, "rgba(9, 26, 45, 0.24)");
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
 
-  ctx.strokeStyle = "rgba(99, 210, 255, 0.45)";
-  ctx.lineWidth = Math.max(2, width * 0.0038);
+  ctx.strokeStyle = "rgba(209, 236, 255, 0.22)";
+  ctx.lineWidth = Math.max(1.5, width * 0.0024);
   ctx.beginPath();
-  ctx.moveTo(width * 0.04, height * 0.30);
-  ctx.bezierCurveTo(width * 0.22, height * 0.18, width * 0.44, height * 0.52, width * 0.66, height * 0.36);
-  ctx.bezierCurveTo(width * 0.80, height * 0.26, width * 0.90, height * 0.32, width * 0.98, height * 0.23);
+  ctx.moveTo(width * 0.04, height * 0.78);
+  ctx.bezierCurveTo(width * 0.28, height * 0.70, width * 0.54, height * 0.87, width * 0.82, height * 0.76);
+  ctx.bezierCurveTo(width * 0.90, height * 0.73, width * 0.95, height * 0.76, width * 1.02, height * 0.72);
   ctx.stroke();
 
-  ctx.strokeStyle = "rgba(246, 194, 111, 0.40)";
-  ctx.lineWidth = Math.max(2, width * 0.003);
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.14)";
+  ctx.lineWidth = Math.max(1, width * 0.0018);
   ctx.beginPath();
-  ctx.moveTo(width * 0.02, height * 0.74);
-  ctx.bezierCurveTo(width * 0.24, height * 0.58, width * 0.52, height * 0.88, width * 0.80, height * 0.70);
-  ctx.bezierCurveTo(width * 0.90, height * 0.64, width * 0.96, height * 0.70, width, height * 0.65);
+  ctx.moveTo(width * 0.04, height * 0.84);
+  ctx.bezierCurveTo(width * 0.22, height * 0.78, width * 0.53, height * 0.93, width * 0.88, height * 0.82);
   ctx.stroke();
 }
 
 function drawFishTitle(ctx: CanvasRenderingContext2D, width: number, height: number, fishName: string) {
-  const panelWidth = width * 0.44;
-  const panelHeight = height * 0.12;
+  const panelWidth = width * 0.28;
+  const panelHeight = height * 0.09;
   const pad = width * 0.04;
 
   ctx.save();
   drawRoundedRect(ctx, pad, pad, panelWidth, panelHeight, Math.max(10, width * 0.018));
-  ctx.fillStyle = "rgba(8, 16, 25, 0.72)";
+  ctx.fillStyle = "rgba(255, 255, 255, 0.26)";
   ctx.fill();
-  ctx.strokeStyle = "rgba(246, 194, 111, 0.85)";
-  ctx.lineWidth = Math.max(2, width * 0.003);
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.44)";
+  ctx.lineWidth = Math.max(1.2, width * 0.0018);
   ctx.stroke();
 
-  ctx.fillStyle = "#f8f6f2";
-  ctx.font = `700 ${Math.max(14, width * 0.035)}px "Hiragino Sans", "Yu Gothic", sans-serif`;
+  ctx.fillStyle = "#f3f8ff";
+  ctx.font = `700 ${Math.max(12, width * 0.022)}px "Hiragino Sans", "Yu Gothic", sans-serif`;
   ctx.textBaseline = "middle";
-  ctx.fillText(fishName, pad + width * 0.025, pad + panelHeight / 2);
+  ctx.fillText(fishName, pad + width * 0.018, pad + panelHeight / 2);
   ctx.restore();
 }
 
 function drawTrendChart(ctx: CanvasRenderingContext2D, width: number, height: number, series: number[], unit: string) {
   const boxWidth = width * 0.42;
-  const boxHeight = height * 0.3;
+  const boxHeight = height * 0.28;
   const margin = width * 0.03;
   const x = width - boxWidth - margin;
   const y = height - boxHeight - margin;
 
   ctx.save();
-  drawRoundedRect(ctx, x, y, boxWidth, boxHeight, Math.max(10, width * 0.018));
-  ctx.fillStyle = "rgba(8, 16, 25, 0.74)";
-  ctx.fill();
-  ctx.strokeStyle = "rgba(99, 210, 255, 0.8)";
-  ctx.lineWidth = Math.max(2, width * 0.0028);
-  ctx.stroke();
-
-  ctx.fillStyle = "#f6f3ec";
-  ctx.font = `600 ${Math.max(11, width * 0.021)}px "Hiragino Sans", "Yu Gothic", sans-serif`;
-  ctx.fillText("直近2年の漁獲量推移", x + boxWidth * 0.07, y + boxHeight * 0.18);
+  const fade = ctx.createRadialGradient(
+    width * 0.92,
+    height * 0.9,
+    0,
+    width * 0.92,
+    height * 0.9,
+    Math.max(boxWidth * 1.26, height * 0.42)
+  );
+  fade.addColorStop(0, "rgba(6, 30, 56, 0.62)");
+  fade.addColorStop(0.32, "rgba(6, 30, 56, 0.42)");
+  fade.addColorStop(0.56, "rgba(6, 30, 56, 0.22)");
+  fade.addColorStop(0.76, "rgba(6, 30, 56, 0.1)");
+  fade.addColorStop(1, "rgba(6, 30, 56, 0)");
+  ctx.fillStyle = fade;
+  ctx.fillRect(0, 0, width, height);
 
   if (!series.length) {
-    ctx.fillStyle = "rgba(246, 243, 236, 0.75)";
-    ctx.font = `500 ${Math.max(10, width * 0.018)}px "Hiragino Sans", "Yu Gothic", sans-serif`;
-    ctx.fillText("データなし", x + boxWidth * 0.07, y + boxHeight * 0.56);
+    ctx.fillStyle = "rgba(240, 248, 255, 0.9)";
+    ctx.font = `600 ${Math.max(10, width * 0.016)}px "Inter", "Noto Sans JP", sans-serif`;
+    ctx.textAlign = "right";
+    ctx.fillText("Nihonkai-tsu 2026", x + boxWidth - 2, y + boxHeight - 6);
     ctx.restore();
     return;
   }
 
-  const chartX = x + boxWidth * 0.07;
-  const chartY = y + boxHeight * 0.30;
-  const chartW = boxWidth * 0.86;
-  const chartH = boxHeight * 0.56;
+  const chartX = x + boxWidth * 0.04;
+  const chartY = y + boxHeight * 0.22;
+  const chartW = boxWidth * 0.92;
+  const chartH = boxHeight * 0.46;
 
   const min = Math.min(...series);
   const max = Math.max(...series);
   const range = Math.max(1, max - min);
 
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = "rgba(240, 248, 255, 0.38)";
+  ctx.lineWidth = Math.max(1, width * 0.0015);
   ctx.beginPath();
   ctx.moveTo(chartX, chartY + chartH);
   ctx.lineTo(chartX + chartW, chartY + chartH);
   ctx.stroke();
 
-  ctx.strokeStyle = "rgba(99, 210, 255, 0.95)";
-  ctx.lineWidth = Math.max(2, width * 0.0026);
+  ctx.strokeStyle = "rgba(221, 242, 255, 0.96)";
+  ctx.lineWidth = Math.max(1.8, width * 0.0022);
   ctx.beginPath();
   series.forEach((value, idx) => {
     const px = chartX + (chartW * idx) / Math.max(1, series.length - 1);
@@ -175,9 +180,15 @@ function drawTrendChart(ctx: CanvasRenderingContext2D, width: number, height: nu
   });
   ctx.stroke();
 
-  ctx.fillStyle = "rgba(246, 243, 236, 0.85)";
-  ctx.font = `500 ${Math.max(9, width * 0.016)}px "Hiragino Sans", "Yu Gothic", sans-serif`;
-  ctx.fillText(`max ${Math.round(max)} ${unit}`, chartX, chartY + chartH + boxHeight * 0.16);
+  ctx.fillStyle = "rgba(240, 248, 255, 0.84)";
+  ctx.font = `500 ${Math.max(8, width * 0.012)}px "Hiragino Sans", "Yu Gothic", sans-serif`;
+  ctx.textAlign = "left";
+  ctx.fillText(`漁獲推移`, chartX, y + boxHeight - 20);
+  ctx.fillText(`max ${Math.round(max)} ${unit}`, chartX, y + boxHeight - 7);
+
+  ctx.textAlign = "right";
+  ctx.font = `600 ${Math.max(10, width * 0.015)}px "Inter", "Noto Sans JP", sans-serif`;
+  ctx.fillText("Nihonkai-tsu 2026", x + boxWidth - 2, y + boxHeight - 6);
   ctx.restore();
 }
 
@@ -352,6 +363,13 @@ export function ShareStudio({
       })
       .join(" ");
   }, [previewSeries]);
+
+  const shareHashtags = useMemo(() => {
+    const matches = fish?.share.text.match(/#[^\s#]+/g) ?? [];
+    const unique = Array.from(new Set(matches));
+    if (unique.length) return unique.slice(0, 4);
+    return ["#日本海通2026", "#変わる海を味わう"];
+  }, [fish?.share.text]);
 
   useEffect(() => {
     return () => {
@@ -561,13 +579,27 @@ export function ShareStudio({
   };
 
   return (
-    <section id="share-studio" className="section">
-      <h2>Share Studio</h2>
-      <div className="actions">
-        <p>対象の魚: {fish ? fish.name : "未選択"}</p>
-        <button onClick={openComposer} disabled={!fish}>
-          Xに投稿する
-        </button>
+    <section id="share-studio" className="section share-studio-section">
+      <div className="card share-studio-card">
+        <div className="share-studio-copy">
+          <h2 className="section-title">Share Your Experience</h2>
+          <p className="section-lead">
+            写真と投稿文をその場で作成して、旬の魚体験をシェアしましょう。
+          </p>
+          <p className="share-target-fish">対象の魚: {fish ? fish.name : "未選択"}</p>
+          <div className="share-hashtag-list" aria-label="推奨ハッシュタグ">
+            {shareHashtags.map((tag) => (
+              <span key={tag} className="share-hashtag-chip">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="share-studio-cta-wrap">
+          <button className="share-studio-cta" onClick={openComposer} disabled={!fish}>
+            投稿を作成する
+          </button>
+        </div>
       </div>
 
       {composerOpen && typeof document !== "undefined" ? createPortal(
@@ -641,18 +673,15 @@ export function ShareStudio({
 
                 {frameOption === "nihonkai" ? (
                   <div className="frame-overlay" aria-hidden="true">
-                    <div className="frame-flow frame-flow-a" />
-                    <div className="frame-flow frame-flow-b" />
                     <div className="frame-fish-badge">{fish?.name ?? ""}</div>
-                    <div className="frame-chart-card">
-                      <p>直近2年の漁獲量推移</p>
+                    <div className="frame-mini-overlay">
                       {previewPolyline ? (
                         <svg viewBox="0 0 240 100" preserveAspectRatio="none">
                           <polyline points={previewPolyline} />
                         </svg>
-                      ) : (
-                        <small>データなし</small>
-                      )}
+                      ) : null}
+                      <span className="frame-mini-label">漁獲推移</span>
+                      <span className="frame-mini-brand">Nihonkai-tsu 2026</span>
                     </div>
                   </div>
                 ) : null}
@@ -661,29 +690,37 @@ export function ShareStudio({
 
             <div className="frame-area">
               <p>投稿フレーム</p>
-              <div className="frame-options">
-                <label className="frame-option">
-                  <input
-                    type="radio"
-                    name="post-frame"
-                    checked={frameOption === "nihonkai"}
-                    onChange={() => setFrameOption("nihonkai")}
-                    disabled={isGenerating || isSubmitting}
-                  />
-                  Nihonkai-tsu フレーム
-                </label>
-                <label className="frame-option">
-                  <input
-                    type="radio"
-                    name="post-frame"
-                    checked={frameOption === "none"}
-                    onChange={() => setFrameOption("none")}
-                    disabled={isGenerating || isSubmitting}
-                  />
-                  フレームなし
-                </label>
+              <div className="frame-options-card-grid" role="radiogroup" aria-label="投稿フレーム選択">
+                <button
+                  type="button"
+                  className={frameOption === "nihonkai" ? "frame-select-card frame-select-card-active" : "frame-select-card"}
+                  onClick={() => setFrameOption("nihonkai")}
+                  disabled={isGenerating || isSubmitting}
+                  aria-pressed={frameOption === "nihonkai"}
+                >
+                  <div className="frame-select-copy">
+                    <strong>Nihonkai-tsu フレーム</strong>
+                    <p>フレームを重ねます</p>
+                  </div>
+                  <div className="frame-select-thumb frame-select-thumb-brand" aria-hidden="true">
+                    <span>{fish?.name ?? "魚種"}</span>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  className={frameOption === "none" ? "frame-select-card frame-select-card-active" : "frame-select-card"}
+                  onClick={() => setFrameOption("none")}
+                  disabled={isGenerating || isSubmitting}
+                  aria-pressed={frameOption === "none"}
+                >
+                  <div className="frame-select-copy">
+                    <strong>フレームなし</strong>
+                    <p>画像のみを送信</p>
+                  </div>
+                  <div className="frame-select-thumb frame-select-thumb-plain" aria-hidden="true" />
+                </button>
               </div>
-              <p className="frame-note">投稿画像にはフレームを重ねます。AI解析には元画像のみを送信します。</p>
+              <p className="frame-note">AI解析にはどちらの場合も元画像のみを送信します。</p>
             </div>
 
             <div className="ai-generate-area">
