@@ -273,7 +273,8 @@ h3 {
 .hero {
   position: relative;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
+  justify-content: center;
   min-height: clamp(420px, 50vw, 520px);
   padding: clamp(48px, 7vw, 64px);
   border-radius: 24px;
@@ -299,8 +300,8 @@ h3 {
 .hero-content {
   position: relative;
   z-index: 1;
-  max-width: min(620px, 100%);
-  text-align: left;
+  max-width: min(760px, 100%);
+  text-align: center;
 }
 
 .hero-title {
@@ -320,7 +321,7 @@ h3 {
 }
 
 .hero-actions {
-  margin-top: 22px;
+  margin-top: 28px;
 }
 
 .hero-eyebrow {
@@ -333,9 +334,9 @@ h3 {
   border-color: rgba(255, 255, 255, 0.4);
   background: linear-gradient(135deg, #2f66e1, var(--primary));
   color: #fff;
-  padding: 14px 28px;
+  padding: 18px 34px;
   border-radius: 14px;
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 700;
   box-shadow: 0 10px 20px rgba(9, 35, 67, 0.32);
 }
@@ -438,6 +439,15 @@ h3 {
 
 .main-fish-detail-actions {
   margin-top: 16px;
+}
+
+.browse-post-cta {
+  margin-top: 14px;
+}
+
+.browse-post-cta p {
+  margin: 8px 0 14px;
+  color: var(--text-sub);
 }
 
 .section-lead {
@@ -1339,6 +1349,12 @@ textarea {
   margin: 0 0 8px;
   font-size: 13px;
   opacity: 0.85;
+}
+
+.ai-safety-note {
+  margin: 10px 0 8px;
+  font-size: 12px;
+  color: rgba(212, 224, 238, 0.78);
 }
 
 .generated-text-panel pre {

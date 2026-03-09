@@ -1,4 +1,10 @@
 export type Trend = "up" | "down" | "flat";
+export type PostTextOptionType = "short" | "standard" | "pr";
+
+export interface PostTextOption {
+  type: PostTextOptionType;
+  text: string;
+}
 
 export interface Theme {
   headline: string;

@@ -1,165 +1,154 @@
 # nihonkai-tsu
 
-石川県の魚の魅力を伝える、React + TypeScript 製のプロトタイプです。  
-画像撮影とフレーム付き投稿体験に加えて、画像と魚種をもとに X 投稿文を生成できます（MVP）。
+石川の魚を撮って投稿する体験を作る、投稿促進アプリです。  
+フロントエンドは GitHub Pages、投稿支援APIは AWS Lambda + API Gateway、KPI は DynamoDB に保存します。
 
-## サービスの使い方
+## アプリ概要
 
-### 1. 閲覧者向け（GitHub Pages）
+このアプリは「閲覧中心」ではなく「投稿中心」の体験を目的にしています。  
+ユーザーは次の流れで投稿体験を行います。
 
-1. GitHub Pages を開く
-2. 主役魚や「今年の魚」「旬カレンダー」「Progress Board+通履歴」を閲覧
-3. `Share Studio` で写真を撮影/選択
-4. 魚種を選択して「投稿文を作る」を押す
-5. 生成文をコピー、または X 投稿導線から投稿
+1. 写真を撮る / 選ぶ
+2. AI が魚種候補を提示し、ユーザーが確定する
+3. 投稿文を 3 案から選び、コピーまたは X 投稿導線へ進む
 
-### 2. 投稿文生成の動作モード
+## 投稿フロー（3ステップ）
 
-- `test` モード: Lambda 内で固定文を返す（OpenAI API を呼ばない）
-- `live` モード: OpenAI API を呼んで投稿文を生成
+1. 写真を撮る / 選ぶ
+2. AI が魚種候補を提示（上位候補 + それ以外）
+3. 投稿文を 3 案（short / standard / pr）から選んで投稿またはコピー
 
-モードは Lambda 環境変数 `POST_TEXT_MODE` で切り替えます。
+## AI 機能
 
-## このリポジトリについて
+- 魚種候補推定（`estimate_fish_candidates`）
+- 投稿文生成（`generate_post_text`）
 
-### 目的
+## KPI 定義
 
-- 既存の「撮影 → 画像確認 → 投稿」導線を維持したまま AI 投稿文生成を追加する
-- フレーム付き投稿画像と AI 解析画像（フレームなし）を分離する
-- 低コスト・最小構成・壊れにくさを優先する
+投稿体験は次のいずれかでカウントします。
 
-### アーキテクチャ
+- 投稿文コピー（`copy`）
+- X 投稿導線クリック（`x_click`）
 
-- フロントエンド: GitHub Pages（React / Vite）
-- バックエンド: AWS Lambda + API Gateway（HTTP API）
-- AI: OpenAI Responses API
-- 日次上限: DynamoDB（JST 日次カウンタ）
+## データ保存（DynamoDB）
 
-`docs/architecture.drawio` に構成図を管理しています。
+投稿体験は DynamoDB のメトリクステーブルに保存します。  
+主な保存項目:
 
-### 主要ディレクトリとファイル
+- `fish_id`
+- `metric_type`
+- `timestamp`
+- `date_jst`
+- `fish_label`（任意）
+- `selected_variant`（任意）
+- `session_id`（任意）
 
-- `src/`: フロントエンド本体
-- `src/components/`: 画面コンポーネント（ShareStudio, カレンダー, Progress Board など）
-- `src/lib/`: ロジック層（データ読込、進捗計算、投稿文API呼び出しなど）
-- `backend/lambda/generate-post-text.mjs`: 投稿文生成 Lambda
-- `infra/dynamodb/daily-limit-table.json`: 日次上限テーブル定義
-- `.github/workflows/deploy-pages.yml`: Pages デプロイ
+目的:
+
+- どの魚が投稿体験につながったかを分析する
+- 日次投稿傾向を把握する
+
+## AI 生成文について
+
+AI が生成した文章は参考文です。  
+ユーザーは自由に編集できます。  
+投稿内容の責任はユーザーにあります。
+
+## システム構成
+
+- フロントエンド: React + TypeScript + Vite（GitHub Pages）
+- API: AWS Lambda + API Gateway（HTTP API）
+- AI: Bedrock / OpenAI（環境変数で切替）
+- データストア: DynamoDB
+  - 日次上限用テーブル
+  - KPI メトリクステーブル
+
+## ディレクトリ構成
+
+- `src/`: フロントエンド
+- `src/components/`: UI コンポーネント（`ShareStudio` など）
+- `src/lib/`: データ取得・投稿文生成APIクライアント・KPI送信
+- `backend/lambda/generate-post-text.mjs`: Lambda ハンドラ
+- `infra/dynamodb/daily-limit-table.json`: 日次上限制御テーブル定義
+- `infra/dynamodb/metrics-table.json`: KPI メトリクステーブル定義
+- `.github/workflows/deploy-pages.yml`: GitHub Pages デプロイ
 - `.github/workflows/deploy-lambda.yml`: Lambda / API Gateway / DynamoDB デプロイ
-- `public/data/`: 公開データ JSON
-- `scripts/generate_public_data.py`: 公開データ生成スクリプト
 
-## 構築手順
-
-### 構築手順の概要
-
-1. ローカルで起動確認する（`npm run dev`）
-2. GitHub Pages のデプロイを設定する（`deploy-pages.yml`）
-3. AWS 側を準備する（OIDC ロール、Lambda 実行ロール）
-4. `deploy-lambda.yml` で Lambda / API Gateway / DynamoDB を自動作成・更新する
-5. フロントエンドの API URL 変数を設定して本番導線を有効化する
-
-### 詳細 1: ローカル開発
+## ローカル開発
 
 前提:
 
-- Node.js 20 系
+- Node.js 20 以上
 - npm
-- （任意）データ再生成時のみ Python 3
 
-手順:
+起動:
 
 ```bash
 npm ci
 npm run dev
 ```
 
-ビルド確認:
+ビルド:
 
 ```bash
 npm run build
 ```
 
-公開データ再生成（任意）:
+テスト:
 
 ```bash
-npm run generate:data
+npm run test:lambda
+npm run test:frontend
 ```
 
-### 詳細 2: GitHub Pages デプロイ
+## デプロイ
 
-`main` ブランチ push で `.github/workflows/deploy-pages.yml` が実行されます。  
-この workflow は `VITE_POST_TEXT_API_URL` を環境変数として注入してビルドします。
+### 1. GitHub Pages
 
-Repository Variables（Pages 側）:
+`main` への push で `.github/workflows/deploy-pages.yml` が実行されます。  
+`VITE_POST_TEXT_API_URL` を Repository Variables に設定してください。
 
-- `VITE_POST_TEXT_API_URL`: 例 `https://xxxx.execute-api.ap-northeast-1.amazonaws.com/api/generate-post-text`
+### 2. Lambda / API Gateway / DynamoDB
 
-### 詳細 3: Lambda / API Gateway / DynamoDB デプロイ
+`main` への push（`backend/lambda/**`, `infra/dynamodb/**`, workflow 変更）で  
+`.github/workflows/deploy-lambda.yml` が実行されます。
 
-`main` への push（`backend/lambda/**`, `infra/dynamodb/**`, workflow 自体の変更）または手動実行で  
-`.github/workflows/deploy-lambda.yml` が動きます。
+この workflow は次を実施します。
 
-この workflow が実施すること:
+1. DynamoDB テーブルの存在確認（なければ作成）
+2. Lambda の作成/更新
+3. Lambda 環境変数の適用
+4. API Gateway ルート設定
+5. Lambda invoke 権限設定
 
-1. DynamoDB テーブルがなければ作成
-2. TTL（`expiresAt`）有効化
-3. Lambda 関数がなければ新規作成
-4. Lambda コード更新
-5. Lambda 環境変数更新（初期値は `test` モード）
-6. API Gateway HTTP API / route / stage を作成または更新
-7. API Gateway から Lambda 呼び出し権限を設定
+## 必須の Repository Secrets / Variables
 
-## GitHub 設定値
+### Secrets
 
-### Repository Secrets
+- `AWS_ROLE_TO_ASSUME`
+- `LAMBDA_EXECUTION_ROLE_ARN`
+- `OPENAI_API_KEY`（OpenAI を使う場合）
 
-- `AWS_ROLE_TO_ASSUME`: GitHub Actions が OIDC で Assume する IAM ロール ARN
-- `LAMBDA_EXECUTION_ROLE_ARN`: Lambda 実行ロール ARN
-- `OPENAI_API_KEY`: OpenAI API キー（live モードで使用）
+### Variables（主要）
 
-### Repository Variables
-
-- `AWS_REGION`（例: `ap-northeast-1`）
+- `AWS_REGION`
 - `LAMBDA_FUNCTION_NAME`
-- `LAMBDA_ARCHITECTURE`（例: `x86_64`）
-- `LAMBDA_TIMEOUT`（例: `10`）
-- `LAMBDA_MEMORY_SIZE`（例: `256`）
-- `ALLOW_ORIGIN`（GitHub Pages の URL 推奨）
-- `OPENAI_MODEL`（例: `gpt-4o-mini`）
-- `OPENAI_MAX_OUTPUT_TOKENS`（例: `120`）
-- `RATE_LIMIT_WINDOW_MS`（例: `60000`）
-- `RATE_LIMIT_MAX_REQUESTS`（例: `8`）
+- `ALLOW_ORIGIN`
+- `API_NAME`
+- `API_ROUTE_PATH`
+- `API_STAGE_NAME`
+- `DAILY_LIMIT_TABLE_NAME`
+- `DAILY_LIMIT_MAX_PER_DAY`
+- `METRICS_TABLE_NAME`
 - `LAMBDA_POST_TEXT_MODE`（`test` or `live`）
-- `TEST_MODE_FIXED_TEXT`（test モード返却文）
-- `DAILY_LIMIT_TABLE_NAME`（例: `nihonkai-post-text-daily-limit`）
-- `DAILY_LIMIT_MAX_PER_DAY`（例: `2000`）
-- `API_NAME`（未設定時: `${LAMBDA_FUNCTION_NAME}-http-api`）
-- `API_ROUTE_PATH`（未設定時: `/api/generate-post-text`）
-- `API_STAGE_NAME`（未設定時: `$default`）
+- `AI_PROVIDER`（`bedrock` or `openai`）
+- `VITE_POST_TEXT_API_URL`（Pages 側）
 
-## IAM 権限（デプロイロール）
+## 運用前提
 
-`AWS_ROLE_TO_ASSUME` には少なくとも次の操作権限が必要です。
+以下の運用を想定しています。
 
-- Lambda: `CreateFunction`, `GetFunction`, `UpdateFunctionCode`, `UpdateFunctionConfiguration`, `AddPermission`, `GetPolicy`
-- API Gateway v2: `GET`, `POST`, `PATCH`
-- DynamoDB: `DescribeTable`, `CreateTable`, `UpdateTimeToLive`, `DescribeTimeToLive`
-- IAM: `PassRole`（`LAMBDA_EXECUTION_ROLE_ARN` を渡すため）
-- STS: `GetCallerIdentity`
-
-## コスト最適化方針（実装済み）
-
-- AI 送信画像はフレームなしで生成
-- 画像をフロントで縮小（長辺 512px 以下）・JPEG 圧縮して送信
-- 出力は 1 案、短文（`max_output_tokens` 小さめ）
-- レート制限 + JST 日次上限（DynamoDB）
-- 失敗時はテンプレート文へフォールバック
-- 同一条件の短時間再生成はフロントの簡易キャッシュで再利用
-
-## セキュリティ注意点
-
-- OpenAI API キーをクライアントへ置かない
-- API キー・機密情報を Git にコミットしない
-- CORS の `ALLOW_ORIGIN` は `*` ではなく公開 URL を指定推奨
+- 旬魚データの更新
+- PR 対象魚の変更
+- 日次投稿数の確認
 

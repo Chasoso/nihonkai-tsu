@@ -134,6 +134,107 @@ async function main() {
     }
   }, results);
 
+  await runCase("task=generate_post_text は3案を返す", async () => {
+    const snapshot = snapshotGlobals();
+    try {
+      const handler = await freshHandler({
+        POST_TEXT_MODE: "test",
+        TEST_MODE_FIXED_TEXT: "固定テキスト",
+        AI_PROVIDER: "bedrock"
+      });
+      const res = await handler(
+        eventOf({ task: "generate_post_text", fishType: "ブリ", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" })
+      );
+      const body = JSON.parse(res.body);
+      assert.equal(res.statusCode, 200);
+      assert.equal(Array.isArray(body.options), true);
+      assert.equal(body.options.length, 3);
+      assert.ok(body.options.some((o) => o.type === "short"));
+      assert.ok(body.options.some((o) => o.type === "standard"));
+      assert.ok(body.options.some((o) => o.type === "pr"));
+    } finally {
+      restoreGlobals(snapshot);
+    }
+  }, results);
+
+  await runCase("task=estimate_fish_candidates は候補を返す", async () => {
+    const snapshot = snapshotGlobals();
+    try {
+      const handler = await freshHandler({
+        POST_TEXT_MODE: "test",
+        AI_PROVIDER: "bedrock"
+      });
+      const res = await handler(
+        eventOf({ task: "estimate_fish_candidates", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" })
+      );
+      const body = JSON.parse(res.body);
+      assert.equal(res.statusCode, 200);
+      assert.equal(Array.isArray(body.candidates), true);
+      assert.ok(body.candidates.length >= 4);
+      assert.ok(body.candidates.some((c) => c.id === "other"));
+    } finally {
+      restoreGlobals(snapshot);
+    }
+  }, results);
+
+  await runCase("task=track_metric 正常系は status=ok", async () => {
+    const snapshot = snapshotGlobals();
+    try {
+      let capturedInput = null;
+      DynamoDBClient.prototype.send = async (command) => {
+        capturedInput = command.input;
+        return {};
+      };
+      const handler = await freshHandler({
+        POST_TEXT_MODE: "live",
+        AI_PROVIDER: "bedrock",
+        METRICS_TABLE_NAME: "metrics-table"
+      });
+      const res = await handler(
+        eventOf({
+          task: "track_metric",
+          metric_type: "copy",
+          fish_id: "saba",
+          fish_label: "サバ",
+          selected_variant: "short"
+        })
+      );
+      const body = JSON.parse(res.body);
+      assert.equal(res.statusCode, 200);
+      assert.equal(body.status, "ok");
+      assert.equal(capturedInput.TableName, "metrics-table");
+      assert.equal(capturedInput.Item.fish_id.S, "saba");
+      assert.equal(capturedInput.Item.metric_type.S, "copy");
+      assert.ok(capturedInput.Item.timestamp.S);
+      assert.ok(capturedInput.Item.date_jst.S);
+    } finally {
+      restoreGlobals(snapshot);
+    }
+  }, results);
+
+  await runCase("task=track_metric 異常入力は status=ignored", async () => {
+    const snapshot = snapshotGlobals();
+    try {
+      const handler = await freshHandler({
+        POST_TEXT_MODE: "live",
+        AI_PROVIDER: "bedrock",
+        METRICS_TABLE_NAME: "metrics-table"
+      });
+      const res = await handler(
+        eventOf({
+          task: "track_metric",
+          metric_type: "invalid",
+          fish_id: ""
+        })
+      );
+      const body = JSON.parse(res.body);
+      assert.equal(res.statusCode, 200);
+      assert.equal(body.status, "ignored");
+    } finally {
+      restoreGlobals(snapshot);
+    }
+  }, results);
+
   await runCase("レート制限超過で429", async () => {
     const snapshot = snapshotGlobals();
     try {

@@ -29,6 +29,7 @@ jobs:
       API_STAGE_NAME: ${{ vars.API_STAGE_NAME }}
       DAILY_LIMIT_TABLE_NAME: ${{ vars.DAILY_LIMIT_TABLE_NAME }}
       DAILY_LIMIT_MAX_PER_DAY: ${{ vars.DAILY_LIMIT_MAX_PER_DAY }}
+      METRICS_TABLE_NAME: ${{ vars.METRICS_TABLE_NAME }}
       LAMBDA_ARCHITECTURE: ${{ vars.LAMBDA_ARCHITECTURE }}
       LAMBDA_RUNTIME: ${{ vars.LAMBDA_RUNTIME }}
       LAMBDA_TIMEOUT: ${{ vars.LAMBDA_TIMEOUT }}
@@ -63,23 +64,33 @@ jobs:
           test -n "${LAMBDA_FUNCTION_NAME}" || (echo "LAMBDA_FUNCTION_NAME is not set (Repository Variable)." && exit 1)
           test -n "${LAMBDA_EXECUTION_ROLE_ARN}" || (echo "LAMBDA_EXECUTION_ROLE_ARN is not set (Repository Secret)." && exit 1)
 
-      - name: Ensure DynamoDB table exists (create if missing)
+      - name: Ensure DynamoDB tables exist (create if missing)
         run: |
           set -euo pipefail
-          EFFECTIVE_TABLE_NAME="${DAILY_LIMIT_TABLE_NAME:-nihonkai-post-text-daily-limit}"
+          EFFECTIVE_DAILY_TABLE_NAME="${DAILY_LIMIT_TABLE_NAME:-nihonkai-post-text-daily-limit}"
+          EFFECTIVE_METRICS_TABLE_NAME="${METRICS_TABLE_NAME:-nihonkai_tsu_metrics}"
 
-          if aws dynamodb describe-table --table-name "${EFFECTIVE_TABLE_NAME}" >/dev/null 2>&1; then
-            echo "DynamoDB table already exists: ${EFFECTIVE_TABLE_NAME}"
+          if aws dynamodb describe-table --table-name "${EFFECTIVE_DAILY_TABLE_NAME}" >/dev/null 2>&1; then
+            echo "DynamoDB table already exists: ${EFFECTIVE_DAILY_TABLE_NAME}"
           else
-            jq --arg tableName "${EFFECTIVE_TABLE_NAME}" '. + {TableName:$tableName}' infra/dynamodb/daily-limit-table.json > ddb-create.json
-            aws dynamodb create-table --cli-input-json file://ddb-create.json >/dev/null
-            aws dynamodb wait table-exists --table-name "${EFFECTIVE_TABLE_NAME}"
-            echo "Created DynamoDB table: ${EFFECTIVE_TABLE_NAME}"
+            jq --arg tableName "${EFFECTIVE_DAILY_TABLE_NAME}" '. + {TableName:$tableName}' infra/dynamodb/daily-limit-table.json > ddb-create-daily.json
+            aws dynamodb create-table --cli-input-json file://ddb-create-daily.json >/dev/null
+            aws dynamodb wait table-exists --table-name "${EFFECTIVE_DAILY_TABLE_NAME}"
+            echo "Created DynamoDB table: ${EFFECTIVE_DAILY_TABLE_NAME}"
+          fi
+
+          if aws dynamodb describe-table --table-name "${EFFECTIVE_METRICS_TABLE_NAME}" >/dev/null 2>&1; then
+            echo "DynamoDB table already exists: ${EFFECTIVE_METRICS_TABLE_NAME}"
+          else
+            jq --arg tableName "${EFFECTIVE_METRICS_TABLE_NAME}" '. + {TableName:$tableName}' infra/dynamodb/metrics-table.json > ddb-create-metrics.json
+            aws dynamodb create-table --cli-input-json file://ddb-create-metrics.json >/dev/null
+            aws dynamodb wait table-exists --table-name "${EFFECTIVE_METRICS_TABLE_NAME}"
+            echo "Created DynamoDB table: ${EFFECTIVE_METRICS_TABLE_NAME}"
           fi
 
           set +e
           TTL_OUTPUT=$(aws dynamodb update-time-to-live \
-            --table-name "${EFFECTIVE_TABLE_NAME}" \
+            --table-name "${EFFECTIVE_DAILY_TABLE_NAME}" \
             --time-to-live-specification "Enabled=true,AttributeName=expiresAt" 2>&1)
           TTL_STATUS=$?
           set -e
@@ -161,6 +172,7 @@ jobs:
             --arg testModeFixedText "${EFFECTIVE_TEST_TEXT}" \
             --arg dailyLimitTableName "${DAILY_LIMIT_TABLE_NAME:-nihonkai-post-text-daily-limit}" \
             --arg dailyLimitMaxPerDay "${DAILY_LIMIT_MAX_PER_DAY:-2000}" \
+            --arg metricsTableName "${METRICS_TABLE_NAME:-nihonkai_tsu_metrics}" \
             '{Variables:{
               OPENAI_API_KEY:$openaiApiKey,
               AI_PROVIDER:$aiProvider,
@@ -175,7 +187,8 @@ jobs:
               POST_TEXT_MODE:$postTextMode,
               TEST_MODE_FIXED_TEXT:$testModeFixedText,
               DAILY_LIMIT_TABLE_NAME:$dailyLimitTableName,
-              DAILY_LIMIT_MAX_PER_DAY:$dailyLimitMaxPerDay
+              DAILY_LIMIT_MAX_PER_DAY:$dailyLimitMaxPerDay,
+              METRICS_TABLE_NAME:$metricsTableName
             }}' > lambda-env.json
 
           EFFECTIVE_RUNTIME="${LAMBDA_RUNTIME:-nodejs24.x}"

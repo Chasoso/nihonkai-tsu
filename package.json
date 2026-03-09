@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "test": "npm run test:frontend && npm run test:lambda",
+    "test:coverage": "npm run test:frontend:coverage && npm run test:lambda:coverage",
     "generate:data": "python scripts/generate_public_data.py",
     "test:lambda": "node tests/run-lambda-exception-tests.mjs",
     "test:lambda:coverage": "c8 --report-dir coverage/lambda --include \"backend/lambda/generate-post-text.mjs\" --reporter=text-summary --reporter=lcov --reporter=json-summary node tests/run-lambda-exception-tests.mjs",
