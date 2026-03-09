@@ -57,6 +57,7 @@ function recommendDishes(fishName: string): string[] {
 }
 
 export default function App() {
+  const heroBackgroundUrl = String(import.meta.env.VITE_HERO_BACKGROUND_URL ?? "").trim() || undefined;
   const [data, setData] = useState<AppData | null>(null);
   const [landings, setLandings] = useState<LandingsData | null>(null);
   const [selectedFish, setSelectedFish] = useState<Fish | null>(null);
@@ -214,6 +215,7 @@ export default function App() {
           <Hero
             year={data.year}
             onStartPost={startPostingFlow}
+            backgroundImageUrl={heroBackgroundUrl}
           />
         </div>
       </section>
