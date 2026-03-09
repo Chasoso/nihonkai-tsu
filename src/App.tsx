@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Hero } from "./components/Hero";
+import heroBackgroundImage from "./assets/hero-background.png";
 import { FishModal } from "./components/FishModal";
 import { ShareStudio } from "./components/ShareStudio";
 import { SeasonalityCalendar } from "./components/SeasonalityCalendar";
@@ -57,7 +58,7 @@ function recommendDishes(fishName: string): string[] {
 }
 
 export default function App() {
-  const heroBackgroundUrl = String(import.meta.env.VITE_HERO_BACKGROUND_URL ?? "").trim() || undefined;
+  const heroBackgroundUrl = String(import.meta.env.VITE_HERO_BACKGROUND_URL ?? "").trim() || heroBackgroundImage;
   const [data, setData] = useState<AppData | null>(null);
   const [landings, setLandings] = useState<LandingsData | null>(null);
   const [selectedFish, setSelectedFish] = useState<Fish | null>(null);
