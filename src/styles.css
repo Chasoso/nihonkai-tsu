@@ -951,6 +951,7 @@ textarea {
   border: 1px solid var(--border);
   padding: 18px;
   color: var(--text-main);
+  overflow: hidden;
 }
 
 .fish-detail-modal {
@@ -1082,7 +1083,124 @@ textarea {
 
 .x-post-modal {
   max-height: min(90vh, 900px);
-  overflow: auto;
+  overflow: hidden;
+  padding-right: 10px;
+}
+
+.x-post-modal-scroll {
+  max-height: calc(min(90vh, 900px) - 30px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  padding-right: 8px;
+  margin-right: -8px;
+}
+
+.x-post-modal .close-button {
+  right: 26px;
+  top: 10px;
+  z-index: 6;
+}
+
+.step-flow-header {
+  margin-top: 14px;
+}
+
+.step-flow-stage {
+  position: relative;
+  width: 100%;
+  height: 126px;
+  border-radius: 18px;
+  overflow: visible;
+}
+
+.step-flow-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.step-flow-svg-meta {
+  font-size: 34px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  font-family: "Inter", "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;
+}
+
+.step-flow-svg-label {
+  font-size: 52px;
+  font-weight: 600;
+  letter-spacing: 0;
+  font-family: "Inter", "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;
+}
+
+.step-flow-hit-row {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.step-flow-hit {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.step-flow-hit:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.step-flow-hit:hover {
+  background: transparent;
+  border: none;
+}
+
+.step-flow-icon-row {
+  margin-top: -4px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.step-flow-icon-wrap {
+  display: grid;
+  justify-items: center;
+}
+
+.step-flow-icon {
+  width: 132px;
+  height: 88px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  color: #5c6f87;
+}
+
+.step-flow-icon-wrap-2 .step-flow-icon {
+  width: 122px;
+  height: 82px;
+}
+
+.step-flow-icon-wrap-2 .step-flow-icon-image {
+  transform: scale(0.93);
+}
+
+.step-flow-icon-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.step-flow-icon-active {
+  color: var(--primary);
 }
 
 .camera-area {
@@ -1164,6 +1282,7 @@ textarea {
   stroke-linecap: round;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 1px rgba(12, 36, 62, 0.95)) drop-shadow(0 0 2px rgba(12, 36, 62, 0.75));
 }
 
 .frame-mini-label {
@@ -1612,6 +1731,29 @@ textarea {
     height: 56px;
   }
 
+  .step-flow-stage {
+    height: 112px;
+    border-radius: 14px;
+  }
+
+  .step-flow-svg-meta {
+    font-size: 30px;
+  }
+
+  .step-flow-svg-label {
+    font-size: 42px;
+  }
+
+  .step-flow-icon {
+    width: 110px;
+    height: 78px;
+  }
+
+  .step-flow-icon-wrap-2 .step-flow-icon {
+    width: 102px;
+    height: 74px;
+  }
+
   .fish-list-header {
     flex-direction: column;
     align-items: stretch;
@@ -1623,5 +1765,36 @@ textarea {
 
   .fish-list-fade {
     height: 102px;
+  }
+}
+
+@media (max-width: 520px) {
+  .step-flow-stage {
+    height: 98px;
+    border-radius: 12px;
+  }
+
+  .step-flow-svg-meta {
+    font-size: 24px;
+  }
+
+  .step-flow-svg-label {
+    font-size: 34px;
+  }
+
+  .step-flow-icon-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .step-flow-icon {
+    justify-self: center;
+    width: 92px;
+    height: 66px;
+  }
+
+  .step-flow-icon-wrap-2 .step-flow-icon {
+    width: 86px;
+    height: 62px;
   }
 }

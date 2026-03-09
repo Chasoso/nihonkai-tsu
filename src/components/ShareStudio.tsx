@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { createPortal } from "react-dom";
 import type { Fish, LandingsData, LandingSpecies } from "../types";
+import { StepFlowHeader } from "./StepFlowHeader";
 import {
   generatePostText,
   getFallbackPostText,
@@ -45,9 +46,9 @@ function envFlag(value: unknown, fallback: boolean): boolean {
 }
 
 function postOptionLabel(type: PostTextOptionType): string {
-  if (type === "short") return "short";
-  if (type === "standard") return "standard";
-  return "tourism pr";
+  if (type === "short") return "短文";
+  if (type === "standard") return "標準";
+  return "観光PR";
 }
 
 function formatPostText(input: string, appUrl: string): string {
@@ -109,6 +110,16 @@ function getTwoYearMonthlySeries(species: LandingSpecies | undefined): number[] 
   });
 
   return series;
+}
+
+function findSpeciesBySelection(landings: LandingsData, selection: string): LandingSpecies | undefined {
+  const key = selection.trim().toLowerCase();
+  if (!key || key === "other") return undefined;
+  return landings.species.find((item) => {
+    const id = item.id.trim().toLowerCase();
+    const nameJa = item.name_ja.trim().toLowerCase();
+    return id === key || nameJa === key;
+  });
 }
 
 function drawFlowBackground(ctx: CanvasRenderingContext2D, width: number, height: number) {
@@ -204,6 +215,21 @@ function drawTrendChart(ctx: CanvasRenderingContext2D, width: number, height: nu
   ctx.lineTo(chartX + chartW, chartY + chartH);
   ctx.stroke();
 
+  // Draw a thin dark outline first so the chart line stays visible on bright backgrounds.
+  ctx.strokeStyle = "rgba(17, 44, 76, 0.55)";
+  ctx.lineWidth = Math.max(2.8, width * 0.0032);
+  ctx.beginPath();
+  series.forEach((value, idx) => {
+    const px = chartX + (chartW * idx) / Math.max(1, series.length - 1);
+    const py = chartY + chartH - ((value - min) / range) * chartH;
+    if (idx === 0) {
+      ctx.moveTo(px, py);
+    } else {
+      ctx.lineTo(px, py);
+    }
+  });
+  ctx.stroke();
+
   ctx.strokeStyle = "rgba(221, 242, 255, 0.96)";
   ctx.lineWidth = Math.max(1.8, width * 0.0022);
   ctx.beginPath();
@@ -221,7 +247,7 @@ function drawTrendChart(ctx: CanvasRenderingContext2D, width: number, height: nu
   ctx.fillStyle = "rgba(240, 248, 255, 0.84)";
   ctx.font = `500 ${Math.max(8, width * 0.012)}px "Hiragino Sans", "Yu Gothic", sans-serif`;
   ctx.textAlign = "left";
-  ctx.fillText(`漁獲推移`, chartX, y + boxHeight - 20);
+  ctx.fillText(`貍∫佐謗ｨ遘ｻ`, chartX, y + boxHeight - 20);
   ctx.fillText(`max ${Math.round(max)} ${unit}`, chartX, y + boxHeight - 7);
 
   ctx.textAlign = "right";
@@ -365,6 +391,8 @@ export function ShareStudio({
   const [fishEstimateError, setFishEstimateError] = useState<string | null>(null);
   const [pendingFishType, setPendingFishType] = useState("");
   const [confirmedFishType, setConfirmedFishType] = useState("");
+  const [otherFishQuery, setOtherFishQuery] = useState("");
+  const [selectedOtherFish, setSelectedOtherFish] = useState("");
   const [generatedOptions, setGeneratedOptions] = useState<PostTextOption[]>([]);
   const [selectedOptionType, setSelectedOptionType] = useState<PostTextOptionType>("standard");
   const [editablePostText, setEditablePostText] = useState("");
@@ -395,11 +423,24 @@ export function ShareStudio({
     return "";
   }, []);
 
+  const previewSelectionKey = useMemo(() => {
+    if (pendingFishType === "other") {
+      const otherSelected = selectedOtherFish.trim();
+      if (otherSelected) return otherSelected;
+    }
+    const pending = pendingFishType.trim();
+    if (pending) return pending;
+    const confirmed = confirmedFishType.trim();
+    if (confirmed) return confirmed;
+    return fish?.id ?? "";
+  }, [pendingFishType, selectedOtherFish, confirmedFishType, fish?.id]);
+
   const previewSeries = useMemo(() => {
-    if (!fish) return [];
-    const species = landings.species.find((item) => item.id === fish.id);
+    const species =
+      findSpeciesBySelection(landings, previewSelectionKey) ??
+      (fish ? landings.species.find((item) => item.id === fish.id) : undefined);
     return getTwoYearMonthlySeries(species);
-  }, [fish, landings]);
+  }, [landings, previewSelectionKey, fish]);
 
   const previewPolyline = useMemo(() => {
     if (!previewSeries.length) return "";
@@ -423,7 +464,7 @@ export function ShareStudio({
     const matches = fish?.share.text.match(/#[^\s#]+/g) ?? [];
     const unique = Array.from(new Set(matches));
     if (unique.length) return unique.slice(0, 4);
-    return ["#日本海通2026", "#変わる海を味わう"];
+    return ["#譌･譛ｬ豬ｷ騾・026", "#螟峨ｏ繧区ｵｷ繧貞袖繧上≧"];
   }, [fish?.share.text]);
 
   const fallbackFishCandidates = useMemo(() => {
@@ -450,10 +491,35 @@ export function ShareStudio({
 
   const step1Complete = Boolean(selectedImageFile);
   const step2Complete = Boolean(confirmedFishType.trim());
+  const displayFishLabel = confirmedFishType.trim() || "未選択";
+  const frameFishBadgeLabel = confirmedFishType.trim();
+  const needsOtherFishSelection = pendingFishType === "other";
+  const canConfirmFishType = Boolean(
+    pendingFishType.trim() && (!needsOtherFishSelection || selectedOtherFish.trim())
+  );
   const selectedOption = useMemo(
     () => generatedOptions.find((item) => item.type === selectedOptionType) ?? null,
     [generatedOptions, selectedOptionType]
   );
+  const searchableFishOptions = useMemo(() => {
+    const unique = new Set<string>();
+    const list: string[] = [];
+    for (const name of fishTypeOptions) {
+      const label = name.trim();
+      if (!label || unique.has(label)) continue;
+      unique.add(label);
+      list.push(label);
+    }
+    return list;
+  }, [fishTypeOptions]);
+  const filteredOtherFishOptions = useMemo(() => {
+    if (!needsOtherFishSelection) return [];
+    const query = otherFishQuery.trim().toLowerCase();
+    if (!query) return searchableFishOptions.slice(0, 24);
+    return searchableFishOptions
+      .filter((name) => name.toLowerCase().includes(query))
+      .slice(0, 24);
+  }, [needsOtherFishSelection, otherFishQuery, searchableFishOptions]);
 
   useEffect(() => {
     return () => {
@@ -484,8 +550,17 @@ export function ShareStudio({
     setFishCandidates([]);
     setFishEstimateError(null);
     setIsEstimatingFish(false);
+    setOtherFishQuery("");
+    setSelectedOtherFish("");
     setCurrentStep(1);
   }, [fish?.name]);
+
+  useEffect(() => {
+    if (pendingFishType !== "other") {
+      setOtherFishQuery("");
+      setSelectedOtherFish("");
+    }
+  }, [pendingFishType]);
 
   const stopCamera = () => {
     if (!streamRef.current) return;
@@ -548,7 +623,7 @@ export function ShareStudio({
       if (estimateRequestIdRef.current !== reqId) return;
       setFishCandidates([...fallbackFishCandidates]);
       setPendingFishType(fallbackFishCandidates[0] ?? "");
-      setFishEstimateError("Failed to estimate fish type. Showing fallback options.");
+      setFishEstimateError("魚種推定に失敗したため、候補を表示しています。");
     } finally {
       if (estimateRequestIdRef.current === reqId) {
         setIsEstimatingFish(false);
@@ -566,6 +641,8 @@ export function ShareStudio({
     setCurrentStep(file ? 2 : 1);
     setConfirmedFishType("");
     setPendingFishType("");
+    setOtherFishQuery("");
+    setSelectedOtherFish("");
     setFishCandidates([]);
     setFishEstimateError(null);
     setGeneratedOptions([]);
@@ -593,6 +670,8 @@ export function ShareStudio({
     stopCamera();
     setPendingFishType("");
     setConfirmedFishType("");
+    setOtherFishQuery("");
+    setSelectedOtherFish("");
     setFishCandidates([]);
     setFishEstimateError(null);
     setIsEstimatingFish(false);
@@ -633,7 +712,7 @@ export function ShareStudio({
         setCameraReady(true);
       }
     } catch {
-      setCameraError("カメラにアクセスできませんでした。権限設定をご確認ください。");
+      setCameraError("カメラにアクセスできませんでした。許可設定をご確認ください。");
       setCameraReady(false);
     }
   };
@@ -680,7 +759,7 @@ export function ShareStudio({
   };
 
   const handleConfirmFishType = () => {
-    const nextFishType = pendingFishType.trim();
+    const nextFishType = needsOtherFishSelection ? selectedOtherFish.trim() : pendingFishType.trim();
     if (!nextFishType) return;
     setConfirmedFishType(nextFishType);
     setCurrentStep(3);
@@ -746,7 +825,7 @@ export function ShareStudio({
     }
   };
 
-  const handleCopyText = async () => {
+  const handleコピーText = async () => {
     if (!editablePostText.trim()) return;
     try {
       const finalText = formatPostText(editablePostText, appUrl);
@@ -805,12 +884,12 @@ export function ShareStudio({
     <section id="share-studio" className="section share-studio-section">
       <div className="card share-studio-card">
         <div className="share-studio-copy">
-          <h2 className="section-title">Share Your Experience</h2>
+          <h2 className="section-title">投稿を作る</h2>
           <p className="section-lead">
-            写真と投稿文をその場で作成して、旬の魚体験をシェアしましょう。
+            写真と投稿文をその場で作成して、海の旬をシェアしましょう。
           </p>
           <p className="share-target-fish">対象の魚: {fish ? fish.name : "未選択"}</p>
-          <div className="share-hashtag-list" aria-label="推奨ハッシュタグ">
+          <div className="share-hashtag-list" aria-label="投稿ハッシュタグ">
             {shareHashtags.map((tag) => (
               <span key={tag} className="share-hashtag-chip">
                 {tag}
@@ -820,7 +899,7 @@ export function ShareStudio({
         </div>
         <div className="share-studio-cta-wrap">
           <button className="share-studio-cta" onClick={openComposer} disabled={!fish}>
-            投稿を作成する
+            投稿をはじめる
           </button>
         </div>
       </div>
@@ -828,50 +907,40 @@ export function ShareStudio({
       {composerOpen && typeof document !== "undefined" ? createPortal(
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="X投稿ポップアップ">
           <div className="modal x-post-modal">
-            <button className="close-button" onClick={closeComposer} aria-label="Close">
+            <button className="close-button" onClick={closeComposer} aria-label="閉じる">
               x
             </button>
-            <h3>Post to X</h3>
-            <p>Target fish: {fish?.name}</p>
+            <div className="x-post-modal-scroll">
+              <h3>Xに投稿</h3>
+              <p>対象の魚: {displayFishLabel}</p>
 
-            <div className="share-stepper" aria-label="post steps">
-              <button
-                type="button"
-                className={currentStep === 1 ? "frame-select-card frame-select-card-active" : "frame-select-card"}
-                onClick={() => setCurrentStep(1)}
-              >
-                1/3 Photo
-              </button>
-              <button
-                type="button"
-                className={currentStep === 2 ? "frame-select-card frame-select-card-active" : "frame-select-card"}
-                onClick={() => {
-                  if (step1Complete) setCurrentStep(2);
+              <StepFlowHeader
+                currentStep={currentStep}
+                step1Complete={step1Complete}
+                step2Complete={step2Complete}
+                onStepChange={(step) => {
+                  if (step === 1) {
+                    setCurrentStep(1);
+                    return;
+                  }
+                  if (step === 2 && step1Complete) {
+                    setCurrentStep(2);
+                    return;
+                  }
+                  if (step === 3 && step2Complete) {
+                    setCurrentStep(3);
+                  }
                 }}
-                disabled={!step1Complete}
-              >
-                2/3 Confirm fish
-              </button>
-              <button
-                type="button"
-                className={currentStep === 3 ? "frame-select-card frame-select-card-active" : "frame-select-card"}
-                onClick={() => {
-                  if (step2Complete) setCurrentStep(3);
-                }}
-                disabled={!step2Complete}
-              >
-                3/3 Post
-              </button>
-            </div>
+              />
 
             <section className="camera-area" aria-label="step 1 photo">
-              <h4>Step 1: Take or choose a photo</h4>
+              <h4>Step 1: 写真を撮る / 選ぶ</h4>
               <div className="actions">
                 <button onClick={startCamera} disabled={isGenerating || isSubmitting}>
-                  Open camera
+                  カメラを開く
                 </button>
                 <button onClick={handlePickImageClick} disabled={isGenerating || isSubmitting}>
-                  Choose image
+                  画像を選ぶ
                 </button>
               </div>
 
@@ -891,7 +960,7 @@ export function ShareStudio({
                 ) : (
                   <>
                     <video ref={videoRef} className="camera-preview" playsInline muted />
-                    {!cameraReady ? <div className="preview-placeholder">Capture or choose an image.</div> : null}
+                    {!cameraReady ? <div className="preview-placeholder">写真を撮るか画像を選んでください。</div> : null}
                   </>
                 )}
 
@@ -900,7 +969,7 @@ export function ShareStudio({
                     className="capture-button-in-frame"
                     onClick={capturePhoto}
                     disabled={isGenerating || isSubmitting}
-                    aria-label="capture"
+                    aria-label="撮影"
                   >
                     <span className="capture-icon">
                       <span className="capture-icon-inner" />
@@ -910,14 +979,14 @@ export function ShareStudio({
 
                 {frameOption === "nihonkai" ? (
                   <div className="frame-overlay" aria-hidden="true">
-                    <div className="frame-fish-badge">{fish?.name ?? ""}</div>
+                    {frameFishBadgeLabel ? <div className="frame-fish-badge">{frameFishBadgeLabel}</div> : null}
                     <div className="frame-mini-overlay">
                       {previewPolyline ? (
                         <svg viewBox="0 0 240 100" preserveAspectRatio="none">
                           <polyline points={previewPolyline} />
                         </svg>
                       ) : null}
-                      <span className="frame-mini-label">trend</span>
+                      <span className="frame-mini-label">トレンド</span>
                       <span className="frame-mini-brand">Nihonkai-tsu 2026</span>
                     </div>
                   </div>
@@ -925,7 +994,7 @@ export function ShareStudio({
               </div>
 
               <div className="frame-area">
-                <p>Post frame</p>
+                <p>投稿フレーム</p>
                 <div className="frame-options-card-grid" role="radiogroup" aria-label="post frame options">
                   <button
                     type="button"
@@ -935,8 +1004,8 @@ export function ShareStudio({
                     aria-pressed={frameOption === "nihonkai"}
                   >
                     <div className="frame-select-copy">
-                      <strong>Nihonkai-tsu frame</strong>
-                      <p>Add branded frame</p>
+                      <strong>Nihonkai-tsu フレーム</strong>
+                      <p>ブランドフレームを追加</p>
                     </div>
                     <div className="frame-select-thumb frame-select-thumb-brand" aria-hidden="true">
                       <span>{fish?.name ?? "fish"}</span>
@@ -950,8 +1019,8 @@ export function ShareStudio({
                     aria-pressed={frameOption === "none"}
                   >
                     <div className="frame-select-copy">
-                      <strong>No frame</strong>
-                      <p>Use image as-is</p>
+                      <strong>フレームなし</strong>
+                      <p>画像をそのまま使う</p>
                     </div>
                     <div className="frame-select-thumb frame-select-thumb-plain" aria-hidden="true" />
                   </button>
@@ -960,10 +1029,10 @@ export function ShareStudio({
             </section>
 
             <section className="frame-area" aria-label="step 2 fish confirmation">
-              <h4>Step 2: AI fish candidates</h4>
-              <p>AI guessed fish candidates. Select one to continue.</p>
+              <h4>Step 2: AI魚種候補の確認</h4>
+              <p>AIが魚種候補を提示しました。1つ選んで進んでください。</p>
               <fieldset disabled={!step1Complete || isGenerating || isSubmitting}>
-                {isEstimatingFish ? <p className="frame-note">Estimating fish candidates...</p> : null}
+                {isEstimatingFish ? <p className="frame-note">魚種候補を推定中です...</p> : null}
                 {!isEstimatingFish ? (
                   <div className="frame-options-card-grid" role="radiogroup" aria-label="fish candidates">
                     {fishCandidates.map((name) => (
@@ -975,39 +1044,72 @@ export function ShareStudio({
                           checked={pendingFishType === name}
                           onChange={(event) => setPendingFishType(event.target.value)}
                         />
-                        <span>{name}</span>
+                        <span>{name === "other" ? "それ以外" : name}</span>
                       </label>
                     ))}
                   </div>
+                ) : null}
+                {needsOtherFishSelection ? (
+                  <>
+                    <label className="generated-text-label">
+                      魚を検索
+                      <input
+                        type="search"
+                        value={otherFishQuery}
+                        onChange={(event) => setOtherFishQuery(event.target.value)}
+                        placeholder="魚名で検索"
+                      />
+                    </label>
+                    <div className="frame-options-card-grid" role="radiogroup" aria-label="all fish options">
+                      {filteredOtherFishOptions.map((name) => (
+                        <button
+                          key={name}
+                          type="button"
+                          className={
+                            selectedOtherFish === name
+                              ? "frame-select-card frame-select-card-active"
+                              : "frame-select-card"
+                          }
+                          onClick={() => setSelectedOtherFish(name)}
+                          aria-pressed={selectedOtherFish === name}
+                        >
+                          <div className="frame-select-copy">
+                            <strong>{name}</strong>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    {!filteredOtherFishOptions.length ? <p className="frame-note">一致する魚が見つかりません。</p> : null}
+                  </>
                 ) : null}
                 <div className="actions">
                   <button
                     type="button"
                     onClick={handleConfirmFishType}
-                    disabled={isEstimatingFish || !pendingFishType.trim()}
+                    disabled={isEstimatingFish || !canConfirmFishType}
                   >
-                    Confirm fish
+                    魚を確定する
                   </button>
                 </div>
               </fieldset>
-              {!step1Complete ? <p className="frame-note">Complete Step 1 first.</p> : null}
+              {!step1Complete ? <p className="frame-note">先に Step 1 を完了してください。</p> : null}
               {fishEstimateError ? <p className="frame-note">{fishEstimateError}</p> : null}
-              {step2Complete ? <p className="frame-note">Confirmed: {confirmedFishType}</p> : null}
+              {step2Complete ? <p className="frame-note">確定した魚: {confirmedFishType}</p> : null}
             </section>
 
             <section className="ai-generate-area" aria-label="step 3 post">
-              <h4>Step 3: Generate and post</h4>
+              <h4>Step 3: 投稿文を作って投稿</h4>
               <button
                 onClick={handleGeneratePostText}
                 disabled={isGenerating || isSubmitting || !step2Complete}
               >
-                {isGenerating ? "Generating..." : "Generate post text"}
+                {isGenerating ? "生成中..." : "投稿文を生成する"}
               </button>
-              {!step2Complete ? <p className="frame-note">Complete Step 2 first.</p> : null}
+              {!step2Complete ? <p className="frame-note">先に Step 2 を完了してください。</p> : null}
 
               {generatedOptions.length ? (
                 <div className="generated-text-panel">
-                  <p className="generated-text-label">Generated options</p>
+                  <p className="generated-text-label">生成された投稿文（3案）</p>
                   <div className="frame-options-card-grid" role="radiogroup" aria-label="post text options">
                     {generatedOptions.map((option) => (
                       <button
@@ -1033,31 +1135,34 @@ export function ShareStudio({
                   </div>
                   <p className="ai-safety-note">AI生成文は参考です。内容は編集できます。</p>
                   <label className="generated-text-label">
-                    Edit selected text
+                    選択した投稿文を編集
                     <textarea
                       value={editablePostText}
                       onChange={(event) => setEditablePostText(event.target.value)}
                       rows={6}
                     />
                   </label>
-                  {selectedOption ? <p className="frame-note">Selected: {postOptionLabel(selectedOption.type)}</p> : null}
+                  {selectedOption ? <p className="frame-note">選択中: {postOptionLabel(selectedOption.type)}</p> : null}
                   {generationNote ? <p className="generated-note">{generationNote}</p> : null}
                   <div className="actions">
-                    <button onClick={handleCopyText} disabled={isGenerating || isSubmitting || !editablePostText.trim()}>
-                      {copied ? "Copied" : "Copy"}
+                    <button onClick={handleコピーText} disabled={isGenerating || isSubmitting || !editablePostText.trim()}>
+                      {copied ? "コピー済み" : "コピー"}
                     </button>
                     <button onClick={handleOpenXPost} disabled={isGenerating || isSubmitting || !editablePostText.trim()}>
-                      {isSubmitting ? "Posting..." : "Post to X"}
+                      {isSubmitting ? "投稿中..." : "Xに投稿"}
                     </button>
                   </div>
                 </div>
               ) : null}
             </section>
 
-            <canvas ref={canvasRef} className="hidden-canvas" />
+              <canvas ref={canvasRef} className="hidden-canvas" />
+            </div>
           </div>
         </div>
       , document.body) : null}
     </section>
   );
 }
+
+
