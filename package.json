@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "screenshots": "node scripts/capture-screenshots.mjs",
+    "screenshots:install": "playwright install chromium",
     "test": "npm run test:frontend && npm run test:lambda",
     "test:coverage": "npm run test:frontend:coverage && npm run test:lambda:coverage",
     "generate:data": "python scripts/generate_public_data.py",
@@ -38,6 +40,7 @@
     "@vitest/coverage-v8": "^4.0.18",
     "c8": "^11.0.0",
     "jsdom": "^28.1.0",
+    "playwright": "^1.58.2",
     "typescript": "^5.6.3",
     "vite": "^5.4.10",
     "vitest": "^4.0.18"
