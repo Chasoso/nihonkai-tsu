@@ -8,7 +8,7 @@ describe("Hero", () => {
 
     expect(screen.getByText("Nihonkai Tsu 2026")).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1, name: "石川の魚を撮って投稿しよう" })).toBeInTheDocument();
-    expect(screen.getByText("写真を1枚選ぶだけで、投稿文づくりまで進めます。")).toBeInTheDocument();
+    expect(screen.getByText("30秒で投稿文とフレーム画像が完成。魚に詳しくなくても、コピーするだけでOK。")).toBeInTheDocument();
   });
 
   it("CTAクリックで onStartPost を呼ぶ", async () => {

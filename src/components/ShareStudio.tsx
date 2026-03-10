@@ -46,9 +46,15 @@ function envFlag(value: unknown, fallback: boolean): boolean {
 }
 
 function postOptionLabel(type: PostTextOptionType): string {
-  if (type === "short") return "短文";
-  if (type === "standard") return "標準";
-  return "観光PR";
+  if (type === "short") return "短くサクッと";
+  if (type === "standard") return "ちょうどいい";
+  return "石川らしさ強め";
+}
+
+function postOptionHint(type: PostTextOptionType): string {
+  if (type === "short") return "140文字以内でサクッと";
+  if (type === "standard") return "食べ方も少し入る";
+  return "観光向け・地域PR寄り";
 }
 
 function formatPostText(input: string, appUrl: string): string {
@@ -380,7 +386,9 @@ export function ShareStudio({
   onPostExperience
 }: ShareStudioProps) {
   const [composerOpen, setComposerOpen] = useState(false);
+  const [cameraPreviewOpen, setCameraPreviewOpen] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
+  const [cameraStreamVersion, setCameraStreamVersion] = useState(0);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
@@ -490,6 +498,7 @@ export function ShareStudio({
   }, [fishTypeOptions]);
 
   const step1Complete = Boolean(selectedImageFile);
+  const step1PreviewVisible = step1Complete || cameraPreviewOpen;
   const step2Complete = Boolean(confirmedFishType.trim());
   const displayFishLabel = confirmedFishType.trim() || "未選択";
   const frameFishBadgeLabel = confirmedFishType.trim();
@@ -533,6 +542,33 @@ export function ShareStudio({
   }, [selectedImageUrl]);
 
   useEffect(() => {
+    const video = videoRef.current;
+    const stream = streamRef.current;
+    if (!cameraPreviewOpen || !video || !stream || selectedImageUrl) return;
+
+    let cancelled = false;
+    video.srcObject = stream;
+    void video
+      .play()
+      .then(() => {
+        if (!cancelled) {
+          setCameraReady(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCameraError("カメラ映像を表示できませんでした。");
+          setCameraReady(false);
+          setCameraPreviewOpen(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cameraPreviewOpen, selectedImageUrl, cameraStreamVersion]);
+
+  useEffect(() => {
     if (openComposerNonce === lastOpenNonceRef.current) return;
     lastOpenNonceRef.current = openComposerNonce;
     if (!fish) return;
@@ -563,10 +599,12 @@ export function ShareStudio({
   }, [pendingFishType]);
 
   const stopCamera = () => {
+    setCameraPreviewOpen(false);
+    setCameraReady(false);
+    setCameraStreamVersion(0);
     if (!streamRef.current) return;
     streamRef.current.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
-    setCameraReady(false);
   };
 
   const normalizeFishCandidates = (input: unknown): string[] => {
@@ -690,8 +728,10 @@ export function ShareStudio({
 
   const startCamera = async () => {
     setCameraError(null);
-    updateSelectedImage(null);
     stopCamera();
+    updateSelectedImage(null);
+    setCameraPreviewOpen(true);
+    setCameraReady(false);
 
     try {
       if (!navigator.mediaDevices?.getUserMedia) {
@@ -705,14 +745,10 @@ export function ShareStudio({
       });
 
       streamRef.current = stream;
-      const video = videoRef.current;
-      if (video) {
-        video.srcObject = stream;
-        await video.play();
-        setCameraReady(true);
-      }
+      setCameraStreamVersion((value) => value + 1);
     } catch {
       setCameraError("カメラにアクセスできませんでした。許可設定をご確認ください。");
+      setCameraPreviewOpen(false);
       setCameraReady(false);
     }
   };
@@ -880,6 +916,11 @@ export function ShareStudio({
     }
   };
 
+  const goToStep2 = () => {
+    if (!step1Complete) return;
+    setCurrentStep(2);
+  };
+
   return (
     <section id="share-studio" className="section share-studio-section">
       <div className="card share-studio-card">
@@ -933,17 +974,6 @@ export function ShareStudio({
                 }}
               />
 
-            <section className="camera-area" aria-label="step 1 photo">
-              <h4>Step 1: 写真を撮る / 選ぶ</h4>
-              <div className="actions">
-                <button onClick={startCamera} disabled={isGenerating || isSubmitting}>
-                  カメラを開く
-                </button>
-                <button onClick={handlePickImageClick} disabled={isGenerating || isSubmitting}>
-                  画像を選ぶ
-                </button>
-              </div>
-
               <input
                 ref={fileInputRef}
                 className="hidden-file-input"
@@ -952,87 +982,148 @@ export function ShareStudio({
                 onChange={handlePickImage}
               />
 
-              {cameraError ? <p>{cameraError}</p> : null}
+            {currentStep === 1 ? (
+            <section className="camera-area composer-step-stage" aria-label="step 1 photo">
+              <div className="composer-step-layout composer-step-layout-stacked">
+                <div className="composer-step-heading">
+                  <h4>Step 1: 写真を撮る / 選ぶ</h4>
+                  <p className="frame-note">まずは写真を1枚選ぶだけで進めます。</p>
+                </div>
 
-              <div className="media-frame">
-                {selectedImageUrl ? (
-                  <img src={selectedImageUrl} className="captured-preview" alt="post image preview" />
-                ) : (
-                  <>
-                    <video ref={videoRef} className="camera-preview" playsInline muted />
-                    {!cameraReady ? <div className="preview-placeholder">写真を撮るか画像を選んでください。</div> : null}
-                  </>
-                )}
-
-                {cameraReady && !selectedImageUrl ? (
-                  <button
-                    className="capture-button-in-frame"
-                    onClick={capturePhoto}
-                    disabled={isGenerating || isSubmitting}
-                    aria-label="撮影"
-                  >
-                    <span className="capture-icon">
-                      <span className="capture-icon-inner" />
-                    </span>
-                  </button>
+                {!step1Complete ? (
+                  <div className="composer-step-entry">
+                    <div className="actions composer-photo-actions">
+                      <button onClick={startCamera} disabled={isGenerating || isSubmitting}>
+                        カメラを開く
+                      </button>
+                      <button onClick={handlePickImageClick} disabled={isGenerating || isSubmitting}>
+                        画像を選ぶ
+                      </button>
+                    </div>
+                    {cameraError ? <p className="frame-note">{cameraError}</p> : null}
+                  </div>
                 ) : null}
 
-                {frameOption === "nihonkai" ? (
-                  <div className="frame-overlay" aria-hidden="true">
-                    {frameFishBadgeLabel ? <div className="frame-fish-badge">{frameFishBadgeLabel}</div> : null}
-                    <div className="frame-mini-overlay">
-                      {previewPolyline ? (
-                        <svg viewBox="0 0 240 100" preserveAspectRatio="none">
-                          <polyline points={previewPolyline} />
-                        </svg>
-                      ) : null}
-                      <span className="frame-mini-label">トレンド</span>
-                      <span className="frame-mini-brand">Nihonkai-tsu 2026</span>
+                {step1PreviewVisible ? (
+                  <div className="composer-step-expanded">
+                    {step1Complete ? (
+                      <div className="frame-area composer-frame-area">
+                        <p>投稿フレーム</p>
+                        <div className="frame-options-card-grid composer-frame-grid" role="radiogroup" aria-label="post frame options">
+                          <button
+                            type="button"
+                            className={frameOption === "nihonkai" ? "frame-select-card frame-select-card-active" : "frame-select-card"}
+                            onClick={() => setFrameOption("nihonkai")}
+                            disabled={isGenerating || isSubmitting}
+                            aria-pressed={frameOption === "nihonkai"}
+                          >
+                            <div className="frame-select-copy">
+                              <strong>Nihonkai-tsu フレーム</strong>
+                              <p>ブランドフレームを追加</p>
+                            </div>
+                            <div className="frame-select-thumb frame-select-thumb-brand" aria-hidden="true">
+                              <span>{fish?.name ?? "fish"}</span>
+                            </div>
+                          </button>
+                          <button
+                            type="button"
+                            className={frameOption === "none" ? "frame-select-card frame-select-card-active" : "frame-select-card"}
+                            onClick={() => setFrameOption("none")}
+                            disabled={isGenerating || isSubmitting}
+                            aria-pressed={frameOption === "none"}
+                          >
+                            <div className="frame-select-copy">
+                              <strong>フレームなし</strong>
+                              <p>画像をそのまま使う</p>
+                            </div>
+                            <div className="frame-select-thumb frame-select-thumb-plain" aria-hidden="true" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div className="composer-step-preview composer-step-preview-wide">
+                      <div className="media-frame">
+                        {selectedImageUrl ? (
+                          <img src={selectedImageUrl} className="captured-preview" alt="post image preview" />
+                        ) : (
+                          <>
+                            <video ref={videoRef} className="camera-preview" playsInline muted />
+                            {!cameraReady ? <div className="preview-placeholder">写真を撮るか画像を選んでください。</div> : null}
+                          </>
+                        )}
+
+                        {cameraReady && !selectedImageUrl ? (
+                          <button
+                            className="capture-button-in-frame"
+                            onClick={capturePhoto}
+                            disabled={isGenerating || isSubmitting}
+                            aria-label="撮影"
+                          >
+                            <span className="capture-icon">
+                              <span className="capture-icon-inner" />
+                            </span>
+                          </button>
+                        ) : null}
+
+                        {frameOption === "nihonkai" ? (
+                          <div className="frame-overlay" aria-hidden="true">
+                            {frameFishBadgeLabel ? <div className="frame-fish-badge">{frameFishBadgeLabel}</div> : null}
+                            <div className="frame-mini-overlay">
+                              {previewPolyline ? (
+                                <svg viewBox="0 0 240 100" preserveAspectRatio="none">
+                                  <polyline points={previewPolyline} />
+                                </svg>
+                              ) : null}
+                              <span className="frame-mini-label">トレンド</span>
+                              <span className="frame-mini-brand">Nihonkai-tsu 2026</span>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <div className="composer-step-footer">
+                      <div className="step-primary-actions">
+                        <button
+                          type="button"
+                          className="step-primary-button step-secondary-button"
+                          onClick={startCamera}
+                          disabled={isGenerating || isSubmitting}
+                        >
+                          カメラを開く
+                        </button>
+                        <button
+                          type="button"
+                          className="step-primary-button step-secondary-button"
+                          onClick={handlePickImageClick}
+                          disabled={isGenerating || isSubmitting}
+                        >
+                          画像を選ぶ
+                        </button>
+                        <button
+                          type="button"
+                          className="step-primary-button"
+                          onClick={goToStep2}
+                          disabled={!step1Complete || isGenerating || isSubmitting}
+                        >
+                          この写真で次へ
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ) : null}
               </div>
-
-              <div className="frame-area">
-                <p>投稿フレーム</p>
-                <div className="frame-options-card-grid" role="radiogroup" aria-label="post frame options">
-                  <button
-                    type="button"
-                    className={frameOption === "nihonkai" ? "frame-select-card frame-select-card-active" : "frame-select-card"}
-                    onClick={() => setFrameOption("nihonkai")}
-                    disabled={isGenerating || isSubmitting}
-                    aria-pressed={frameOption === "nihonkai"}
-                  >
-                    <div className="frame-select-copy">
-                      <strong>Nihonkai-tsu フレーム</strong>
-                      <p>ブランドフレームを追加</p>
-                    </div>
-                    <div className="frame-select-thumb frame-select-thumb-brand" aria-hidden="true">
-                      <span>{fish?.name ?? "fish"}</span>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    className={frameOption === "none" ? "frame-select-card frame-select-card-active" : "frame-select-card"}
-                    onClick={() => setFrameOption("none")}
-                    disabled={isGenerating || isSubmitting}
-                    aria-pressed={frameOption === "none"}
-                  >
-                    <div className="frame-select-copy">
-                      <strong>フレームなし</strong>
-                      <p>画像をそのまま使う</p>
-                    </div>
-                    <div className="frame-select-thumb frame-select-thumb-plain" aria-hidden="true" />
-                  </button>
-                </div>
-              </div>
             </section>
+            ) : null}
 
-            <section className="frame-area" aria-label="step 2 fish confirmation">
-              <h4>Step 2: AI魚種候補の確認</h4>
-              <p>AIが魚種候補を提示しました。1つ選んで進んでください。</p>
+            {currentStep === 2 ? (
+            <section className="frame-area composer-step-stage" aria-label="step 2 fish confirmation">
+              <h4>Step 2: 魚を選ぶ</h4>
+              <p className="step2-intro">写真をもとに、候補をいくつか出しました。</p>
+              <p className="step2-intro step2-intro-sub">一番近いものを選ぶか、なければ「それ以外」を選んでください。</p>
               <fieldset disabled={!step1Complete || isGenerating || isSubmitting}>
-                {isEstimatingFish ? <p className="frame-note">魚種候補を推定中です...</p> : null}
+                {isEstimatingFish ? <p className="frame-note">写真を見ながら候補を準備しています...</p> : null}
                 {!isEstimatingFish ? (
                   <div className="frame-options-card-grid" role="radiogroup" aria-label="fish candidates">
                     {fishCandidates.map((name) => (
@@ -1049,8 +1140,10 @@ export function ShareStudio({
                     ))}
                   </div>
                 ) : null}
+                <p className="step2-support-copy">魚種が分からなくても投稿できます。候補にない場合も、そのまま進めます。</p>
                 {needsOtherFishSelection ? (
                   <>
+                    <p className="frame-note">候補にない場合は、近い名前を選べばそのまま投稿文づくりに進めます。</p>
                     <label className="generated-text-label">
                       魚を検索
                       <input
@@ -1082,13 +1175,14 @@ export function ShareStudio({
                     {!filteredOtherFishOptions.length ? <p className="frame-note">一致する魚が見つかりません。</p> : null}
                   </>
                 ) : null}
-                <div className="actions">
+                <div className="composer-step-footer">
                   <button
                     type="button"
+                    className="step-primary-button"
                     onClick={handleConfirmFishType}
                     disabled={isEstimatingFish || !canConfirmFishType}
                   >
-                    魚を確定する
+                    この魚で投稿文を作る
                   </button>
                 </div>
               </fieldset>
@@ -1096,15 +1190,11 @@ export function ShareStudio({
               {fishEstimateError ? <p className="frame-note">{fishEstimateError}</p> : null}
               {step2Complete ? <p className="frame-note">確定した魚: {confirmedFishType}</p> : null}
             </section>
+            ) : null}
 
-            <section className="ai-generate-area" aria-label="step 3 post">
+            {currentStep === 3 ? (
+            <section className="ai-generate-area composer-step-stage" aria-label="step 3 post">
               <h4>Step 3: 投稿文を作って投稿</h4>
-              <button
-                onClick={handleGeneratePostText}
-                disabled={isGenerating || isSubmitting || !step2Complete}
-              >
-                {isGenerating ? "生成中..." : "投稿文を生成する"}
-              </button>
               {!step2Complete ? <p className="frame-note">先に Step 2 を完了してください。</p> : null}
 
               {generatedOptions.length ? (
@@ -1125,12 +1215,13 @@ export function ShareStudio({
                           setEditablePostText(option.text);
                         }}
                         aria-pressed={selectedOptionType === option.type}
-                      >
-                        <div className="frame-select-copy">
-                          <strong>{postOptionLabel(option.type)}</strong>
-                          <p>{option.text}</p>
-                        </div>
-                      </button>
+                        >
+                          <div className="frame-select-copy">
+                            <strong>{postOptionLabel(option.type)}</strong>
+                            <span className="post-option-hint">{postOptionHint(option.type)}</span>
+                            <p>{option.text}</p>
+                          </div>
+                        </button>
                     ))}
                   </div>
                   <p className="ai-safety-note">AI生成文は参考です。内容は編集できます。</p>
@@ -1144,17 +1235,39 @@ export function ShareStudio({
                   </label>
                   {selectedOption ? <p className="frame-note">選択中: {postOptionLabel(selectedOption.type)}</p> : null}
                   {generationNote ? <p className="generated-note">{generationNote}</p> : null}
-                  <div className="actions">
-                    <button onClick={handleコピーText} disabled={isGenerating || isSubmitting || !editablePostText.trim()}>
-                      {copied ? "コピー済み" : "コピー"}
-                    </button>
-                    <button onClick={handleOpenXPost} disabled={isGenerating || isSubmitting || !editablePostText.trim()}>
-                      {isSubmitting ? "投稿中..." : "Xに投稿"}
-                    </button>
-                  </div>
+                  <p className="post-experience-note">※ コピーするだけでも投稿体験としてカウントされます</p>
                 </div>
               ) : null}
+              <div className="composer-step-footer">
+                {generatedOptions.length ? (
+                  <div className="step-primary-actions">
+                    <button
+                      className={copied ? "step-primary-button step-secondary-button" : "step-primary-button step-secondary-button"}
+                      onClick={handleコピーText}
+                      disabled={isGenerating || isSubmitting || !editablePostText.trim()}
+                    >
+                      {copied ? "コピー済み" : "コピーする"}
+                    </button>
+                    <button
+                      className="step-primary-button"
+                      onClick={handleOpenXPost}
+                      disabled={isGenerating || isSubmitting || !editablePostText.trim()}
+                    >
+                      {isSubmitting ? "投稿中..." : "Xに投稿する"}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    className="step-primary-button"
+                    onClick={handleGeneratePostText}
+                    disabled={isGenerating || isSubmitting || !step2Complete}
+                  >
+                    {isGenerating ? "生成中..." : "投稿文を作る"}
+                  </button>
+                )}
+              </div>
             </section>
+            ) : null}
 
               <canvas ref={canvasRef} className="hidden-canvas" />
             </div>

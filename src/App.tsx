@@ -57,6 +57,18 @@ function recommendDishes(fishName: string): string[] {
   return ["刺身", "塩焼き", "煮付け"];
 }
 
+function buildPostExperienceToast(
+  metricType: "copy" | "x_click",
+  count: number,
+  popularFishName: string
+): string {
+  const firstLine =
+    metricType === "copy"
+      ? "コピーしました。投稿体験を記録しました。"
+      : "Xへの投稿を始めました。投稿体験を記録しました。";
+  return `${firstLine}\nあなたは今日${count}件目の投稿体験です\n今週人気: ${popularFishName}`;
+}
+
 export default function App() {
   const heroBackgroundUrl = String(import.meta.env.VITE_HERO_BACKGROUND_URL ?? "").trim() || heroBackgroundImage;
   const [data, setData] = useState<AppData | null>(null);
@@ -69,7 +81,6 @@ export default function App() {
   const [toastVisible, setToastVisible] = useState(false);
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   const featuredRef = useRef<HTMLElement | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
@@ -145,7 +156,6 @@ export default function App() {
 
   const scrollToSection = (key: SectionKey) => {
     sectionRefByKey[key].current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    setMenuOpen(false);
   };
 
   const openToast = (message: string) => {
@@ -166,9 +176,10 @@ export default function App() {
     shareRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const handlePostExperience = () => {
+  const handlePostExperience = (metricType: "copy" | "x_click") => {
     postExperienceCountRef.current += 1;
-    openToast(`謚慕ｨｿ菴馴ｨ薙ｒ險倬鹸縺励∪縺励◆・・縺ゅ↑縺溘〒${postExperienceCountRef.current}莉ｶ逶ｮ`);
+    const popularFishName = featuredFish[0]?.name ?? selectedFish?.name ?? "おすすめの魚";
+    openToast(buildPostExperienceToast(metricType, postExperienceCountRef.current, popularFishName));
   };
 
   if (error) {
@@ -182,34 +193,15 @@ export default function App() {
     <main className="app-shell horizontal-app">
       <header className="top-nav">
         <div className="top-nav-inner">
-          <button className="brand-button" onClick={() => scrollToSection("featured")} aria-label="Nihonkai Tsu">
+          <button className="brand-button" onClick={startPostingFlow} aria-label="Nihonkai Tsu">
             Nihonkai Tsu
           </button>
           <nav className="top-nav-links" aria-label="メインナビゲーション">
             <button onClick={() => scrollToSection("featured")}>Fish</button>
-            <button onClick={() => scrollToSection("main")}>Calendar</button>
-            <button onClick={() => scrollToSection("progress")}>Your Tsu</button>
             <button onClick={() => scrollToSection("about")}>About</button>
           </nav>
-          <div className="top-nav-actions">
-            <button className="share-button" onClick={startPostingFlow}>
-              Share
-            </button>
-            <button className="hamburger-button" onClick={() => setMenuOpen((prev) => !prev)} aria-label="メニュー">
-              ☰
-            </button>
-          </div>
         </div>
       </header>
-
-      {menuOpen ? (
-        <div className="menu-drawer" role="dialog" aria-label="ナビゲーションメニュー">
-          <button onClick={() => scrollToSection("featured")}>Featured Fish</button>
-          <button onClick={() => scrollToSection("main")}>Season Calendar</button>
-          <button onClick={() => scrollToSection("share")}>Share</button>
-          <button onClick={() => scrollToSection("progress")}>Your Tsu</button>
-        </div>
-      ) : null}
 
       <section className="persistent-header">
         <div className="panel-inner">
@@ -223,7 +215,8 @@ export default function App() {
 
       <section ref={featuredRef} className="section">
         <div className="panel-inner">
-          <h2 className="section-title">Featured Fish</h2>
+          <h2 className="section-title">投稿ネタを選ぶ（おすすめ）</h2>
+          <p className="section-lead featured-fish-lead">迷ったらここから選ぶと、そのまま投稿フローに入れます。</p>
           <div className="featured-fish-grid">
             {featuredFish.map((fish) => (
               <article key={fish.id} className="card featured-fish-card">
@@ -238,11 +231,10 @@ export default function App() {
                 </div>
                 <button
                   onClick={() => {
-                    setSelectedFish(fish);
-                    setModalFish(fish);
+                    openFishForShare(fish);
                   }}
                 >
-                  View
+                  この魚で投稿文を作る
                 </button>
               </article>
             ))}
