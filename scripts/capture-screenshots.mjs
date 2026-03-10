@@ -9,7 +9,30 @@ const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
 
 const baseUrl = process.env.SCREENSHOT_BASE_URL ?? "http://127.0.0.1:5173";
-const viewport = { width: 1440, height: 1400 };
+const viewports = [
+  {
+    key: "desktop",
+    viewport: { width: 1440, height: 1400 },
+    isMobile: false,
+    userAgent: undefined
+  },
+  {
+    key: "mobile",
+    viewport: { width: 430, height: 1600 },
+    isMobile: true,
+    userAgent:
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+  }
+];
+const captureFiles = [
+  "01-top.png",
+  "02-modal-step1-initial.png",
+  "03-modal-step1-selected.png",
+  "04-modal-step2-default.png",
+  "05-modal-step2-other.png",
+  "06-modal-step3-initial.png",
+  "07-modal-step3-generated.png"
+];
 const sampleSvg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
   <rect width="1280" height="720" fill="#f6f7f2"/>
@@ -94,16 +117,17 @@ async function saveExpandedModal(page, filePath) {
   });
 }
 
-async function main() {
-  const outputDir = path.join(repoRoot, "screenshots", timestampLabel());
-  await ensureDir(outputDir);
-
-  const browser = await chromium.launch({
-    headless: process.env.SCREENSHOT_HEADLESS !== "false"
+async function captureSet(browser, outputDir, config) {
+  const context = await browser.newContext({
+    viewport: config.viewport,
+    isMobile: config.isMobile,
+    hasTouch: config.isMobile,
+    deviceScaleFactor: config.isMobile ? 3 : 1,
+    userAgent: config.userAgent
   });
 
   try {
-    const page = await browser.newPage({ viewport });
+    const page = await context.newPage();
 
     try {
       await page.goto(baseUrl, { waitUntil: "networkidle", timeout: 20000 });
@@ -139,7 +163,9 @@ async function main() {
     const otherCandidate = modal.locator('input[name="fish-candidate"][value="other"]');
     if (await otherCandidate.count()) {
       await otherCandidate.check({ force: true });
-      await modal.getByText("魚種が分からなくても投稿できます。候補にない場合も、そのまま進めます。", { exact: true }).waitFor();
+      await modal
+        .getByText("魚種が分からなくても投稿できます。候補にない場合も、そのまま進めます。", { exact: true })
+        .waitFor();
       await saveExpandedModal(page, path.join(outputDir, "05-modal-step2-other.png"));
 
       const firstOtherFish = modal.locator('[aria-label="all fish options"] button').first();
@@ -161,26 +187,41 @@ async function main() {
 
     await modal.getByRole("button", { name: "コピーする" }).waitFor({ timeout: 20000 });
     await saveExpandedModal(page, path.join(outputDir, "07-modal-step3-generated.png"));
+  } finally {
+    await context.close();
+  }
+}
+
+async function main() {
+  const outputRootDir = path.join(repoRoot, "screenshots", timestampLabel());
+  await ensureDir(outputRootDir);
+
+  const browser = await chromium.launch({
+    headless: process.env.SCREENSHOT_HEADLESS !== "false"
+  });
+
+  try {
+    for (const config of viewports) {
+      const variantDir = path.join(outputRootDir, config.key);
+      await ensureDir(variantDir);
+      await captureSet(browser, variantDir, config);
+    }
 
     const metadata = {
       capturedAt: new Date().toISOString(),
       baseUrl,
-      viewport,
       captureMode: {
         top: "fullPage",
         modal: "expanded-scroll"
       },
-      files: [
-        "01-top.png",
-        "02-modal-step1-initial.png",
-        "03-modal-step1-selected.png",
-        "04-modal-step2-default.png",
-        "05-modal-step2-other.png",
-        "06-modal-step3-initial.png",
-        "07-modal-step3-generated.png"
-      ]
+      variants: viewports.map((config) => ({
+        key: config.key,
+        viewport: config.viewport,
+        isMobile: config.isMobile,
+        files: captureFiles
+      }))
     };
-    await fs.writeFile(path.join(outputDir, "meta.json"), JSON.stringify(metadata, null, 2), "utf8");
+    await fs.writeFile(path.join(outputRootDir, "meta.json"), JSON.stringify(metadata, null, 2), "utf8");
   } finally {
     await browser.close();
   }
