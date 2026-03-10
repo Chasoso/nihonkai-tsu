@@ -10,7 +10,7 @@ import {
   type PostTextOption,
   type PostTextOptionType
 } from "../lib/postText";
-import { trackMetric } from "../lib/metrics";
+import { getMetricsSummary, trackMetric, type MetricsSummary } from "../lib/metrics";
 
 interface ShareStudioProps {
   fish: Fish | null;
@@ -19,7 +19,7 @@ interface ShareStudioProps {
   openComposerNonce: number;
   onOpenXIntent: (finalText: string, imageFile: File | null) => Promise<boolean> | boolean;
   onComplete: () => void;
-  onPostExperience?: (metricType: "copy" | "x_click") => void;
+  onPostExperience?: (metricType: "copy" | "x_click", summary?: MetricsSummary | null) => void;
 }
 
 type FrameOption = "none" | "nihonkai";
@@ -409,6 +409,7 @@ export function ShareStudio({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [imageSaved, setImageSaved] = useState(false);
+  const [postMetricsSummary, setPostMetricsSummary] = useState<MetricsSummary | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -726,6 +727,7 @@ export function ShareStudio({
     setGenerationNote(null);
     setCopied(false);
     setImageSaved(false);
+    setPostMetricsSummary(null);
     if (!file) {
       setIsEstimatingFish(false);
       return;
@@ -744,6 +746,7 @@ export function ShareStudio({
     setGenerationNote(null);
     setCopied(false);
     setImageSaved(false);
+    setPostMetricsSummary(null);
     stopCamera();
     setPendingFishType("");
     setConfirmedFishType("");
@@ -844,6 +847,7 @@ export function ShareStudio({
     setGenerationNote(null);
     setCopied(false);
     setImageSaved(false);
+    setPostMetricsSummary(null);
   };
 
   const handleGeneratePostText = async () => {
@@ -852,6 +856,7 @@ export function ShareStudio({
     setIsGenerating(true);
     setCopied(false);
     setImageSaved(false);
+    setPostMetricsSummary(null);
     try {
       if (!selectedImageFile) {
         const fallback = getFallbackPostText(fishType);
@@ -910,14 +915,24 @@ export function ShareStudio({
       const metricFishId = confirmedFishType.trim().toLowerCase();
       const metricFishLabel = confirmedFishType.trim() || fish?.name || "unknown";
       const metricVariant = selectedOptionType;
-      void trackMetric({
-        apiUrl: aiApiUrl,
-        metricType: "copy",
-        fishId: metricFishId,
-        fishLabel: metricFishLabel,
-        selectedVariant: metricVariant
-      });
       onPostExperience?.("copy");
+      void (async () => {
+        const tracked = await trackMetric({
+          apiUrl: aiApiUrl,
+          metricType: "copy",
+          fishId: metricFishId,
+          fishLabel: metricFishLabel,
+          selectedVariant: metricVariant
+        });
+        if (!tracked) return;
+        const summary = await getMetricsSummary({
+          apiUrl: aiApiUrl,
+          fishId: metricFishId
+        });
+        if (!summary) return;
+        setPostMetricsSummary(summary);
+        onPostExperience?.("copy", summary);
+      })();
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);
     } catch {
@@ -956,14 +971,24 @@ export function ShareStudio({
     const metricFishId = confirmedFishType.trim().toLowerCase();
     const metricFishLabel = confirmedFishType.trim() || fish?.name || "unknown";
     const metricVariant = selectedOptionType;
-    void trackMetric({
-      apiUrl: aiApiUrl,
-      metricType: "x_click",
-      fishId: metricFishId,
-      fishLabel: metricFishLabel,
-      selectedVariant: metricVariant
-    });
     onPostExperience?.("x_click");
+    void (async () => {
+      const tracked = await trackMetric({
+        apiUrl: aiApiUrl,
+        metricType: "x_click",
+        fishId: metricFishId,
+        fishLabel: metricFishLabel,
+        selectedVariant: metricVariant
+      });
+      if (!tracked) return;
+      const summary = await getMetricsSummary({
+        apiUrl: aiApiUrl,
+        fishId: metricFishId
+      });
+      if (!summary) return;
+      setPostMetricsSummary(summary);
+      onPostExperience?.("x_click", summary);
+    })();
     try {
       let imageToPost = selectedImageFile;
       if (imageToPost && frameOption === "nihonkai") {
@@ -1342,6 +1367,19 @@ export function ShareStudio({
                   </button>
                 )}
               </div>
+              {postMetricsSummary ? (
+                <div className="post-experience-feedback" aria-live="polite">
+                  <p className="post-experience-feedback-title">投稿体験を記録しました</p>
+                  <p>あなたは今日{postMetricsSummary.currentOrder}件目の投稿体験です</p>
+                  <p>今日の投稿体験数: {postMetricsSummary.totalToday}件</p>
+                  {postMetricsSummary.topFishThisWeek ? (
+                    <p>
+                      今週人気: {postMetricsSummary.topFishThisWeek.fishLabel}
+                      （{postMetricsSummary.topFishThisWeek.count}件）
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
             </section>
             ) : null}
 

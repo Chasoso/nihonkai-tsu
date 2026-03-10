@@ -8,6 +8,7 @@ import { BadgeToast } from "./components/BadgeToast";
 import { BadgeHistory } from "./components/BadgeHistory";
 import { ProgressBoardVoronoi } from "./components/ProgressBoardVoronoi";
 import { fetchLandings5y, fetchYearData } from "./lib/data";
+import type { MetricsSummary } from "./lib/metrics";
 import { computeMaxCoveredPercentile } from "./lib/progress";
 import { earnBadge, getBadges } from "./lib/storage";
 import type { AppData, Fish, LandingsData } from "./types";
@@ -67,6 +68,19 @@ function buildPostExperienceToast(
       ? "コピーしました。投稿体験を記録しました。"
       : "Xへの投稿を始めました。投稿体験を記録しました。";
   return `${firstLine}\nあなたは今日${count}件目の投稿体験です\n今週人気: ${popularFishName}`;
+}
+
+function buildPostExperienceToastFromSummary(
+  metricType: "copy" | "x_click",
+  summary: MetricsSummary,
+  fallbackFishName: string
+): string {
+  const firstLine =
+    metricType === "copy"
+      ? "コピーしました。投稿体験を記録しました。"
+      : "Xへの投稿を始めました。投稿体験を記録しました。";
+  const popularFishName = summary.topFishThisWeek?.fishLabel || fallbackFishName;
+  return `${firstLine}\nあなたは今日${summary.currentOrder}件目の投稿体験です\n今日の投稿体験数: ${summary.totalToday}\n今週人気: ${popularFishName}`;
 }
 
 export default function App() {
@@ -176,9 +190,15 @@ export default function App() {
     shareRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const handlePostExperience = (metricType: "copy" | "x_click") => {
-    postExperienceCountRef.current += 1;
+  const handlePostExperience = (metricType: "copy" | "x_click", summary?: MetricsSummary | null) => {
     const popularFishName = featuredFish[0]?.name ?? selectedFish?.name ?? "おすすめの魚";
+    if (summary) {
+      postExperienceCountRef.current = summary.currentOrder;
+      openToast(buildPostExperienceToastFromSummary(metricType, summary, popularFishName));
+      return;
+    }
+
+    postExperienceCountRef.current += 1;
     openToast(buildPostExperienceToast(metricType, postExperienceCountRef.current, popularFishName));
   };
 
@@ -221,7 +241,7 @@ export default function App() {
             {featuredFish.map((fish) => (
               <article key={fish.id} className="card featured-fish-card">
                 <div className="featured-fish-image" aria-hidden="true">
-                  澄
+                  <span>魚の写真準備中</span>
                 </div>
                 <h3>{fish.name}</h3>
                 <p>{fish.microcopy}</p>
@@ -353,9 +373,9 @@ export default function App() {
                 setOverlayVisible(true);
                 if (overlayTimerRef.current) window.clearTimeout(overlayTimerRef.current);
                 overlayTimerRef.current = window.setTimeout(() => setOverlayVisible(false), 1500);
-                openToast(`騾壹ｒ迯ｲ蠕励＠縺ｾ縺励◆: ${selectedFish.share.badgeLabel}`);
+                openToast(`通を獲得しました: ${selectedFish.share.badgeLabel}`);
               } else {
-                openToast(`縺吶〒縺ｫ迯ｲ蠕玲ｸ医∩縺ｧ縺・ ${selectedFish.share.badgeLabel}`);
+                openToast(`すでに獲得済みです: ${selectedFish.share.badgeLabel}`);
               }
             }}
           />

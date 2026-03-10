@@ -1,4 +1,4 @@
-import { DynamoDBClient, PutItemCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, PutItemCommand, QueryCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
 import { BedrockRuntimeClient, ConverseCommand } from "@aws-sdk/client-bedrock-runtime";
 
 const AI_PROVIDER = String(process.env.AI_PROVIDER || "bedrock").toLowerCase();
@@ -88,7 +88,12 @@ function fallbackFishCandidates() {
 function parseTask(value) {
   const raw = String(value || "").trim().toLowerCase();
   if (!raw) return "legacy_generate_post_text";
-  if (raw === "generate_post_text" || raw === "estimate_fish_candidates" || raw === "track_metric") {
+  if (
+    raw === "generate_post_text" ||
+    raw === "estimate_fish_candidates" ||
+    raw === "track_metric" ||
+    raw === "get_metrics_summary"
+  ) {
     return raw;
   }
   return "legacy_generate_post_text";
@@ -116,6 +121,24 @@ function getJstDayKey(date = new Date()) {
     day: "2-digit"
   });
   return formatter.format(date);
+}
+
+function getJstDayKeyWithOffset(offsetDays, baseDate = new Date()) {
+  return getJstDayKey(new Date(baseDate.getTime() + offsetDays * 24 * 60 * 60 * 1000));
+}
+
+function getJstDayRangeIso(dateJst) {
+  const normalized = String(dateJst || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    const today = getJstDayKey(new Date());
+    return getJstDayRangeIso(today);
+  }
+  const start = new Date(`${normalized}T00:00:00+09:00`);
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000 - 1);
+  return {
+    startIso: start.toISOString(),
+    endIso: end.toISOString()
+  };
 }
 
 function getEpochSecondsAfterDays(days) {
@@ -492,6 +515,106 @@ async function saveMetricEvent({
   return { stored: true };
 }
 
+async function queryAllCount(input) {
+  if (!ddbClient || !METRICS_TABLE_NAME) return 0;
+  let total = 0;
+  let ExclusiveStartKey;
+  do {
+    const response = await ddbClient.send(
+      new QueryCommand({
+        ...input,
+        TableName: METRICS_TABLE_NAME,
+        Select: "COUNT",
+        ExclusiveStartKey
+      })
+    );
+    total += Number(response.Count || 0);
+    ExclusiveStartKey = response.LastEvaluatedKey;
+  } while (ExclusiveStartKey);
+  return total;
+}
+
+async function queryAllItems(input) {
+  if (!ddbClient || !METRICS_TABLE_NAME) return [];
+  const items = [];
+  let ExclusiveStartKey;
+  do {
+    const response = await ddbClient.send(
+      new QueryCommand({
+        ...input,
+        TableName: METRICS_TABLE_NAME,
+        ExclusiveStartKey
+      })
+    );
+    if (Array.isArray(response.Items)) {
+      items.push(...response.Items);
+    }
+    ExclusiveStartKey = response.LastEvaluatedKey;
+  } while (ExclusiveStartKey);
+  return items;
+}
+
+async function getTotalTodayCount(dateJst) {
+  return await queryAllCount({
+    IndexName: "GSI1",
+    KeyConditionExpression: "date_jst = :dateJst",
+    ExpressionAttributeValues: {
+      ":dateJst": { S: dateJst }
+    }
+  });
+}
+
+async function getFishTodayCount(fishId, dateJst) {
+  if (!fishId) return null;
+  const { startIso, endIso } = getJstDayRangeIso(dateJst);
+  return await queryAllCount({
+    KeyConditionExpression: "fish_id = :fishId AND #ts BETWEEN :startIso AND :endIso",
+    ExpressionAttributeNames: {
+      "#ts": "timestamp"
+    },
+    ExpressionAttributeValues: {
+      ":fishId": { S: fishId },
+      ":startIso": { S: startIso },
+      ":endIso": { S: endIso }
+    }
+  });
+}
+
+async function getTopFishThisWeek(baseDate = new Date()) {
+  const aggregate = new Map();
+  for (let i = 0; i < 7; i += 1) {
+    const dateJst = getJstDayKeyWithOffset(-i, baseDate);
+    const items = await queryAllItems({
+      IndexName: "GSI1",
+      KeyConditionExpression: "date_jst = :dateJst",
+      ExpressionAttributeValues: {
+        ":dateJst": { S: dateJst }
+      },
+      ProjectionExpression: "fish_id, fish_label"
+    });
+
+    for (const item of items) {
+      const fishId = item?.fish_id?.S;
+      if (!fishId) continue;
+      const fishLabel = item?.fish_label?.S || fishId;
+      const current = aggregate.get(fishId) || { fish_id: fishId, fish_label: fishLabel, count: 0 };
+      current.count += 1;
+      if (!current.fish_label && fishLabel) {
+        current.fish_label = fishLabel;
+      }
+      aggregate.set(fishId, current);
+    }
+  }
+
+  let top = null;
+  for (const value of aggregate.values()) {
+    if (!top || value.count > top.count) {
+      top = value;
+    }
+  }
+  return top;
+}
+
 async function guardAiInvocation({ clientKey, requestId, fishType, fallbackBodyFactory }) {
   if (!checkRateLimit(clientKey)) {
     return { blocked: true, response: json(429, fallbackBodyFactory("rate_limited")) };
@@ -754,6 +877,42 @@ async function handleTrackMetricTask({ requestId, body }) {
   }
 }
 
+async function handleGetMetricsSummaryTask({ requestId, body }) {
+  const fishId = String(body.fish_id || "").trim().toLowerCase();
+  const now = new Date();
+  const dateJst = getJstDayKey(now);
+
+  if (!ddbClient || !METRICS_TABLE_NAME) {
+    return json(200, {
+      total_today: 0,
+      current_order: 0,
+      top_fish_this_week: null,
+      fish_count_today: fishId ? 0 : null
+    });
+  }
+
+  try {
+    const totalToday = await getTotalTodayCount(dateJst);
+    const fishCountToday = fishId ? await getFishTodayCount(fishId, dateJst) : null;
+    const topFishThisWeek = await getTopFishThisWeek(now);
+
+    return json(200, {
+      total_today: totalToday,
+      current_order: totalToday,
+      top_fish_this_week: topFishThisWeek,
+      fish_count_today: fishCountToday
+    });
+  } catch (error) {
+    logError("get_metrics_summary_failed", error, { requestId, fishId, dateJst });
+    return json(200, {
+      total_today: 0,
+      current_order: 0,
+      top_fish_this_week: null,
+      fish_count_today: fishId ? 0 : null
+    });
+  }
+}
+
 export const handler = async (event) => {
   if (event?.requestContext?.http?.method === "OPTIONS" || event?.httpMethod === "OPTIONS") {
     return json(204, {});
@@ -800,6 +959,9 @@ export const handler = async (event) => {
 
     if (task === "track_metric") {
       return await handleTrackMetricTask({ requestId, body });
+    }
+    if (task === "get_metrics_summary") {
+      return await handleGetMetricsSummaryTask({ requestId, body });
     }
     if (task === "estimate_fish_candidates") {
       return await handleEstimateFishCandidatesTask({ requestId, clientKey, body });
