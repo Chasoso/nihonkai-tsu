@@ -83,6 +83,17 @@ function buildPostExperienceToastFromSummary(
   return `${firstLine}\nあなたは今日${summary.currentOrder}件目の投稿体験です\n今日の投稿体験数: ${summary.totalToday}\n今週人気: ${popularFishName}`;
 }
 
+function saveImageForXPost(imageFile: File): void {
+  const downloadUrl = URL.createObjectURL(imageFile);
+  const link = document.createElement("a");
+  link.href = downloadUrl;
+  link.download = imageFile.name || `nihonkai-${Date.now()}.jpg`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+}
+
 export default function App() {
   const heroBackgroundUrl = String(import.meta.env.VITE_HERO_BACKGROUND_URL ?? "").trim() || heroBackgroundImage;
   const [data, setData] = useState<AppData | null>(null);
@@ -344,38 +355,27 @@ export default function App() {
             openComposerNonce={openShareComposerNonce}
             onPostExperience={handlePostExperience}
             onOpenXIntent={async (finalText, imageFile) => {
-              const canShareWithImage =
-                !!imageFile &&
-                typeof navigator.canShare === "function" &&
-                navigator.canShare({ files: [imageFile] });
-              if (canShareWithImage) {
-                try {
-                  await navigator.share({ text: finalText, files: [imageFile] });
-                  return true;
-                } catch (errorInfo) {
-                  if (errorInfo instanceof DOMException && errorInfo.name === "AbortError") {
-                    return false;
-                  }
-                }
+              if (imageFile) {
+                saveImageForXPost(imageFile);
+                openToast("画像を保存しました。Xの投稿画面で画像を添付してください。");
               }
 
-              const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(finalText)}`;
+              const url = `https://x.com/intent/tweet?text=${encodeURIComponent(finalText)}`;
               window.open(url, "_blank", "noopener,noreferrer");
-              if (imageFile) {
-                window.alert("このブラウザでは画像の自動添付に未対応のため、Xの投稿画面で画像を手動追加してください。");
-              }
               return true;
             }}
-            onComplete={() => {
-              const result = earnBadge(data.year, selectedFish);
+            onComplete={(completedFishId) => {
+              const earnedFish =
+                data.fish.find((item) => item.id === (completedFishId?.trim().toLowerCase() || "")) ?? selectedFish;
+              const result = earnBadge(data.year, earnedFish);
               setBadges(result.badges);
               if (result.added) {
                 setOverlayVisible(true);
                 if (overlayTimerRef.current) window.clearTimeout(overlayTimerRef.current);
                 overlayTimerRef.current = window.setTimeout(() => setOverlayVisible(false), 1500);
-                openToast(`通を獲得しました: ${selectedFish.share.badgeLabel}`);
+                openToast(`通を獲得しました: ${earnedFish.share.badgeLabel}`);
               } else {
-                openToast(`すでに獲得済みです: ${selectedFish.share.badgeLabel}`);
+                openToast(`すでに獲得済みです: ${earnedFish.share.badgeLabel}`);
               }
             }}
           />

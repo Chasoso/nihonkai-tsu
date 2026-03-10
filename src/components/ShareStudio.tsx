@@ -18,7 +18,7 @@ interface ShareStudioProps {
   landings: LandingsData;
   openComposerNonce: number;
   onOpenXIntent: (finalText: string, imageFile: File | null) => Promise<boolean> | boolean;
-  onComplete: () => void;
+  onComplete: (completedFishId?: string) => void;
   onPostExperience?: (metricType: "copy" | "x_click", summary?: MetricsSummary | null) => void;
 }
 
@@ -414,6 +414,7 @@ export function ShareStudio({
   const [copied, setCopied] = useState(false);
   const [imageSaved, setImageSaved] = useState(false);
   const [postMetricsSummary, setPostMetricsSummary] = useState<MetricsSummary | null>(null);
+  const [completionNotified, setCompletionNotified] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -752,6 +753,7 @@ export function ShareStudio({
     setCopied(false);
     setImageSaved(false);
     setPostMetricsSummary(null);
+    setCompletionNotified(false);
     if (!file) {
       setIsEstimatingFish(false);
       return;
@@ -771,6 +773,7 @@ export function ShareStudio({
     setCopied(false);
     setImageSaved(false);
     setPostMetricsSummary(null);
+    setCompletionNotified(false);
     stopCamera();
     setPendingFishType("");
     setConfirmedFishType("");
@@ -942,6 +945,10 @@ export function ShareStudio({
       const metricFishId = confirmedFishId.trim().toLowerCase();
       const metricFishLabel = confirmedFishType.trim() || fish?.name || "unknown";
       const metricVariant = selectedOptionType;
+      if (!completionNotified) {
+        onComplete(metricFishId || fish?.id);
+        setCompletionNotified(true);
+      }
       onPostExperience?.("copy");
       void (async () => {
         const tracked = await trackMetric({
@@ -1026,7 +1033,10 @@ export function ShareStudio({
       const posted = await onOpenXIntent(finalText, imageToPost);
       if (!posted) return;
 
-      onComplete();
+      if (!completionNotified) {
+        onComplete(confirmedFishId.trim() || fish.id);
+        setCompletionNotified(true);
+      }
       closeComposer();
     } finally {
       setIsSubmitting(false);
