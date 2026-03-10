@@ -31,10 +31,14 @@ type LeafNode = {
 const WIDTH = 960;
 const HEIGHT = 520;
 
-function categoryColor(id: string): string {
-  if (id === "trend") return "#3d7f5f";
-  if (id === "discovery") return "#1f5f8b";
-  return "#7f5f3d";
+function getVoronoiFill(isEarned: boolean): string {
+  return isEarned ? "#1d4ed8" : "#dce7f5";
+}
+
+function getVoronoiStroke(isEarned: boolean, isCovered: boolean): string {
+  if (isEarned) return "#f8fbff";
+  if (isCovered) return "#7aa6f7";
+  return "#b7c9e1";
 }
 
 export function ProgressBoardVoronoi({
@@ -119,10 +123,10 @@ export function ProgressBoardVoronoi({
                 key={leaf.id}
                 points={points}
                 className="voronoi-cell"
-                fill={categoryColor(leaf.category)}
-                fillOpacity={isEarned ? 0.72 : 0.26}
-                stroke={isCovered ? "#f9d976" : "#ffffff"}
-                strokeWidth={isCovered ? 2.5 : 1.1}
+                fill={getVoronoiFill(isEarned)}
+                fillOpacity={isEarned ? 0.96 : 0.86}
+                stroke={getVoronoiStroke(isEarned, isCovered)}
+                strokeWidth={isEarned ? 2.6 : isCovered ? 1.9 : 1.2}
                 onMouseMove={(event) =>
                   setTooltip({
                     x: event.clientX,

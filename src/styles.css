@@ -817,29 +817,31 @@ textarea {
   width: 100%;
   height: 12px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.15);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(228, 237, 248, 0.96));
+  border: 1px solid rgba(183, 201, 225, 0.82);
   overflow: hidden;
   margin-bottom: 12px;
 }
 
 .progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #63d2ff, #f6c26f);
+  background: linear-gradient(90deg, #5aa2ff, #1d4ed8 56%, #0f3d91 100%);
   transition: width 220ms ease;
 }
 
 .voronoi-wrapper {
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.26);
+  border: 1px solid rgba(183, 201, 225, 0.82);
   border-radius: 10px;
   overflow: hidden;
+  box-shadow: 0 12px 24px rgba(17, 38, 67, 0.08);
 }
 
 .voronoi-wrapper svg {
   display: block;
   width: 100%;
   height: auto;
-  background: rgba(11, 22, 34, 0.86);
+  background: linear-gradient(180deg, #f8fbff 0%, #e7eff9 100%);
 }
 
 .voronoi-cell {
@@ -855,11 +857,13 @@ textarea {
   position: fixed;
   z-index: 50;
   pointer-events: none;
-  background: rgba(8, 16, 25, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.98);
+  color: #183552;
+  border: 1px solid rgba(180, 198, 220, 0.88);
   border-radius: 8px;
   padding: 6px 8px;
   font-size: 13px;
+  box-shadow: 0 10px 20px rgba(17, 38, 67, 0.12);
 }
 
 .toast {
@@ -869,8 +873,10 @@ textarea {
   width: min(360px, calc(100vw - 28px));
   padding: 12px;
   border-radius: 12px;
-  background: rgba(7, 14, 24, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.98);
+  color: #183552;
+  border: 1px solid rgba(180, 198, 220, 0.88);
+  box-shadow: 0 18px 30px rgba(17, 38, 67, 0.16);
   transform: translateY(120%);
   opacity: 0;
   transition: transform 220ms ease, opacity 220ms ease;
@@ -891,6 +897,12 @@ textarea {
   display: flex;
   gap: 8px;
   margin-top: 8px;
+}
+
+.toast-actions button {
+  background: linear-gradient(180deg, #ffffff, #eef5ff);
+  color: #1b3c63;
+  border-color: rgba(180, 198, 220, 0.88);
 }
 
 .overlay {
@@ -916,8 +928,12 @@ textarea {
   position: fixed;
   inset: 0;
   z-index: 40;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: rgba(7, 13, 20, 0.78);
 }
 
@@ -1061,18 +1077,38 @@ textarea {
 
 .x-post-modal {
   width: min(980px, calc(100vw - 32px));
-  max-height: min(92vh, 980px);
+  max-height: min(calc(100dvh - 32px), 980px);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   padding: 24px 24px 18px;
 }
 
+.x-post-modal-header {
+  flex: 0 0 auto;
+  padding-right: 52px;
+}
+
+.x-post-modal-header h3 {
+  margin: 0;
+}
+
 .x-post-modal-scroll {
-  max-height: calc(min(92vh, 980px) - 42px);
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   padding-right: 12px;
   margin-right: -12px;
+}
+
+.x-post-modal-scroll > :first-child {
+  margin-top: 12px;
 }
 
 .x-post-modal .close-button {
@@ -1088,7 +1124,10 @@ textarea {
 .step-flow-stage {
   position: relative;
   width: 100%;
-  height: clamp(108px, 12vw, 132px);
+  aspect-ratio: 1200 / 220;
+  height: auto;
+  max-height: 132px;
+  min-height: 72px;
   border-radius: 18px;
   overflow: visible;
 }
@@ -1172,7 +1211,7 @@ textarea {
 .step-flow-icon-row {
   margin-top: 0;
   position: relative;
-  height: 96px;
+  height: clamp(60px, 7vw, 96px);
 }
 
 .step-flow-icon-wrap {
@@ -1484,6 +1523,39 @@ textarea {
   font-weight: 500;
 }
 
+.fish-candidate-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.fish-candidate-card {
+  border-radius: 14px;
+  border: 1px solid #d8e1ee;
+  background: #fff;
+  min-height: 64px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  margin-top: 0;
+  box-shadow: 0 6px 14px rgba(17, 38, 67, 0.05);
+}
+
+.fish-candidate-radio {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.fish-candidate-label {
+  font-size: 16px;
+  font-weight: 700;
+  color: #11335a;
+  line-height: 1.35;
+}
+
 .frame-options-card-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1529,6 +1601,27 @@ textarea {
   margin: 6px 0 0;
   color: #5b6f86;
   font-size: 13px;
+}
+
+.post-option-card {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid #d8e1ee;
+  background: #fff;
+  display: block;
+  padding: 12px 14px;
+  text-align: left;
+  box-shadow: 0 6px 14px rgba(17, 38, 67, 0.05);
+}
+
+.post-option-card .frame-select-copy {
+  width: 100%;
+}
+
+.post-option-card-active {
+  border-color: rgba(29, 78, 216, 0.72);
+  box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.24), 0 10px 22px rgba(17, 44, 76, 0.12);
+  background: linear-gradient(180deg, rgba(218, 232, 255, 0.98), rgba(238, 244, 255, 1));
 }
 
 .frame-select-thumb {
@@ -1667,6 +1760,12 @@ textarea {
   margin-top: 12px;
 }
 
+.x-post-modal label.fish-candidate-card {
+  display: flex;
+  gap: 12px;
+  margin-top: 0;
+}
+
 .x-post-modal select {
   width: 100%;
   padding: 8px 10px;
@@ -1688,20 +1787,21 @@ textarea {
   margin-top: 10px;
   padding: 10px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(8, 16, 25, 0.5);
+  border: 1px solid #d8e1ee;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(17, 38, 67, 0.06);
 }
 
 .generated-text-label {
   margin: 0 0 8px;
   font-size: 13px;
-  opacity: 0.85;
+  color: #48627f;
 }
 
 .ai-safety-note {
   margin: 10px 0 8px;
   font-size: 12px;
-  color: rgba(212, 224, 238, 0.78);
+  color: #6b829b;
 }
 
 .generated-text-panel pre {
@@ -1715,7 +1815,21 @@ textarea {
 .generated-note {
   margin: 8px 0 0;
   font-size: 12px;
-  opacity: 0.8;
+  color: #5e7390;
+}
+
+.generated-text-editor {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(8, 16, 25, 0.72);
+  color: inherit;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.generated-text-editor-active {
+  border-color: rgba(29, 78, 216, 0.34);
+  background: #f8fbff;
+  color: #163458;
+  box-shadow: inset 0 0 0 1px rgba(29, 78, 216, 0.08);
 }
 
 .post-experience-note {
@@ -1938,13 +2052,17 @@ textarea {
     grid-template-columns: 1fr;
   }
 
+  .fish-candidate-grid {
+    grid-template-columns: 1fr;
+  }
+
   .x-post-modal {
     width: min(calc(100vw - 16px), 980px);
+    max-height: min(calc(100dvh - 16px), 980px);
     padding: 18px 16px 14px;
   }
 
   .x-post-modal-scroll {
-    max-height: calc(92vh - 36px);
     padding-right: 6px;
     margin-right: -6px;
   }
@@ -2015,7 +2133,8 @@ textarea {
   }
 
   .step-flow-stage {
-    height: clamp(104px, 15vw, 124px);
+    max-height: 124px;
+    min-height: 68px;
     border-radius: 14px;
   }
 
@@ -2042,7 +2161,7 @@ textarea {
   }
 
   .step-flow-icon-row {
-    height: 84px;
+    height: clamp(56px, 8vw, 84px);
   }
 
   .fish-list-header {
@@ -2060,8 +2179,21 @@ textarea {
 }
 
 @media (max-width: 520px) {
+  .modal-backdrop {
+    align-items: flex-start;
+    padding:
+      calc(env(safe-area-inset-top, 0px) + clamp(72px, 12dvh, 104px))
+      4px
+      12px;
+  }
+
+  .x-post-modal {
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - clamp(92px, 14dvh, 124px));
+  }
+
   .step-flow-stage {
-    height: 112px;
+    max-height: 92px;
+    min-height: 58px;
     border-radius: 12px;
   }
 
@@ -2078,7 +2210,7 @@ textarea {
   }
 
   .step-flow-icon-row {
-    height: 74px;
+    height: 58px;
   }
 
   .step-flow-icon {
