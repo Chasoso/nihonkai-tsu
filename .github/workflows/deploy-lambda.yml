@@ -52,6 +52,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Regenerate public data and fish master
+        run: npm run generate:data
+
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -107,7 +124,7 @@ jobs:
         working-directory: backend/lambda
         run: |
           cp "${LAMBDA_HANDLER_FILE}" index.mjs
-          zip -r "../../${LAMBDA_ZIP}" index.mjs
+          zip -r "../../${LAMBDA_ZIP}" index.mjs fish-master.json
 
       - name: Ensure Lambda exists (create if missing)
         run: |

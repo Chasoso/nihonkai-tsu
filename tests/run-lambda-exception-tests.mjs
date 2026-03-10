@@ -171,7 +171,53 @@ async function main() {
       assert.equal(res.statusCode, 200);
       assert.equal(Array.isArray(body.candidates), true);
       assert.ok(body.candidates.length >= 4);
-      assert.ok(body.candidates.some((c) => c.id === "other"));
+      assert.ok(body.candidates.some((c) => typeof c.fish_id === "string"));
+      assert.ok(body.candidates.some((c) => c.fish_id === "other"));
+    } finally {
+      restoreGlobals(snapshot);
+    }
+  }, results);
+
+  await runCase("task=estimate_fish_candidates はfish master内のfish_idだけを返す", async () => {
+    const snapshot = snapshotGlobals();
+    try {
+      BedrockRuntimeClient.prototype.send = async () => ({
+        output: {
+          message: {
+            content: [
+              {
+                text: JSON.stringify({
+                  candidates: [
+                    { fish_id: "brand_36600", score: 0.91 },
+                    { label: "マイワシ", score: 0.82 },
+                    { label: "リスト外の魚", score: 0.77 },
+                    { fish_id: "other", score: 0.2 }
+                  ]
+                })
+              }
+            ]
+          }
+        }
+      });
+
+      const handler = await freshHandler({
+        POST_TEXT_MODE: "live",
+        AI_PROVIDER: "bedrock",
+        DAILY_LIMIT_MAX_PER_DAY: "0"
+      });
+      const res = await handler(
+        eventOf({ task: "estimate_fish_candidates", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" })
+      );
+      const body = JSON.parse(res.body);
+      assert.equal(res.statusCode, 200);
+      assert.equal(body.candidates.length, 4);
+      assert.deepEqual(body.candidates[0], { fish_id: "brand_36600", score: 0.91 });
+      assert.deepEqual(body.candidates[1], { fish_id: "brand_5400", score: 0.82 });
+      assert.equal(body.candidates[2].fish_id !== "other", true);
+      assert.equal(typeof body.candidates[2].fish_id, "string");
+      assert.equal(body.candidates[2].score > 0, true);
+      assert.deepEqual(body.candidates[3], { fish_id: "other", score: 0 });
+      assert.equal(body.fallbackUsed, false);
     } finally {
       restoreGlobals(snapshot);
     }
