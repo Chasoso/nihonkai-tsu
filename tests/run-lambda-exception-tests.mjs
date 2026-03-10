@@ -235,6 +235,95 @@ async function main() {
     }
   }, results);
 
+  await runCase("task=get_metrics_summary は集計結果を返す", async () => {
+    const snapshot = snapshotGlobals();
+    try {
+      let gsiCallCount = 0;
+      DynamoDBClient.prototype.send = async (command) => {
+        const input = command.input;
+        if (input.IndexName === "GSI1" && input.Select === "COUNT") {
+          return { Count: 128 };
+        }
+        if (!input.IndexName && input.Select === "COUNT") {
+          return { Count: 17 };
+        }
+        if (input.IndexName === "GSI1") {
+          gsiCallCount += 1;
+          if (gsiCallCount === 1) {
+            return {
+              Items: [
+                {
+                  fish_id: { S: "maiwashi" },
+                  fish_label: { S: "マイワシ" }
+                },
+                {
+                  fish_id: { S: "maiwashi" },
+                  fish_label: { S: "マイワシ" }
+                },
+                {
+                  fish_id: { S: "saba" },
+                  fish_label: { S: "サバ" }
+                }
+              ]
+            };
+          }
+          return { Items: [] };
+        }
+        return {};
+      };
+
+      const handler = await freshHandler({
+        POST_TEXT_MODE: "live",
+        AI_PROVIDER: "bedrock",
+        METRICS_TABLE_NAME: "metrics-table"
+      });
+      const res = await handler(
+        eventOf({
+          task: "get_metrics_summary",
+          fish_id: "maiwashi"
+        })
+      );
+      const body = JSON.parse(res.body);
+      assert.equal(res.statusCode, 200);
+      assert.equal(body.total_today, 128);
+      assert.equal(body.current_order, 128);
+      assert.equal(body.fish_count_today, 17);
+      assert.equal(body.top_fish_this_week.fish_id, "maiwashi");
+      assert.equal(body.top_fish_this_week.fish_label, "マイワシ");
+      assert.equal(body.top_fish_this_week.count, 2);
+    } finally {
+      restoreGlobals(snapshot);
+    }
+  }, results);
+
+  await runCase("task=get_metrics_summary はDynamoDB異常時もゼロで返す", async () => {
+    const snapshot = snapshotGlobals();
+    try {
+      DynamoDBClient.prototype.send = async () => {
+        throw new Error("ddb_summary_down");
+      };
+      const handler = await freshHandler({
+        POST_TEXT_MODE: "live",
+        AI_PROVIDER: "bedrock",
+        METRICS_TABLE_NAME: "metrics-table"
+      });
+      const res = await handler(
+        eventOf({
+          task: "get_metrics_summary",
+          fish_id: "maiwashi"
+        })
+      );
+      const body = JSON.parse(res.body);
+      assert.equal(res.statusCode, 200);
+      assert.equal(body.total_today, 0);
+      assert.equal(body.current_order, 0);
+      assert.equal(body.fish_count_today, 0);
+      assert.equal(body.top_fish_this_week, null);
+    } finally {
+      restoreGlobals(snapshot);
+    }
+  }, results);
+
   await runCase("レート制限超過で429", async () => {
     const snapshot = snapshotGlobals();
     try {
