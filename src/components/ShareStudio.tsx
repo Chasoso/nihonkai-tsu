@@ -408,10 +408,12 @@ export function ShareStudio({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [imageSaved, setImageSaved] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const modalScrollRef = useRef<HTMLDivElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const lastOpenNonceRef = useRef(openComposerNonce);
   const estimateRequestIdRef = useRef(0);
@@ -542,6 +544,25 @@ export function ShareStudio({
   }, [selectedImageUrl]);
 
   useEffect(() => {
+    if (typeof document === "undefined" || !composerOpen) return;
+
+    const { body, documentElement } = document;
+    const originalBodyOverflow = body.style.overflow;
+    const originalBodyTouchAction = body.style.touchAction;
+    const originalHtmlOverflow = documentElement.style.overflow;
+
+    body.style.overflow = "hidden";
+    body.style.touchAction = "none";
+    documentElement.style.overflow = "hidden";
+
+    return () => {
+      body.style.overflow = originalBodyOverflow;
+      body.style.touchAction = originalBodyTouchAction;
+      documentElement.style.overflow = originalHtmlOverflow;
+    };
+  }, [composerOpen]);
+
+  useEffect(() => {
     const video = videoRef.current;
     const stream = streamRef.current;
     if (!cameraPreviewOpen || !video || !stream || selectedImageUrl) return;
@@ -574,6 +595,22 @@ export function ShareStudio({
     if (!fish) return;
     setComposerOpen(true);
   }, [openComposerNonce, fish]);
+
+  useEffect(() => {
+    if (!composerOpen) return;
+    const node = modalScrollRef.current;
+    if (!node) return;
+
+    const rafId = window.requestAnimationFrame(() => {
+      if (typeof node.scrollTo === "function") {
+        node.scrollTo({ top: 0, behavior: "auto" });
+      } else {
+        node.scrollTop = 0;
+      }
+    });
+
+    return () => window.cancelAnimationFrame(rafId);
+  }, [composerOpen, currentStep]);
 
   useEffect(() => {
     if (fish?.name) {
@@ -688,6 +725,7 @@ export function ShareStudio({
     setEditablePostText("");
     setGenerationNote(null);
     setCopied(false);
+    setImageSaved(false);
     if (!file) {
       setIsEstimatingFish(false);
       return;
@@ -705,6 +743,7 @@ export function ShareStudio({
     setEditablePostText("");
     setGenerationNote(null);
     setCopied(false);
+    setImageSaved(false);
     stopCamera();
     setPendingFishType("");
     setConfirmedFishType("");
@@ -804,6 +843,7 @@ export function ShareStudio({
     setEditablePostText("");
     setGenerationNote(null);
     setCopied(false);
+    setImageSaved(false);
   };
 
   const handleGeneratePostText = async () => {
@@ -811,6 +851,7 @@ export function ShareStudio({
 
     setIsGenerating(true);
     setCopied(false);
+    setImageSaved(false);
     try {
       if (!selectedImageFile) {
         const fallback = getFallbackPostText(fishType);
@@ -884,6 +925,30 @@ export function ShareStudio({
     }
   };
 
+  const handleSaveImage = async () => {
+    if (!selectedImageFile) return;
+
+    try {
+      let fileToSave = selectedImageFile;
+      if (fish && frameOption === "nihonkai") {
+        fileToSave = await buildShareImage(fileToSave, fish, landings);
+      }
+
+      const downloadUrl = URL.createObjectURL(fileToSave);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = fileToSave.name || `nihonkai-${Date.now()}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+      setImageSaved(true);
+      window.setTimeout(() => setImageSaved(false), 1600);
+    } catch {
+      setImageSaved(false);
+    }
+  };
+
   const handleOpenXPost = async () => {
     if (!fish || !editablePostText.trim()) return;
 
@@ -951,8 +1016,10 @@ export function ShareStudio({
             <button className="close-button" onClick={closeComposer} aria-label="閉じる">
               x
             </button>
-            <div className="x-post-modal-scroll">
+            <div className="x-post-modal-header">
               <h3>Xに投稿</h3>
+            </div>
+            <div ref={modalScrollRef} className="x-post-modal-scroll">
               <p>対象の魚: {displayFishLabel}</p>
 
               <StepFlowHeader
@@ -1005,38 +1072,36 @@ export function ShareStudio({
                 ) : null}
 
                 {step1PreviewVisible ? (
-                  <div className="composer-step-expanded">
+                  <div className="composer-step-expanded composer-step-expanded-photo">
                     {step1Complete ? (
-                      <div className="frame-area composer-frame-area">
-                        <p>投稿フレーム</p>
-                        <div className="frame-options-card-grid composer-frame-grid" role="radiogroup" aria-label="post frame options">
+                      <div className="composer-frame-compact" role="radiogroup" aria-label="post frame options">
+                        <span className="composer-frame-label">投稿フレーム</span>
+                        <div className="composer-frame-toggle">
                           <button
                             type="button"
-                            className={frameOption === "nihonkai" ? "frame-select-card frame-select-card-active" : "frame-select-card"}
+                            className={
+                              frameOption === "nihonkai"
+                                ? "composer-frame-chip composer-frame-chip-active"
+                                : "composer-frame-chip"
+                            }
                             onClick={() => setFrameOption("nihonkai")}
                             disabled={isGenerating || isSubmitting}
                             aria-pressed={frameOption === "nihonkai"}
                           >
-                            <div className="frame-select-copy">
-                              <strong>Nihonkai-tsu フレーム</strong>
-                              <p>ブランドフレームを追加</p>
-                            </div>
-                            <div className="frame-select-thumb frame-select-thumb-brand" aria-hidden="true">
-                              <span>{fish?.name ?? "fish"}</span>
-                            </div>
+                            Nihonkai-tsu
                           </button>
                           <button
                             type="button"
-                            className={frameOption === "none" ? "frame-select-card frame-select-card-active" : "frame-select-card"}
+                            className={
+                              frameOption === "none"
+                                ? "composer-frame-chip composer-frame-chip-active"
+                                : "composer-frame-chip"
+                            }
                             onClick={() => setFrameOption("none")}
                             disabled={isGenerating || isSubmitting}
                             aria-pressed={frameOption === "none"}
                           >
-                            <div className="frame-select-copy">
-                              <strong>フレームなし</strong>
-                              <p>画像をそのまま使う</p>
-                            </div>
-                            <div className="frame-select-thumb frame-select-thumb-plain" aria-hidden="true" />
+                            なし
                           </button>
                         </div>
                       </div>
@@ -1083,11 +1148,11 @@ export function ShareStudio({
                       </div>
                     </div>
 
-                    <div className="composer-step-footer">
-                      <div className="step-primary-actions">
+                    <div className="composer-step-footer composer-step-footer-split">
+                      <div className="step-secondary-actions">
                         <button
                           type="button"
-                          className="step-primary-button step-secondary-button"
+                          className="step-secondary-button"
                           onClick={startCamera}
                           disabled={isGenerating || isSubmitting}
                         >
@@ -1095,12 +1160,14 @@ export function ShareStudio({
                         </button>
                         <button
                           type="button"
-                          className="step-primary-button step-secondary-button"
+                          className="step-secondary-button"
                           onClick={handlePickImageClick}
                           disabled={isGenerating || isSubmitting}
                         >
                           画像を選ぶ
                         </button>
+                      </div>
+                      <div className="step-primary-actions step-primary-actions-step1">
                         <button
                           type="button"
                           className="step-primary-button"
@@ -1125,17 +1192,18 @@ export function ShareStudio({
               <fieldset disabled={!step1Complete || isGenerating || isSubmitting}>
                 {isEstimatingFish ? <p className="frame-note">写真を見ながら候補を準備しています...</p> : null}
                 {!isEstimatingFish ? (
-                  <div className="frame-options-card-grid" role="radiogroup" aria-label="fish candidates">
+                  <div className="fish-candidate-grid" role="radiogroup" aria-label="fish candidates">
                     {fishCandidates.map((name) => (
-                      <label key={name} className="frame-select-card">
+                      <label key={name} className="fish-candidate-card">
                         <input
+                          className="fish-candidate-radio"
                           type="radio"
                           name="fish-candidate"
                           value={name}
                           checked={pendingFishType === name}
                           onChange={(event) => setPendingFishType(event.target.value)}
                         />
-                        <span>{name === "other" ? "それ以外" : name}</span>
+                        <span className="fish-candidate-label">{name === "other" ? "それ以外" : name}</span>
                       </label>
                     ))}
                   </div>
@@ -1207,8 +1275,8 @@ export function ShareStudio({
                         type="button"
                         className={
                           selectedOptionType === option.type
-                            ? "frame-select-card frame-select-card-active"
-                            : "frame-select-card"
+                            ? "post-option-card post-option-card-active"
+                            : "post-option-card"
                         }
                         onClick={() => {
                           setSelectedOptionType(option.type);
@@ -1228,6 +1296,7 @@ export function ShareStudio({
                   <label className="generated-text-label">
                     選択した投稿文を編集
                     <textarea
+                      className={selectedOption ? "generated-text-editor generated-text-editor-active" : "generated-text-editor"}
                       value={editablePostText}
                       onChange={(event) => setEditablePostText(event.target.value)}
                       rows={6}
@@ -1241,6 +1310,13 @@ export function ShareStudio({
               <div className="composer-step-footer">
                 {generatedOptions.length ? (
                   <div className="step-primary-actions">
+                    <button
+                      className="step-primary-button step-secondary-button"
+                      onClick={handleSaveImage}
+                      disabled={isGenerating || isSubmitting || !selectedImageFile}
+                    >
+                      {imageSaved ? "保存済み" : "画像を保存する"}
+                    </button>
                     <button
                       className={copied ? "step-primary-button step-secondary-button" : "step-primary-button step-secondary-button"}
                       onClick={handleコピーText}
