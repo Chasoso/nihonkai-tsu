@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { DynamoDBClient, PutItemCommand, QueryCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
 import { BedrockRuntimeClient, ConverseCommand } from "@aws-sdk/client-bedrock-runtime";
 
@@ -23,15 +26,32 @@ const METRICS_TABLE_NAME = process.env.METRICS_TABLE_NAME || "";
 
 const ddbClient = DAILY_LIMIT_TABLE_NAME || METRICS_TABLE_NAME ? new DynamoDBClient({}) : null;
 const bedrockClient = new BedrockRuntimeClient({ region: BEDROCK_REGION });
+const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
 
 const rateLimitStore = new Map();
 const METRIC_TYPES = new Set(["copy", "x_click"]);
 
-const DEFAULT_FISH_CANDIDATES = [
-  { id: "maiwashi", label: "マイワシ", score: 0.82 },
-  { id: "saba", label: "サバ", score: 0.61 },
-  { id: "aji", label: "アジ", score: 0.47 }
-];
+const FISH_MASTER = (() => {
+  try {
+    const raw = readFileSync(join(MODULE_DIR, "fish-master.json"), "utf8");
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((item) => ({
+        fish_id: String(item?.fish_id || "").trim(),
+        label: String(item?.label || "").trim()
+      }))
+      .filter((item) => item.fish_id && item.label);
+  } catch {
+    return [];
+  }
+})();
+const FISH_MASTER_BY_ID = new Map(FISH_MASTER.map((item) => [item.fish_id.toLowerCase(), item]));
+const FISH_MASTER_ID_BY_LABEL = new Map(FISH_MASTER.map((item) => [item.label, item.fish_id.toLowerCase()]));
+const DEFAULT_FISH_CANDIDATES = FISH_MASTER.slice(0, 3).map((item, index) => ({
+  fish_id: item.fish_id.toLowerCase(),
+  score: normalizeScore(0.82 - index * 0.18)
+}));
 
 function logInfo(event, extra = {}) {
   console.log(JSON.stringify({ level: "info", event, ...extra }));
@@ -82,7 +102,7 @@ function fallbackPostOptions(fishType) {
 }
 
 function fallbackFishCandidates() {
-  return [...DEFAULT_FISH_CANDIDATES, { id: "other", label: "それ以外", score: 0 }];
+  return [...DEFAULT_FISH_CANDIDATES, { fish_id: "other", score: 0 }];
 }
 
 function parseTask(value) {
@@ -152,12 +172,7 @@ function normalizeScore(value) {
 }
 
 function sanitizeFishCandidateId(value) {
-  const cleaned = String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^\w-]/g, "_")
-    .replace(/^_+|_+$/g, "");
-  return cleaned || "unknown";
+  return String(value || "").trim().toLowerCase();
 }
 
 function sanitizeGeneratedText(input, maxLen = 160) {
@@ -197,11 +212,14 @@ function normalizeFishCandidates(rawCandidates) {
   const seen = new Set();
 
   for (const item of list) {
-    const id = sanitizeFishCandidateId(item?.id || item?.label);
-    if (!id || id === "other" || seen.has(id)) continue;
-    const label = String(item?.label || "").trim() || id;
+    const rawId =
+      typeof item === "object" && item !== null
+        ? item?.fish_id || item?.id || FISH_MASTER_ID_BY_LABEL.get(String(item?.label || "").trim())
+        : item;
+    const id = sanitizeFishCandidateId(rawId);
+    if (!id || id === "other" || seen.has(id) || !FISH_MASTER_BY_ID.has(id)) continue;
     const score = normalizeScore(item?.score);
-    unique.push({ id, label, score });
+    unique.push({ fish_id: id, score });
     seen.add(id);
   }
 
@@ -210,16 +228,21 @@ function normalizeFishCandidates(rawCandidates) {
 
   for (const fallback of DEFAULT_FISH_CANDIDATES) {
     if (top.length >= 3) break;
-    if (seen.has(fallback.id)) continue;
+    if (seen.has(fallback.fish_id)) continue;
     top.push(fallback);
-    seen.add(fallback.id);
+    seen.add(fallback.fish_id);
   }
 
   while (top.length < 3) {
-    top.push({ id: `candidate_${top.length + 1}`, label: `候補${top.length + 1}`, score: 0.1 });
+    const fallback = FISH_MASTER[top.length];
+    if (!fallback) break;
+    const fallbackId = fallback.fish_id.toLowerCase();
+    if (seen.has(fallbackId)) break;
+    top.push({ fish_id: fallbackId, score: 0.1 });
+    seen.add(fallbackId);
   }
 
-  return [...top, { id: "other", label: "それ以外", score: 0 }];
+  return [...top.slice(0, 3), { fish_id: "other", score: 0 }];
 }
 
 function parseFishCandidatesFromText(rawText) {
@@ -319,15 +342,19 @@ function buildThreeOptionPrompt(fishType, tone) {
 }
 
 function buildFishCandidatePrompt() {
-  const list = DEFAULT_FISH_CANDIDATES.map((item) => `${item.id}:${item.label}`).join(", ");
+  const list = FISH_MASTER.map((item) => `- ${item.fish_id}: ${item.label}`).join("\n");
   return [
-    "あなたは魚料理写真から魚種候補を推定するアシスタントです。",
-    `候補は次のID/ラベルを優先して使ってください: ${list}`,
-    "画像だけから判断し、断定は避けてください。",
-    "上位3候補をJSONで返してください。",
-    "形式は必ずJSONのみ。説明文禁止。",
-    'JSON形式: {"candidates":[{"id":"maiwashi","label":"マイワシ","score":0.82},{"id":"saba","label":"サバ","score":0.61},{"id":"aji","label":"アジ","score":0.47}]}',
-    "scoreは0〜1の小数。高い順に並べる。"
+    "You classify the fish in the uploaded photo.",
+    "You MUST choose only from the fish master list below.",
+    "Do not invent new fish names or ids.",
+    "Return strict JSON only.",
+    'Return format: {"candidates":[{"fish_id":"brand_5400","score":0.78},{"fish_id":"brand_36600","score":0.55},{"fish_id":"brand_23500","score":0.41},{"fish_id":"other","score":0.0}]}',
+    "Rules:",
+    "- choose exactly 3 fish_id values from the fish master",
+    "- sort by confidence descending",
+    "- use fish_id only in output",
+    "- the 4th candidate must be other with score 0.0",
+    `Fish master:\n${list}`
   ].join("\n");
 }
 

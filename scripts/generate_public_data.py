@@ -360,6 +360,7 @@ def build_2026_json(metrics: List[FishMetric], range_years: List[int], template:
         "headline": "旬を知り、深く味わう。",
         "subline": "直近5年の水揚げデータから選んだ2026年の魚一覧",
     }
+
     if template and isinstance(template.get("theme"), dict):
         theme["headline"] = template["theme"].get("headline", theme["headline"])
         theme["subline"] = template["theme"].get("subline", theme["subline"])
@@ -380,12 +381,17 @@ def build_2026_json(metrics: List[FishMetric], range_years: List[int], template:
     }
 
 
+def build_fish_master_json(metrics: List[FishMetric]) -> List[Dict[str, str]]:
+    return [{"fish_id": m.fish_id, "label": m.name} for m in metrics]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate public/data json files from source xlsx")
     parser.add_argument("--xlsx", default="data/2025.12.18.xlsx")
     parser.add_argument("--template-2026", default="public/data/2026.json")
     parser.add_argument("--out-landings", default="public/data/landings_5y.json")
     parser.add_argument("--out-2026", default="public/data/2026.json")
+    parser.add_argument("--out-fish-master", default="backend/lambda/fish-master.json")
     parser.add_argument("--years", type=int, default=5)
     args = parser.parse_args()
 
@@ -393,6 +399,7 @@ def main() -> None:
     template_path = Path(args.template_2026)
     out_landings = Path(args.out_landings)
     out_2026 = Path(args.out_2026)
+    out_fish_master = Path(args.out_fish_master)
 
     if not xlsx_path.exists():
         raise SystemExit(f"Source xlsx not found: {xlsx_path}")
@@ -427,15 +434,19 @@ def main() -> None:
     landings = build_landings_json(fish_ids, fish_name_by_id, monthly_sum_by_fish, range_years)
     metrics = build_metrics(fish_ids, fish_name_by_id, monthly_sum_by_fish, range_years)
     data2026 = build_2026_json(metrics, range_years, template)
+    fish_master = build_fish_master_json(metrics)
 
     out_landings.parent.mkdir(parents=True, exist_ok=True)
     out_2026.parent.mkdir(parents=True, exist_ok=True)
+    out_fish_master.parent.mkdir(parents=True, exist_ok=True)
 
     out_landings.write_text(json.dumps(landings, ensure_ascii=False, indent=2), encoding="utf-8")
     out_2026.write_text(json.dumps(data2026, ensure_ascii=False, indent=2), encoding="utf-8")
+    out_fish_master.write_text(json.dumps(fish_master, ensure_ascii=False, indent=2), encoding="utf-8")
 
     print(f"Generated: {out_landings}")
     print(f"Generated: {out_2026}")
+    print(f"Generated: {out_fish_master}")
     print(f"Range years: {range_years}")
     print(f"Fish count: {len(fish_ids)}")
     print(f"Percentile sum: {sum(item['percentile'] for item in data2026['fish'])}")

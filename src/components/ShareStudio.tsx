@@ -24,12 +24,15 @@ interface ShareStudioProps {
 
 type FrameOption = "none" | "nihonkai";
 type ComposerStep = 1 | 2 | 3;
+type FishCandidateOption = {
+  fishId: string;
+  label: string;
+};
 
 const DEFAULT_MAX_AI_IMAGE_EDGE_PX = 512;
 const DEFAULT_AI_IMAGE_QUALITY = 0.68;
 const DEFAULT_AI_CACHE_TTL_MS = 180_000;
 const DEFAULT_AI_API_URL = "/api/generate-post-text";
-const FALLBACK_FISH_CANDIDATES = ["aji", "saba", "iwashi", "other"];
 const FIXED_POST_HASHTAGS = ["#石川の魚", "#日本海", "#nihonkai_tsu"];
 
 function toNumber(value: unknown, fallback: number): number {
@@ -394,11 +397,12 @@ export function ShareStudio({
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
   const [frameOption, setFrameOption] = useState<FrameOption>("nihonkai");
   const [currentStep, setCurrentStep] = useState<ComposerStep>(1);
-  const [fishCandidates, setFishCandidates] = useState<string[]>([]);
+  const [fishCandidates, setFishCandidates] = useState<FishCandidateOption[]>([]);
   const [isEstimatingFish, setIsEstimatingFish] = useState(false);
   const [fishEstimateError, setFishEstimateError] = useState<string | null>(null);
   const [pendingFishType, setPendingFishType] = useState("");
   const [confirmedFishType, setConfirmedFishType] = useState("");
+  const [confirmedFishId, setConfirmedFishId] = useState("");
   const [otherFishQuery, setOtherFishQuery] = useState("");
   const [selectedOtherFish, setSelectedOtherFish] = useState("");
   const [generatedOptions, setGeneratedOptions] = useState<PostTextOption[]>([]);
@@ -434,6 +438,27 @@ export function ShareStudio({
     return "";
   }, []);
 
+  const fishMasterOptions = useMemo<FishCandidateOption[]>(() => {
+    const seen = new Set<string>();
+    return landings.species.flatMap((item) => {
+      const fishId = item.id.trim().toLowerCase();
+      const label = item.name_ja.trim();
+      if (!fishId || !label || seen.has(fishId)) return [];
+      seen.add(fishId);
+      return [{ fishId, label }];
+    });
+  }, [landings.species]);
+
+  const fishLabelById = useMemo(
+    () => new Map(fishMasterOptions.map((item) => [item.fishId, item.label])),
+    [fishMasterOptions]
+  );
+
+  const fishIdByLabel = useMemo(
+    () => new Map(fishMasterOptions.map((item) => [item.label, item.fishId])),
+    [fishMasterOptions]
+  );
+
   const previewSelectionKey = useMemo(() => {
     if (pendingFishType === "other") {
       const otherSelected = selectedOtherFish.trim();
@@ -441,10 +466,10 @@ export function ShareStudio({
     }
     const pending = pendingFishType.trim();
     if (pending) return pending;
-    const confirmed = confirmedFishType.trim();
+    const confirmed = confirmedFishId.trim();
     if (confirmed) return confirmed;
     return fish?.id ?? "";
-  }, [pendingFishType, selectedOtherFish, confirmedFishType, fish?.id]);
+  }, [pendingFishType, selectedOtherFish, confirmedFishId, fish?.id]);
 
   const previewSeries = useMemo(() => {
     const species =
@@ -478,31 +503,26 @@ export function ShareStudio({
     return ["#譌･譛ｬ豬ｷ騾・026", "#螟峨ｏ繧区ｵｷ繧貞袖繧上≧"];
   }, [fish?.share.text]);
 
-  const fallbackFishCandidates = useMemo(() => {
-    const list: string[] = [];
+  const fallbackFishCandidates = useMemo<FishCandidateOption[]>(() => {
+    const fromMaster = fishMasterOptions.slice(0, 3);
+    if (fromMaster.length >= 3) {
+      return [...fromMaster, { fishId: "other", label: "それ以外" }];
+    }
+
+    const list: FishCandidateOption[] = [...fromMaster];
     for (const name of fishTypeOptions) {
-      const normalized = name.trim().toLowerCase();
-      if (!normalized || list.includes(normalized)) continue;
-      list.push(normalized);
+      const label = name.trim();
+      const fishId = fishIdByLabel.get(label);
+      if (!label || !fishId || list.some((item) => item.fishId === fishId)) continue;
+      list.push({ fishId, label });
       if (list.length >= 3) break;
     }
-    if (list.length < 3) {
-      for (const name of FALLBACK_FISH_CANDIDATES) {
-        if (!list.includes(name) && name !== "other") {
-          list.push(name);
-        }
-        if (list.length >= 3) break;
-      }
-    }
-    if (!list.includes("other")) {
-      list.push("other");
-    }
-    return list.slice(0, 4);
-  }, [fishTypeOptions]);
+    return [...list.slice(0, 3), { fishId: "other", label: "それ以外" }];
+  }, [fishMasterOptions, fishTypeOptions, fishIdByLabel]);
 
   const step1Complete = Boolean(selectedImageFile);
   const step1PreviewVisible = step1Complete || cameraPreviewOpen;
-  const step2Complete = Boolean(confirmedFishType.trim());
+  const step2Complete = Boolean(confirmedFishId.trim());
   const displayFishLabel = confirmedFishType.trim() || "未選択";
   const frameFishBadgeLabel = confirmedFishType.trim();
   const needsOtherFishSelection = pendingFishType === "other";
@@ -513,23 +533,13 @@ export function ShareStudio({
     () => generatedOptions.find((item) => item.type === selectedOptionType) ?? null,
     [generatedOptions, selectedOptionType]
   );
-  const searchableFishOptions = useMemo(() => {
-    const unique = new Set<string>();
-    const list: string[] = [];
-    for (const name of fishTypeOptions) {
-      const label = name.trim();
-      if (!label || unique.has(label)) continue;
-      unique.add(label);
-      list.push(label);
-    }
-    return list;
-  }, [fishTypeOptions]);
+  const searchableFishOptions = useMemo(() => fishMasterOptions, [fishMasterOptions]);
   const filteredOtherFishOptions = useMemo(() => {
     if (!needsOtherFishSelection) return [];
     const query = otherFishQuery.trim().toLowerCase();
     if (!query) return searchableFishOptions.slice(0, 24);
     return searchableFishOptions
-      .filter((name) => name.toLowerCase().includes(query))
+      .filter((item) => item.label.toLowerCase().includes(query))
       .slice(0, 24);
   }, [needsOtherFishSelection, otherFishQuery, searchableFishOptions]);
 
@@ -617,9 +627,11 @@ export function ShareStudio({
     if (fish?.name) {
       setPendingFishType("");
       setConfirmedFishType("");
+      setConfirmedFishId("");
     } else {
       setPendingFishType("");
       setConfirmedFishType("");
+      setConfirmedFishId("");
     }
     setFishCandidates([]);
     setFishEstimateError(null);
@@ -645,27 +657,38 @@ export function ShareStudio({
     streamRef.current = null;
   };
 
-  const normalizeFishCandidates = (input: unknown): string[] => {
+  const normalizeFishCandidates = (input: unknown): FishCandidateOption[] => {
     if (!Array.isArray(input)) {
       return [...fallbackFishCandidates];
     }
 
-    const labels: string[] = [];
+    const candidates: FishCandidateOption[] = [];
     for (const item of input) {
-      const label =
+      const rawFishId =
         typeof item === "object" && item !== null
-          ? String((item as { label?: unknown; id?: unknown }).label ?? (item as { id?: unknown }).id ?? "")
+          ? String(
+              (item as { fish_id?: unknown; id?: unknown; label?: unknown }).fish_id ??
+                (item as { id?: unknown; label?: unknown }).id ??
+                fishIdByLabel.get(String((item as { label?: unknown }).label ?? "").trim()) ??
+                ""
+            )
           : "";
-      const normalized = label.trim().toLowerCase();
-      if (!normalized || labels.includes(normalized)) continue;
-      labels.push(normalized);
-      if (labels.length >= 4) break;
+      const fishId = rawFishId.trim().toLowerCase();
+      if (!fishId || candidates.some((candidate) => candidate.fishId === fishId)) continue;
+      if (fishId === "other") {
+        candidates.push({ fishId: "other", label: "それ以外" });
+      } else {
+        const label = fishLabelById.get(fishId);
+        if (!label) continue;
+        candidates.push({ fishId, label });
+      }
+      if (candidates.length >= 4) break;
     }
 
-    if (!labels.includes("other")) {
-      labels.push("other");
+    if (!candidates.some((candidate) => candidate.fishId === "other")) {
+      candidates.push({ fishId: "other", label: "それ以外" });
     }
-    return labels.slice(0, 4);
+    return candidates.slice(0, 4);
   };
 
   const estimateFishCandidates = async (file: File) => {
@@ -694,11 +717,11 @@ export function ShareStudio({
       if (estimateRequestIdRef.current !== reqId) return;
       const nextCandidates = normalizeFishCandidates(json.candidates);
       setFishCandidates(nextCandidates);
-      setPendingFishType(nextCandidates[0] ?? "");
+      setPendingFishType(nextCandidates[0]?.fishId ?? "");
     } catch {
       if (estimateRequestIdRef.current !== reqId) return;
       setFishCandidates([...fallbackFishCandidates]);
-      setPendingFishType(fallbackFishCandidates[0] ?? "");
+      setPendingFishType(fallbackFishCandidates[0]?.fishId ?? "");
       setFishEstimateError("魚種推定に失敗したため、候補を表示しています。");
     } finally {
       if (estimateRequestIdRef.current === reqId) {
@@ -716,6 +739,7 @@ export function ShareStudio({
     setSelectedImageFile(file);
     setCurrentStep(file ? 2 : 1);
     setConfirmedFishType("");
+    setConfirmedFishId("");
     setPendingFishType("");
     setOtherFishQuery("");
     setSelectedOtherFish("");
@@ -750,6 +774,7 @@ export function ShareStudio({
     stopCamera();
     setPendingFishType("");
     setConfirmedFishType("");
+    setConfirmedFishId("");
     setOtherFishQuery("");
     setSelectedOtherFish("");
     setFishCandidates([]);
@@ -837,9 +862,11 @@ export function ShareStudio({
   };
 
   const handleConfirmFishType = () => {
-    const nextFishType = needsOtherFishSelection ? selectedOtherFish.trim() : pendingFishType.trim();
-    if (!nextFishType) return;
-    setConfirmedFishType(nextFishType);
+    const nextFishId = needsOtherFishSelection ? selectedOtherFish.trim() : pendingFishType.trim();
+    if (!nextFishId) return;
+    const nextFishLabel = fishLabelById.get(nextFishId) || fish?.name || nextFishId;
+    setConfirmedFishId(nextFishId);
+    setConfirmedFishType(nextFishLabel);
     setCurrentStep(3);
     setGeneratedOptions([]);
     setSelectedOptionType("standard");
@@ -912,7 +939,7 @@ export function ShareStudio({
     try {
       const finalText = formatPostText(editablePostText, appUrl);
       await navigator.clipboard.writeText(finalText);
-      const metricFishId = confirmedFishType.trim().toLowerCase();
+      const metricFishId = confirmedFishId.trim().toLowerCase();
       const metricFishLabel = confirmedFishType.trim() || fish?.name || "unknown";
       const metricVariant = selectedOptionType;
       onPostExperience?.("copy");
@@ -968,7 +995,7 @@ export function ShareStudio({
     if (!fish || !editablePostText.trim()) return;
 
     setIsSubmitting(true);
-    const metricFishId = confirmedFishType.trim().toLowerCase();
+    const metricFishId = confirmedFishId.trim().toLowerCase();
     const metricFishLabel = confirmedFishType.trim() || fish?.name || "unknown";
     const metricVariant = selectedOptionType;
     onPostExperience?.("x_click");
@@ -1218,17 +1245,17 @@ export function ShareStudio({
                 {isEstimatingFish ? <p className="frame-note">写真を見ながら候補を準備しています...</p> : null}
                 {!isEstimatingFish ? (
                   <div className="fish-candidate-grid" role="radiogroup" aria-label="fish candidates">
-                    {fishCandidates.map((name) => (
-                      <label key={name} className="fish-candidate-card">
+                    {fishCandidates.map((candidate) => (
+                      <label key={candidate.fishId} className="fish-candidate-card">
                         <input
                           className="fish-candidate-radio"
                           type="radio"
                           name="fish-candidate"
-                          value={name}
-                          checked={pendingFishType === name}
+                          value={candidate.fishId}
+                          checked={pendingFishType === candidate.fishId}
                           onChange={(event) => setPendingFishType(event.target.value)}
                         />
-                        <span className="fish-candidate-label">{name === "other" ? "それ以外" : name}</span>
+                        <span className="fish-candidate-label">{candidate.label}</span>
                       </label>
                     ))}
                   </div>
@@ -1247,20 +1274,20 @@ export function ShareStudio({
                       />
                     </label>
                     <div className="frame-options-card-grid" role="radiogroup" aria-label="all fish options">
-                      {filteredOtherFishOptions.map((name) => (
+                      {filteredOtherFishOptions.map((option) => (
                         <button
-                          key={name}
+                          key={option.fishId}
                           type="button"
                           className={
-                            selectedOtherFish === name
+                            selectedOtherFish === option.fishId
                               ? "frame-select-card frame-select-card-active"
                               : "frame-select-card"
                           }
-                          onClick={() => setSelectedOtherFish(name)}
-                          aria-pressed={selectedOtherFish === name}
+                          onClick={() => setSelectedOtherFish(option.fishId)}
+                          aria-pressed={selectedOtherFish === option.fishId}
                         >
                           <div className="frame-select-copy">
-                            <strong>{name}</strong>
+                            <strong>{option.label}</strong>
                           </div>
                         </button>
                       ))}

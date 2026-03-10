@@ -1,0 +1,450 @@
+[
+  {
+    "fish_id": "brand_2000",
+    "label": "サメ類"
+  },
+  {
+    "fish_id": "brand_3000",
+    "label": "エイ類"
+  },
+  {
+    "fish_id": "brand_5200",
+    "label": "ウルメイワシ"
+  },
+  {
+    "fish_id": "brand_5300",
+    "label": "コノシロ"
+  },
+  {
+    "fish_id": "brand_5400",
+    "label": "マイワシ"
+  },
+  {
+    "fish_id": "brand_5600",
+    "label": "カタクチイワシ"
+  },
+  {
+    "fish_id": "brand_8100",
+    "label": "ニギス"
+  },
+  {
+    "fish_id": "brand_8900",
+    "label": "カラフトマス"
+  },
+  {
+    "fish_id": "brand_9000",
+    "label": "サケ"
+  },
+  {
+    "fish_id": "brand_9110",
+    "label": "サーモントラウト"
+  },
+  {
+    "fish_id": "brand_9500",
+    "label": "サクラマス"
+  },
+  {
+    "fish_id": "brand_11100",
+    "label": "マダラ"
+  },
+  {
+    "fish_id": "brand_11200",
+    "label": "スケトウダラ"
+  },
+  {
+    "fish_id": "brand_11600",
+    "label": "アンコウ"
+  },
+  {
+    "fish_id": "brand_12000",
+    "label": "トビウオ類"
+  },
+  {
+    "fish_id": "brand_12700",
+    "label": "サヨリ"
+  },
+  {
+    "fish_id": "brand_13600",
+    "label": "マトウダイ"
+  },
+  {
+    "fish_id": "brand_14500",
+    "label": "メバル"
+  },
+  {
+    "fish_id": "brand_14900",
+    "label": "アカラバチメ(ハツメ)"
+  },
+  {
+    "fish_id": "brand_15200",
+    "label": "ヤナギバチメ(ウスメバル)"
+  },
+  {
+    "fish_id": "brand_15500",
+    "label": "カサゴ"
+  },
+  {
+    "fish_id": "brand_17210",
+    "label": "ホウボウ"
+  },
+  {
+    "fish_id": "brand_17220",
+    "label": "カナガシラ"
+  },
+  {
+    "fish_id": "brand_18200",
+    "label": "アイナメ"
+  },
+  {
+    "fish_id": "brand_18300",
+    "label": "ホッケ"
+  },
+  {
+    "fish_id": "brand_19400",
+    "label": "スズキ"
+  },
+  {
+    "fish_id": "brand_19600",
+    "label": "ノドグロ(アカムツ)"
+  },
+  {
+    "fish_id": "brand_20000",
+    "label": "ナメラバチメ(キジハタ)"
+  },
+  {
+    "fish_id": "brand_21400",
+    "label": "チカメキントキ"
+  },
+  {
+    "fish_id": "brand_21800",
+    "label": "シロギス"
+  },
+  {
+    "fish_id": "brand_22300",
+    "label": "アカアマダイ"
+  },
+  {
+    "fish_id": "brand_23200",
+    "label": "ヒラマサ"
+  },
+  {
+    "fish_id": "brand_23400",
+    "label": "ブリ"
+  },
+  {
+    "fish_id": "brand_23410",
+    "label": "ガンド(ブリ)"
+  },
+  {
+    "fish_id": "brand_23420",
+    "label": "フクラギ(ブリ)"
+  },
+  {
+    "fish_id": "brand_23430",
+    "label": "コゾクラ(ブリ)"
+  },
+  {
+    "fish_id": "brand_23500",
+    "label": "マアジ"
+  },
+  {
+    "fish_id": "brand_25100",
+    "label": "シイラ"
+  },
+  {
+    "fish_id": "brand_27100",
+    "label": "クロダイ"
+  },
+  {
+    "fish_id": "brand_27200",
+    "label": "キダイ"
+  },
+  {
+    "fish_id": "brand_27300",
+    "label": "チダイ"
+  },
+  {
+    "fish_id": "brand_27400",
+    "label": "マダイ"
+  },
+  {
+    "fish_id": "brand_28700",
+    "label": "メジナ"
+  },
+  {
+    "fish_id": "brand_29100",
+    "label": "イシダイ"
+  },
+  {
+    "fish_id": "brand_29400",
+    "label": "ウミタナゴ"
+  },
+  {
+    "fish_id": "brand_31100",
+    "label": "アカカマス"
+  },
+  {
+    "fish_id": "brand_32000",
+    "label": "コブダイ"
+  },
+  {
+    "fish_id": "brand_33100",
+    "label": "ノロゲンゲ"
+  },
+  {
+    "fish_id": "brand_34000",
+    "label": "ハタハタ"
+  },
+  {
+    "fish_id": "brand_35100",
+    "label": "タチウオ"
+  },
+  {
+    "fish_id": "brand_36100",
+    "label": "マルソウダ"
+  },
+  {
+    "fish_id": "brand_36300",
+    "label": "カツオ"
+  },
+  {
+    "fish_id": "brand_36500",
+    "label": "ゴマサバ"
+  },
+  {
+    "fish_id": "brand_36600",
+    "label": "マサバ"
+  },
+  {
+    "fish_id": "brand_36700",
+    "label": "サワラ"
+  },
+  {
+    "fish_id": "brand_37000",
+    "label": "クロマグロ"
+  },
+  {
+    "fish_id": "brand_37010",
+    "label": "シワカ(クロマグロ)"
+  },
+  {
+    "fish_id": "brand_37020",
+    "label": "メジ(クロマグロ)"
+  },
+  {
+    "fish_id": "brand_37030",
+    "label": "シビコ(クロマグロ)"
+  },
+  {
+    "fish_id": "brand_37300",
+    "label": "カジキ類"
+  },
+  {
+    "fish_id": "brand_38100",
+    "label": "メダイ"
+  },
+  {
+    "fish_id": "brand_40100",
+    "label": "ヒラメ"
+  },
+  {
+    "fish_id": "brand_41000",
+    "label": "その他のカレイ科"
+  },
+  {
+    "fish_id": "brand_41300",
+    "label": "ソウハチ"
+  },
+  {
+    "fish_id": "brand_41500",
+    "label": "ムシガレイ"
+  },
+  {
+    "fish_id": "brand_41600",
+    "label": "ヒレグロ"
+  },
+  {
+    "fish_id": "brand_41700",
+    "label": "アカガレイ"
+  },
+  {
+    "fish_id": "brand_41900",
+    "label": "マガレイ"
+  },
+  {
+    "fish_id": "brand_42000",
+    "label": "マコガレイ"
+  },
+  {
+    "fish_id": "brand_42100",
+    "label": "ババガレイ"
+  },
+  {
+    "fish_id": "brand_42300",
+    "label": "ヤナギムシガレイ"
+  },
+  {
+    "fish_id": "brand_45300",
+    "label": "ウマヅラハギ"
+  },
+  {
+    "fish_id": "brand_46000",
+    "label": "その他フグ類"
+  },
+  {
+    "fish_id": "brand_46200",
+    "label": "トラフグ"
+  },
+  {
+    "fish_id": "brand_60600",
+    "label": "ホタルイカ"
+  },
+  {
+    "fish_id": "brand_60900",
+    "label": "ソデイカ"
+  },
+  {
+    "fish_id": "brand_61100",
+    "label": "ケンサキイカ"
+  },
+  {
+    "fish_id": "brand_61200",
+    "label": "ヤリイカ"
+  },
+  {
+    "fish_id": "brand_61300",
+    "label": "アオリイカ"
+  },
+  {
+    "fish_id": "brand_62100",
+    "label": "スルメイカ"
+  },
+  {
+    "fish_id": "brand_64100",
+    "label": "マダコ"
+  },
+  {
+    "fish_id": "brand_64200",
+    "label": "イイダコ"
+  },
+  {
+    "fish_id": "brand_64300",
+    "label": "ミズダコ"
+  },
+  {
+    "fish_id": "brand_65000",
+    "label": "アワビ類"
+  },
+  {
+    "fish_id": "brand_66100",
+    "label": "サザエ"
+  },
+  {
+    "fish_id": "brand_68000",
+    "label": "バイ類"
+  },
+  {
+    "fish_id": "brand_68200",
+    "label": "エッチュウバイ"
+  },
+  {
+    "fish_id": "brand_68600",
+    "label": "エゾボラモトキ"
+  },
+  {
+    "fish_id": "brand_70100",
+    "label": "アカガイ"
+  },
+  {
+    "fish_id": "brand_70300",
+    "label": "マガキ"
+  },
+  {
+    "fish_id": "brand_70350",
+    "label": "イワガキ"
+  },
+  {
+    "fish_id": "brand_71300",
+    "label": "チョウセンハマグリ"
+  },
+  {
+    "fish_id": "brand_71400",
+    "label": "コタマガイ"
+  },
+  {
+    "fish_id": "brand_72300",
+    "label": "トリガイ"
+  },
+  {
+    "fish_id": "brand_75100",
+    "label": "カニ類"
+  },
+  {
+    "fish_id": "brand_76100",
+    "label": "クルマエビ"
+  },
+  {
+    "fish_id": "brand_77600",
+    "label": "ボタンエビ(トヤマエビ)"
+  },
+  {
+    "fish_id": "brand_77700",
+    "label": "シマエビ(モロトゲアカエビ)"
+  },
+  {
+    "fish_id": "brand_77800",
+    "label": "アマエビ(ホッコクアカエビ)"
+  },
+  {
+    "fish_id": "brand_78000",
+    "label": "ガスエビ(トゲザコエビ)"
+  },
+  {
+    "fish_id": "brand_78200",
+    "label": "シロガス(クロザコエビ)"
+  },
+  {
+    "fish_id": "brand_80100",
+    "label": "加能ガニ(ズワイガニ雄)"
+  },
+  {
+    "fish_id": "brand_80160",
+    "label": "香箱ガニ(ズワイガニ雌)"
+  },
+  {
+    "fish_id": "brand_80200",
+    "label": "ベニズワイ"
+  },
+  {
+    "fish_id": "brand_80600",
+    "label": "ガザミ"
+  },
+  {
+    "fish_id": "brand_90000",
+    "label": "ウニ類"
+  },
+  {
+    "fish_id": "brand_92000",
+    "label": "マナマコ科"
+  },
+  {
+    "fish_id": "brand_92100",
+    "label": "マナマコ"
+  },
+  {
+    "fish_id": "brand_92200",
+    "label": "オキナマコ"
+  },
+  {
+    "fish_id": "brand_97100",
+    "label": "ワカメ"
+  },
+  {
+    "fish_id": "brand_97101",
+    "label": "ワカメ(乾)"
+  },
+  {
+    "fish_id": "brand_97500",
+    "label": "ノリ"
+  }
+]
