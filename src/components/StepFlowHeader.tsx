@@ -1,4 +1,4 @@
-import cameraIcon from "../assets/step-camera.png";
+﻿import cameraIcon from "../assets/step-camera.png";
 import confirmIcon from "../assets/step-confirm.png";
 import postIcon from "../assets/step-post.png";
 
@@ -31,16 +31,9 @@ function StepCard({ step, disabled, ariaLabel, onClick }: StepCardProps) {
 }
 
 export function StepFlowHeader({ currentStep, step1Complete, step2Complete, onStepChange }: StepFlowHeaderProps) {
-  const flowLabel = "\u6295\u7a3f\u30d5\u30ed\u30fc";
-  const photoLabel = "\u5199\u771f";
-  const confirmLabel = "\u9b5a\u3092\u78ba\u8a8d";
-  const postLabel = "\u6295\u7a3f";
-  const photoAlt = "\u5199\u771f\u30b9\u30c6\u30c3\u30d7\u306e\u30a2\u30a4\u30b3\u30f3";
-  const confirmAlt = "\u9b5a\u78ba\u8a8d\u30b9\u30c6\u30c3\u30d7\u306e\u30a2\u30a4\u30b3\u30f3";
-  const postAlt = "\u6295\u7a3f\u30b9\u30c6\u30c3\u30d7\u306e\u30a2\u30a4\u30b3\u30f3";
+  const flowLabel = "投稿フロー";
   const gray = "#d8dbe0";
   const blue = "#1d4ed8";
-  const textGray = "#9aa0a9";
   const stepColors = [
     currentStep === 1 ? blue : gray,
     currentStep === 2 ? blue : gray,
@@ -53,38 +46,38 @@ export function StepFlowHeader({ currentStep, step1Complete, step2Complete, onSt
     iconSrc: string;
     iconAlt: string;
     disabled: boolean;
-    metaX: number;
-    labelX: number;
+    centerX: number;
+    textWidth: string;
     ariaLabel: string;
   }> = [
     {
       step: 1,
-      label: photoLabel,
+      label: "写真",
       iconSrc: cameraIcon,
-      iconAlt: photoAlt,
+      iconAlt: "写真ステップのアイコン",
       disabled: false,
-      metaX: 200,
-      labelX: 200,
+      centerX: 176,
+      textWidth: "26%",
       ariaLabel: "1/3 写真"
     },
     {
       step: 2,
-      label: confirmLabel,
+      label: "魚を確認",
       iconSrc: confirmIcon,
-      iconAlt: confirmAlt,
+      iconAlt: "魚確認ステップのアイコン",
       disabled: !step1Complete,
-      metaX: 570,
-      labelX: 570,
+      centerX: 562,
+      textWidth: "30%",
       ariaLabel: "2/3 魚を確認"
     },
     {
       step: 3,
-      label: postLabel,
+      label: "投稿",
       iconSrc: postIcon,
-      iconAlt: postAlt,
+      iconAlt: "投稿ステップのアイコン",
       disabled: !step2Complete,
-      metaX: 970,
-      labelX: 970,
+      centerX: 950,
+      textWidth: "24%",
       ariaLabel: "3/3 投稿"
     }
   ];
@@ -92,41 +85,30 @@ export function StepFlowHeader({ currentStep, step1Complete, step2Complete, onSt
   return (
     <div className="step-flow-header" aria-label={flowLabel}>
       <div className="step-flow-stage" role="group" aria-label={flowLabel}>
-        <svg className="step-flow-svg" viewBox="0 0 1200 220" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <svg className="step-flow-svg" viewBox="0 0 1200 220" preserveAspectRatio="none" aria-hidden="true">
           <path d="M0 0H300L384 110L300 220H0Z" fill={stepColors[0]} />
           <path d="M346 0H700L784 110L700 220H346L430 110Z" fill={stepColors[1]} />
           <path d="M746 0H1100L1184 110L1100 220H746L830 110Z" fill={stepColors[2]} />
-
+        </svg>
+        <div className="step-flow-text-row" aria-hidden="true">
           {steps.map((item) => {
             const isActive = currentStep === item.step;
-            const metaFill = isActive ? "#ffffff" : textGray;
-            const labelFill = isActive ? "#ffffff" : textGray;
             return (
-              <g key={`text-${item.step}`}>
-                <text
-                  x={item.metaX}
-                  y="78"
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  className="step-flow-svg-meta"
-                  fill={metaFill}
-                >
+              <div
+                key={`text-${item.step}`}
+                className="step-flow-text"
+                style={{ left: `${(item.centerX / 1200) * 100}%`, width: item.textWidth }}
+              >
+                <span className={isActive ? "step-flow-step-number step-flow-step-number-active" : "step-flow-step-number"}>
                   {item.step}/3
-                </text>
-                <text
-                  x={item.labelX}
-                  y="146"
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  className="step-flow-svg-label"
-                  fill={labelFill}
-                >
+                </span>
+                <span className={isActive ? "step-flow-step-label step-flow-step-label-active" : "step-flow-step-label"}>
                   {item.label}
-                </text>
-              </g>
+                </span>
+              </div>
             );
           })}
-        </svg>
+        </div>
         <div className="step-flow-hit-row">
           {steps.map((item) => (
             <StepCard
@@ -141,7 +123,11 @@ export function StepFlowHeader({ currentStep, step1Complete, step2Complete, onSt
       </div>
       <div className="step-flow-icon-row" aria-hidden="true">
         {steps.map((item) => (
-          <div key={`icon-${item.step}`} className={`step-flow-icon-wrap step-flow-icon-wrap-${item.step}`}>
+          <div
+            key={`icon-${item.step}`}
+            className={`step-flow-icon-wrap step-flow-icon-wrap-${item.step}`}
+            style={{ left: `${(item.centerX / 1200) * 100}%` }}
+          >
             <div className={currentStep === item.step ? "step-flow-icon step-flow-icon-active" : "step-flow-icon"}>
               <img src={item.iconSrc} alt={item.iconAlt} className="step-flow-icon-image" loading="lazy" />
             </div>

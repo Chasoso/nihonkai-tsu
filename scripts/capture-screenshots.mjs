@@ -10,8 +10,21 @@ const repoRoot = path.resolve(__dirname, "..");
 
 const baseUrl = process.env.SCREENSHOT_BASE_URL ?? "http://127.0.0.1:5173";
 const viewport = { width: 1440, height: 1400 };
-const tinyPngBase64 =
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9p4nHCcAAAAASUVORK5CYII=";
+const sampleSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <rect width="1280" height="720" fill="#f6f7f2"/>
+  <rect x="30" y="30" width="1220" height="660" rx="18" fill="#fbfbf8" stroke="#c8ced7" stroke-width="6"/>
+  <path d="M210 380 C320 250 520 210 700 260 C800 285 900 340 980 330 L1075 285 L1030 350 L1095 390 L980 385 C920 460 800 500 660 500 C470 500 290 455 210 380 Z" fill="#eceee8" stroke="#777d84" stroke-width="8"/>
+  <path d="M365 355 C510 315 725 320 900 355" stroke="#9ca3aa" stroke-width="7" fill="none"/>
+  <path d="M320 385 C500 360 720 360 930 392" stroke="#9ca3aa" stroke-width="6" fill="none"/>
+  <path d="M470 280 L555 150 L610 290" fill="#f1f3ed" stroke="#777d84" stroke-width="8"/>
+  <path d="M700 495 L770 620 L810 500" fill="#f1f3ed" stroke="#777d84" stroke-width="8"/>
+  <circle cx="880" cy="355" r="26" fill="#ffffff" stroke="#777d84" stroke-width="8"/>
+  <circle cx="888" cy="355" r="10" fill="#777d84"/>
+  <path d="M935 376 Q970 390 1005 372" stroke="#777d84" stroke-width="8" fill="none"/>
+  <path d="M120 575 C340 535 640 560 1160 522" stroke="#d7dcd3" stroke-width="6" fill="none"/>
+</svg>
+`.trim();
 
 function timestampLabel(date = new Date()) {
   const pad = (value) => String(value).padStart(2, "0");
@@ -109,9 +122,9 @@ async function main() {
 
     const fileInput = page.locator("input.hidden-file-input");
     await fileInput.setInputFiles({
-      name: "sample-upload.png",
-      mimeType: "image/png",
-      buffer: Buffer.from(tinyPngBase64, "base64")
+      name: "sample-upload.svg",
+      mimeType: "image/svg+xml",
+      buffer: Buffer.from(sampleSvg, "utf8")
     });
 
     await page.getByRole("heading", { name: "Step 2: 魚を選ぶ" }).waitFor();

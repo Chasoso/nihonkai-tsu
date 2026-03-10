@@ -1005,38 +1005,36 @@ export function ShareStudio({
                 ) : null}
 
                 {step1PreviewVisible ? (
-                  <div className="composer-step-expanded">
+                  <div className="composer-step-expanded composer-step-expanded-photo">
                     {step1Complete ? (
-                      <div className="frame-area composer-frame-area">
-                        <p>投稿フレーム</p>
-                        <div className="frame-options-card-grid composer-frame-grid" role="radiogroup" aria-label="post frame options">
+                      <div className="composer-frame-compact" role="radiogroup" aria-label="post frame options">
+                        <span className="composer-frame-label">投稿フレーム</span>
+                        <div className="composer-frame-toggle">
                           <button
                             type="button"
-                            className={frameOption === "nihonkai" ? "frame-select-card frame-select-card-active" : "frame-select-card"}
+                            className={
+                              frameOption === "nihonkai"
+                                ? "composer-frame-chip composer-frame-chip-active"
+                                : "composer-frame-chip"
+                            }
                             onClick={() => setFrameOption("nihonkai")}
                             disabled={isGenerating || isSubmitting}
                             aria-pressed={frameOption === "nihonkai"}
                           >
-                            <div className="frame-select-copy">
-                              <strong>Nihonkai-tsu フレーム</strong>
-                              <p>ブランドフレームを追加</p>
-                            </div>
-                            <div className="frame-select-thumb frame-select-thumb-brand" aria-hidden="true">
-                              <span>{fish?.name ?? "fish"}</span>
-                            </div>
+                            Nihonkai-tsu
                           </button>
                           <button
                             type="button"
-                            className={frameOption === "none" ? "frame-select-card frame-select-card-active" : "frame-select-card"}
+                            className={
+                              frameOption === "none"
+                                ? "composer-frame-chip composer-frame-chip-active"
+                                : "composer-frame-chip"
+                            }
                             onClick={() => setFrameOption("none")}
                             disabled={isGenerating || isSubmitting}
                             aria-pressed={frameOption === "none"}
                           >
-                            <div className="frame-select-copy">
-                              <strong>フレームなし</strong>
-                              <p>画像をそのまま使う</p>
-                            </div>
-                            <div className="frame-select-thumb frame-select-thumb-plain" aria-hidden="true" />
+                            なし
                           </button>
                         </div>
                       </div>
@@ -1083,11 +1081,11 @@ export function ShareStudio({
                       </div>
                     </div>
 
-                    <div className="composer-step-footer">
-                      <div className="step-primary-actions">
+                    <div className="composer-step-footer composer-step-footer-split">
+                      <div className="step-secondary-actions">
                         <button
                           type="button"
-                          className="step-primary-button step-secondary-button"
+                          className="step-secondary-button"
                           onClick={startCamera}
                           disabled={isGenerating || isSubmitting}
                         >
@@ -1095,12 +1093,14 @@ export function ShareStudio({
                         </button>
                         <button
                           type="button"
-                          className="step-primary-button step-secondary-button"
+                          className="step-secondary-button"
                           onClick={handlePickImageClick}
                           disabled={isGenerating || isSubmitting}
                         >
                           画像を選ぶ
                         </button>
+                      </div>
+                      <div className="step-primary-actions step-primary-actions-step1">
                         <button
                           type="button"
                           className="step-primary-button"

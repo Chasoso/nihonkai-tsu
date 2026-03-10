@@ -1088,7 +1088,7 @@ textarea {
 .step-flow-stage {
   position: relative;
   width: 100%;
-  height: 126px;
+  height: clamp(108px, 12vw, 132px);
   border-radius: 18px;
   overflow: visible;
 }
@@ -1099,18 +1099,46 @@ textarea {
   height: 100%;
 }
 
-.step-flow-svg-meta {
-  font-size: 34px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  font-family: "Inter", "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;
+.step-flow-text-row {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 
-.step-flow-svg-label {
-  font-size: 52px;
-  font-weight: 600;
-  letter-spacing: 0;
+.step-flow-text {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.step-flow-step-number,
+.step-flow-step-label {
   font-family: "Inter", "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;
+  color: #9aa0a9;
+}
+
+.step-flow-step-number {
+  font-size: clamp(15px, 1.55vw, 22px);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.step-flow-step-label {
+  font-size: clamp(28px, 3vw, 42px);
+  font-weight: 600;
+  line-height: 1.05;
+}
+
+.step-flow-step-number-active,
+.step-flow-step-label-active {
+  color: #ffffff;
 }
 
 .step-flow-hit-row {
@@ -1142,13 +1170,15 @@ textarea {
 }
 
 .step-flow-icon-row {
-  margin-top: -4px;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2px;
+  margin-top: 0;
+  position: relative;
+  height: 96px;
 }
 
 .step-flow-icon-wrap {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
   display: grid;
   justify-items: center;
 }
@@ -1175,6 +1205,7 @@ textarea {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  object-position: 50% 50%;
   display: block;
 }
 
@@ -1218,12 +1249,65 @@ textarea {
   min-width: 0;
 }
 
+.composer-step-expanded {
+  display: grid;
+  gap: 16px;
+}
+
+.composer-step-expanded-photo {
+  gap: 18px;
+}
+
 .composer-photo-actions {
   margin-top: 0;
 }
 
 .composer-frame-area {
   margin-top: 0;
+}
+
+.composer-frame-compact {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.composer-frame-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #17365d;
+}
+
+.composer-frame-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.composer-frame-chip {
+  min-width: 136px;
+  min-height: 42px;
+  border-radius: 10px;
+  border: 1px solid #d5dfeb;
+  background: #eef3f9;
+  color: #7d8ea4;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  justify-content: center;
+}
+
+.composer-frame-chip:hover {
+  border-color: rgba(29, 78, 216, 0.25);
+  background: #eef3f9;
+}
+
+.composer-frame-chip-active {
+  background: linear-gradient(135deg, #2f66e1, var(--primary));
+  border-color: rgba(29, 78, 216, 0.58);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(17, 44, 76, 0.14);
 }
 
 .hidden-file-input {
@@ -1327,10 +1411,18 @@ textarea {
 .captured-preview {
   width: 100%;
   height: 100%;
-  object-fit: cover;
   display: block;
   border-radius: 14px;
+}
+
+.camera-preview {
+  object-fit: cover;
   background: rgba(0, 0, 0, 0.35);
+}
+
+.captured-preview {
+  object-fit: contain;
+  background: #f7f7f3;
 }
 
 .capture-button-in-frame {
@@ -1489,6 +1581,11 @@ textarea {
   align-items: center;
 }
 
+.composer-step-footer-split {
+  justify-content: space-between;
+  gap: 16px;
+}
+
 .step-primary-button {
   min-width: min(360px, 100%);
   min-height: 58px;
@@ -1513,14 +1610,55 @@ textarea {
   gap: 12px;
 }
 
+.step-primary-actions-step1 {
+  width: auto;
+  flex: 0 0 auto;
+}
+
+.step-secondary-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .step-secondary-button {
   background: linear-gradient(180deg, #ffffff, #eef4ff);
   color: var(--primary-deep);
   box-shadow: 0 12px 24px rgba(24, 56, 112, 0.12);
+  min-width: 108px;
+  min-height: 46px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .step-secondary-button:hover {
   background: linear-gradient(180deg, #ffffff, #e7f0ff);
+}
+
+.composer-step-preview-wide {
+  width: min(100%, 620px);
+  margin: 0 auto;
+}
+
+.composer-step-expanded-photo .media-frame {
+  aspect-ratio: 16 / 8.2;
+  border-radius: 10px;
+  border: 1px solid rgba(93, 111, 136, 0.42);
+  background: #fafaf6;
+  box-shadow: none;
+  padding: 0;
+}
+
+.composer-step-expanded-photo .frame-overlay {
+  inset: 0;
+  border-radius: 10px;
+}
+
+.composer-step-expanded-photo .composer-step-footer {
+  margin-top: 0;
 }
 
 .x-post-modal label {
@@ -1823,7 +1961,13 @@ textarea {
     justify-content: stretch;
   }
 
-  .step-primary-actions {
+  .composer-step-footer-split {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .step-primary-actions,
+  .step-secondary-actions {
     flex-direction: column;
   }
 
@@ -1852,22 +1996,39 @@ textarea {
     padding: 9px;
   }
 
+  .composer-frame-compact {
+    align-items: stretch;
+  }
+
+  .composer-frame-toggle {
+    width: 100%;
+  }
+
+  .composer-frame-chip {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
   .frame-select-thumb {
     width: 78px;
     height: 56px;
   }
 
   .step-flow-stage {
-    height: 112px;
+    height: clamp(104px, 15vw, 124px);
     border-radius: 14px;
   }
 
-  .step-flow-svg-meta {
-    font-size: 30px;
+  .step-flow-text {
+    gap: 7px;
   }
 
-  .step-flow-svg-label {
-    font-size: 42px;
+  .step-flow-step-number {
+    font-size: clamp(14px, 2vw, 20px);
+  }
+
+  .step-flow-step-label {
+    font-size: clamp(23px, 4vw, 34px);
   }
 
   .step-flow-icon {
@@ -1878,6 +2039,10 @@ textarea {
   .step-flow-icon-wrap-2 .step-flow-icon {
     width: 102px;
     height: 74px;
+  }
+
+  .step-flow-icon-row {
+    height: 84px;
   }
 
   .fish-list-header {
@@ -1896,25 +2061,27 @@ textarea {
 
 @media (max-width: 520px) {
   .step-flow-stage {
-    height: 98px;
+    height: 112px;
     border-radius: 12px;
   }
 
-  .step-flow-svg-meta {
-    font-size: 24px;
+  .step-flow-text {
+    gap: 6px;
   }
 
-  .step-flow-svg-label {
-    font-size: 34px;
+  .step-flow-step-number {
+    font-size: 14px;
+  }
+
+  .step-flow-step-label {
+    font-size: 22px;
   }
 
   .step-flow-icon-row {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 4px;
+    height: 74px;
   }
 
   .step-flow-icon {
-    justify-self: center;
     width: 92px;
     height: 66px;
   }
