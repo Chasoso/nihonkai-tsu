@@ -31,7 +31,8 @@ const captureFiles = [
   "04-modal-step2-default.png",
   "05-modal-step2-other.png",
   "06-modal-step3-initial.png",
-  "07-modal-step3-generated.png"
+  "07-modal-step3-generated.png",
+  "08-progress-board-after-alt-fish.png"
 ];
 const sampleSvg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
@@ -117,6 +118,11 @@ async function saveExpandedModal(page, filePath) {
   });
 }
 
+async function saveElement(locator, filePath) {
+  await locator.screenshot({ path: filePath });
+  console.log(`saved: ${path.relative(repoRoot, filePath)}`);
+}
+
 async function captureSet(browser, outputDir, config) {
   const context = await browser.newContext({
     viewport: config.viewport,
@@ -128,6 +134,10 @@ async function captureSet(browser, outputDir, config) {
 
   try {
     const page = await context.newPage();
+    await page.addInitScript(() => {
+      window.open = () => null;
+      window.alert = () => undefined;
+    });
 
     try {
       await page.goto(baseUrl, { waitUntil: "networkidle", timeout: 20000 });
@@ -168,10 +178,16 @@ async function captureSet(browser, outputDir, config) {
         .waitFor();
       await saveExpandedModal(page, path.join(outputDir, "05-modal-step2-other.png"));
 
-      const firstOtherFish = modal.locator('[aria-label="all fish options"] button').first();
-      if (await firstOtherFish.count()) {
-        await firstOtherFish.click();
+      const otherFishSearch = modal.getByRole("searchbox", { name: "魚を検索" });
+      if (await otherFishSearch.count()) {
+        await otherFishSearch.fill("マサバ");
       }
+
+      const preferredOtherFish = modal.getByRole("button", { name: /^マサバ$/ }).first();
+      if (!(await preferredOtherFish.count())) {
+        throw new Error("Progress Board verification setup failed: マサバ option was not found in Step 2.");
+      }
+      await preferredOtherFish.click();
     }
 
     const step2Primary = modal.getByRole("button", { name: "この魚で投稿文を作る" });
@@ -187,6 +203,36 @@ async function captureSet(browser, outputDir, config) {
 
     await modal.getByRole("button", { name: "コピーする" }).waitFor({ timeout: 20000 });
     await saveExpandedModal(page, path.join(outputDir, "07-modal-step3-generated.png"));
+
+    const xPostButton = modal.getByRole("button", { name: "Xに投稿する" });
+    await xPostButton.waitFor();
+    await xPostButton.click();
+    await modal.waitFor({ state: "hidden", timeout: 10000 });
+
+    const badges = await page.evaluate(() => {
+      try {
+        return JSON.parse(window.localStorage.getItem("nihonkai_badges") || "[]");
+      } catch {
+        return [];
+      }
+    });
+
+    const earnedIds = new Set(
+      Array.isArray(badges) ? badges.map((badge) => String(badge?.fishId || "").trim().toLowerCase()) : []
+    );
+    if (!Array.isArray(badges) || badges.length === 0) {
+      throw new Error("Progress Board verification failed: no badges were recorded after posting.");
+    }
+    if (!earnedIds.has("brand_36600")) {
+      throw new Error(`Progress Board verification failed: alternate fish badge was not recorded. Actual: ${JSON.stringify(badges)}`);
+    }
+    if (earnedIds.has("brand_5400")) {
+      throw new Error("Progress Board verification failed: initial fish badge was recorded instead of the alternate fish.");
+    }
+
+    const progressSection = page.locator("section").filter({ has: page.getByRole("heading", { name: "Your Tsu" }) }).first();
+    await progressSection.scrollIntoViewIfNeeded();
+    await saveElement(progressSection, path.join(outputDir, "08-progress-board-after-alt-fish.png"));
   } finally {
     await context.close();
   }

@@ -366,16 +366,18 @@ export default function App() {
               }
               return true;
             }}
-            onComplete={() => {
-              const result = earnBadge(data.year, selectedFish);
+            onComplete={(completedFishId) => {
+              const earnedFish =
+                data.fish.find((item) => item.id === (completedFishId?.trim().toLowerCase() || "")) ?? selectedFish;
+              const result = earnBadge(data.year, earnedFish);
               setBadges(result.badges);
               if (result.added) {
                 setOverlayVisible(true);
                 if (overlayTimerRef.current) window.clearTimeout(overlayTimerRef.current);
                 overlayTimerRef.current = window.setTimeout(() => setOverlayVisible(false), 1500);
-                openToast(`通を獲得しました: ${selectedFish.share.badgeLabel}`);
+                openToast(`通を獲得しました: ${earnedFish.share.badgeLabel}`);
               } else {
-                openToast(`すでに獲得済みです: ${selectedFish.share.badgeLabel}`);
+                openToast(`すでに獲得済みです: ${earnedFish.share.badgeLabel}`);
               }
             }}
           />
