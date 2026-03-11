@@ -541,10 +541,10 @@ export function ShareStudio({
   );
   const shareImageFishMeta = useMemo<ShareImageFishMeta>(
     () => ({
-      fishId: confirmedFishId.trim() || fish.id,
-      fishLabel: confirmedFishType.trim() || fish.name
+      fishId: confirmedFishId.trim() || fish?.id || "unknown",
+      fishLabel: confirmedFishType.trim() || fish?.name || "unknown"
     }),
-    [confirmedFishId, confirmedFishType, fish.id, fish.name]
+    [confirmedFishId, confirmedFishType, fish?.id, fish?.name]
   );
   const searchableFishOptions = useMemo(() => fishMasterOptions, [fishMasterOptions]);
   const filteredOtherFishOptions = useMemo(() => {
