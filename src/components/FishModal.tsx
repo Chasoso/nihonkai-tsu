@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { Fish, LandingsData } from "../types";
+import { FishImage } from "./FishImage";
 
 interface FishModalProps {
   fish: Fish | null;
@@ -14,10 +15,10 @@ function trendLabel(trend: Fish["trend"]) {
   return "横ばい";
 }
 
-function categoryLabel(category: string): string {
+function categoryLabel(category: string) {
   if (category === "trend") return "旬";
   if (category === "discovery") return "発見";
-  if (category === "classic") return "王道";
+  if (category === "classic") return "定番";
   return category;
 }
 
@@ -42,19 +43,20 @@ function buildSeasonIndexByMonth(landings: LandingsData | null | undefined, fish
 
 function recommendDishes(fishName: string): string[] {
   const name = fishName.toLowerCase();
-  if (name.includes("イカ")) return ["刺身", "バター醤油炒め", "天ぷら"];
-  if (name.includes("エビ") || name.includes("ガニ")) return ["刺身", "塩ゆで", "味噌汁"];
-  if (name.includes("サバ") || name.includes("イワシ")) return ["塩焼き", "炙り刺し", "つみれ汁"];
-  if (name.includes("ブリ")) return ["刺身", "照り焼き", "しゃぶしゃぶ"];
-  if (name.includes("ノドグロ")) return ["塩焼き", "炙り寿司", "煮付け"];
+  if (name.includes("いか")) return ["刺身", "バター焼き", "天ぷら"];
+  if (name.includes("えび") || name.includes("かに")) return ["刺身", "塩ゆで", "唐揚げ"];
+  if (name.includes("さば") || name.includes("いわし")) return ["塩焼き", "炙り刺し", "つみれ汁"];
+  if (name.includes("ぶり")) return ["刺身", "照り焼き", "しゃぶしゃぶ"];
+  if (name.includes("のどぐろ")) return ["塩焼き", "炙り寿司", "煮付け"];
   return ["刺身", "塩焼き", "煮付け"];
 }
 
 export function FishModal({ fish, landings = null, onClose, onSelectForShare }: FishModalProps) {
-  if (!fish) return null;
-
-  const seasonIndexByMonth = useMemo(() => buildSeasonIndexByMonth(landings, fish.id), [landings, fish.id]);
-  const dishes = useMemo(() => recommendDishes(fish.name), [fish.name]);
+  const seasonIndexByMonth = useMemo(
+    () => (fish ? buildSeasonIndexByMonth(landings, fish.id) : []),
+    [fish, landings]
+  );
+  const dishes = useMemo(() => (fish ? recommendDishes(fish.name) : []), [fish]);
   const peakMonth = useMemo(() => {
     if (!seasonIndexByMonth.length) return null;
     let bestIndex = 0;
@@ -68,6 +70,8 @@ export function FishModal({ fish, landings = null, onClose, onSelectForShare }: 
     return bestIndex + 1;
   }, [seasonIndexByMonth]);
 
+  if (!fish) return null;
+
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true">
       <div className="modal fish-detail-modal">
@@ -77,7 +81,7 @@ export function FishModal({ fish, landings = null, onClose, onSelectForShare }: 
         <div className="fish-detail-grid">
           <div className="fish-detail-hero card">
             <div className="fish-detail-image" aria-label={`${fish.name}の画像`}>
-              <span className="fish-detail-emoji">🐟</span>
+              <FishImage fishId={fish.id} fishName={fish.name} />
             </div>
             <div>
               <h3 className="fish-detail-title">{fish.name}</h3>
@@ -85,7 +89,7 @@ export function FishModal({ fish, landings = null, onClose, onSelectForShare }: 
               <div className="fish-detail-meta">
                 <span>カテゴリ: {categoryLabel(fish.category)}</span>
                 <span>トレンド: {trendLabel(fish.trend)}</span>
-                <span>レア帯: 上位{fish.percentile}%</span>
+                <span>レア度: 上位 {fish.percentile}%</span>
               </div>
             </div>
           </div>
@@ -97,7 +101,10 @@ export function FishModal({ fish, landings = null, onClose, onSelectForShare }: 
                 <div className="season-mini-graph" aria-label="月別旬グラフ">
                   {seasonIndexByMonth.map((value, idx) => (
                     <div key={idx} className="season-mini-bar-wrap" title={`${idx + 1}月 / 指数 ${value.toFixed(2)}`}>
-                      <div className={`season-mini-bar ${peakMonth === idx + 1 ? "season-mini-bar-peak" : ""}`} style={{ height: `${Math.max(10, Math.min(100, value * 58))}%` }} />
+                      <div
+                        className={`season-mini-bar ${peakMonth === idx + 1 ? "season-mini-bar-peak" : ""}`}
+                        style={{ height: `${Math.max(10, Math.min(100, value * 58))}%` }}
+                      />
                     </div>
                   ))}
                 </div>
@@ -128,7 +135,7 @@ export function FishModal({ fish, landings = null, onClose, onSelectForShare }: 
               onClose();
             }}
           >
-            食べた（投稿する）
+            食べたら投稿する
           </button>
         </div>
       </div>

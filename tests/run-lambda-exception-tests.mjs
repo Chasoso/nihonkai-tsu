@@ -226,15 +226,17 @@ async function main() {
   await runCase("task=track_metric 正常系は status=ok", async () => {
     const snapshot = snapshotGlobals();
     try {
-      let capturedInput = null;
+      const capturedInputs = [];
       DynamoDBClient.prototype.send = async (command) => {
-        capturedInput = command.input;
+        capturedInputs.push(command.input);
         return {};
       };
       const handler = await freshHandler({
         POST_TEXT_MODE: "live",
         AI_PROVIDER: "bedrock",
-        METRICS_TABLE_NAME: "metrics-table"
+        METRICS_TABLE_NAME: "metrics-table",
+        METRICS_DAILY_TABLE_NAME: "metrics-daily-table",
+        METRICS_FISH_DAILY_TABLE_NAME: "metrics-fish-daily-table"
       });
       const res = await handler(
         eventOf({
@@ -248,11 +250,28 @@ async function main() {
       const body = JSON.parse(res.body);
       assert.equal(res.statusCode, 200);
       assert.equal(body.status, "ok");
-      assert.equal(capturedInput.TableName, "metrics-table");
-      assert.equal(capturedInput.Item.fish_id.S, "saba");
-      assert.equal(capturedInput.Item.metric_type.S, "copy");
-      assert.ok(capturedInput.Item.timestamp.S);
-      assert.ok(capturedInput.Item.date_jst.S);
+      assert.equal(capturedInputs.length, 3);
+
+      const eventWrite = capturedInputs[0];
+      assert.equal(eventWrite.TableName, "metrics-table");
+      assert.equal(eventWrite.Item.fish_id.S, "saba");
+      assert.equal(eventWrite.Item.metric_type.S, "copy");
+      assert.ok(eventWrite.Item.timestamp.S);
+      assert.ok(eventWrite.Item.date_jst.S);
+
+      const dailyUpdate = capturedInputs[1];
+      assert.equal(dailyUpdate.TableName, "metrics-daily-table");
+      assert.equal(dailyUpdate.Key.date_jst.S, eventWrite.Item.date_jst.S);
+      assert.match(dailyUpdate.UpdateExpression, /total_count/);
+      assert.equal(dailyUpdate.ExpressionAttributeNames["#metricCount"], "copy_count");
+
+      const fishDailyUpdate = capturedInputs[2];
+      assert.equal(fishDailyUpdate.TableName, "metrics-fish-daily-table");
+      assert.equal(fishDailyUpdate.Key.date_jst.S, eventWrite.Item.date_jst.S);
+      assert.equal(fishDailyUpdate.Key.fish_id.S, "saba");
+      assert.equal(fishDailyUpdate.ExpressionAttributeValues[":fishLabel"].S, "サバ");
+      assert.match(fishDailyUpdate.UpdateExpression, /total_count/);
+      assert.equal(fishDailyUpdate.ExpressionAttributeNames["#metricCount"], "copy_count");
     } finally {
       restoreGlobals(snapshot);
     }
@@ -365,6 +384,151 @@ async function main() {
       assert.equal(body.current_order, 0);
       assert.equal(body.fish_count_today, 0);
       assert.equal(body.top_fish_this_week, null);
+    } finally {
+      restoreGlobals(snapshot);
+    }
+  }, results);
+
+  await runCase("task=get_dashboard_metrics は集計済みKPIを返す", async () => {
+    const snapshot = snapshotGlobals();
+    try {
+      DynamoDBClient.prototype.send = async (command) => {
+        const input = command.input;
+        if (input.TableName === "metrics-daily-table") {
+          const dateJst = input.ExpressionAttributeValues[":dateJst"].S;
+          if (dateJst === "2026-03-11") {
+            return { Items: [{ date_jst: { S: dateJst }, total_count: { N: "7" } }] };
+          }
+          if (dateJst === "2026-03-10") {
+            return { Items: [{ date_jst: { S: dateJst }, total_count: { N: "5" } }] };
+          }
+          if (dateJst === "2026-03-09") {
+            return { Items: [{ date_jst: { S: dateJst }, total_count: { N: "3" } }] };
+          }
+          return { Items: [] };
+        }
+        if (input.TableName === "metrics-fish-daily-table") {
+          const dateJst = input.ExpressionAttributeValues[":dateJst"].S;
+          if (dateJst === "2026-03-11") {
+            return {
+              Items: [
+                {
+                  date_jst: { S: dateJst },
+                  fish_id: { S: "maiwashi" },
+                  fish_label: { S: "マイワシ" },
+                  total_count: { N: "4" }
+                },
+                {
+                  date_jst: { S: dateJst },
+                  fish_id: { S: "saba" },
+                  fish_label: { S: "サバ" },
+                  total_count: { N: "3" }
+                }
+              ]
+            };
+          }
+          if (dateJst === "2026-03-10") {
+            return {
+              Items: [
+                {
+                  date_jst: { S: dateJst },
+                  fish_id: { S: "maiwashi" },
+                  fish_label: { S: "マイワシ" },
+                  total_count: { N: "2" }
+                },
+                {
+                  date_jst: { S: dateJst },
+                  fish_id: { S: "aji" },
+                  fish_label: { S: "アジ" },
+                  total_count: { N: "3" }
+                }
+              ]
+            };
+          }
+          return { Items: [] };
+        }
+        return { Items: [] };
+      };
+
+      const OriginalDate = Date;
+      globalThis.Date = class extends OriginalDate {
+        constructor(...args) {
+          if (args.length === 0) {
+            super("2026-03-11T12:00:00.000Z");
+            return;
+          }
+          super(...args);
+        }
+        static now() {
+          return new OriginalDate("2026-03-11T12:00:00.000Z").getTime();
+        }
+        static parse(value) {
+          return OriginalDate.parse(value);
+        }
+        static UTC(...args) {
+          return OriginalDate.UTC(...args);
+        }
+      };
+
+      const handler = await freshHandler({
+        POST_TEXT_MODE: "live",
+        AI_PROVIDER: "bedrock",
+        METRICS_DAILY_TABLE_NAME: "metrics-daily-table",
+        METRICS_FISH_DAILY_TABLE_NAME: "metrics-fish-daily-table"
+      });
+      const res = await handler(
+        eventOf({
+          task: "get_dashboard_metrics",
+          date_from: "2026-03-09",
+          date_to: "2026-03-11"
+        })
+      );
+      const body = JSON.parse(res.body);
+      assert.equal(res.statusCode, 200);
+      assert.equal(body.total, 15);
+      assert.equal(body.today, 7);
+      assert.equal(body.this_week, 15);
+      assert.deepEqual(body.daily_counts, [
+        { date_jst: "2026-03-09", count: 3 },
+        { date_jst: "2026-03-10", count: 5 },
+        { date_jst: "2026-03-11", count: 7 }
+      ]);
+      assert.equal(body.fish_counts[0].fish_id, "maiwashi");
+      assert.equal(body.fish_counts[0].count, 6);
+      assert.equal(body.top_fish.fish_id, "maiwashi");
+      assert.equal(body.top_fish.fish_label, "マイワシ");
+    } finally {
+      restoreGlobals(snapshot);
+    }
+  }, results);
+
+  await runCase("task=get_dashboard_metrics はDynamoDB異常時もゼロで返す", async () => {
+    const snapshot = snapshotGlobals();
+    try {
+      DynamoDBClient.prototype.send = async () => {
+        throw new Error("ddb_dashboard_down");
+      };
+      const handler = await freshHandler({
+        POST_TEXT_MODE: "live",
+        AI_PROVIDER: "bedrock",
+        METRICS_DAILY_TABLE_NAME: "metrics-daily-table",
+        METRICS_FISH_DAILY_TABLE_NAME: "metrics-fish-daily-table"
+      });
+      const res = await handler(
+        eventOf({
+          task: "get_dashboard_metrics",
+          date_from: "2026-03-09",
+          date_to: "2026-03-11"
+        })
+      );
+      const body = JSON.parse(res.body);
+      assert.equal(res.statusCode, 200);
+      assert.equal(body.total, 0);
+      assert.equal(body.today, 0);
+      assert.equal(body.this_week, 0);
+      assert.deepEqual(body.daily_counts, []);
+      assert.deepEqual(body.fish_counts, []);
+      assert.equal(body.top_fish, null);
     } finally {
       restoreGlobals(snapshot);
     }
