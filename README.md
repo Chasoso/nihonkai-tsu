@@ -34,7 +34,7 @@
 
 - 投稿文を 3 案表示
 - 編集可能
-- `コピーする` または `X に投稿する` で投稿体験として記録
+- `コピーする` または `Xに投稿する` で投稿体験として記録
 
 ## AI 機能
 
@@ -77,6 +77,28 @@
 - 魚ごとの投稿体験数の集計
 - 投稿体験後の「あなたは今日○件目」表示
 
+## 魚画像ファイルの命名規則
+
+魚画像は PNG ファイル前提です。  
+配置先と命名規則は次のとおりです。
+
+- 配置先: `src/assets/fish/`
+- ファイル形式: `.png`
+- 個別魚画像: `<fish_id>.png`
+- デフォルト画像: `default-fish.png`
+
+例:
+
+- `src/assets/fish/brand_5400.png`
+- `src/assets/fish/brand_36600.png`
+- `src/assets/fish/default-fish.png`
+
+補足:
+
+- fish ごとの画像は `fish_id` で解決します
+- 対応する画像ファイルがない場合は `default-fish.png` を表示します
+- `fish_id` は `public/data/2026.json` と `backend/lambda/fish-master.json` を基準にしてください
+
 ## X 投稿に関する制限事項
 
 このアプリの `Xに投稿する` は、X の Web Intent (`https://x.com/intent/tweet`) を使っています。  
@@ -113,6 +135,7 @@ AI が生成した文章は参考文です。
 - `src/`: フロントエンド
 - `src/components/`: UI コンポーネント
 - `src/lib/`: API クライアント、投稿文生成、KPI 関連処理
+- `src/assets/fish/`: 魚画像 PNG
 - `backend/lambda/generate-post-text.mjs`: Lambda ハンドラ
 - `backend/lambda/fish-master.json`: Lambda 用 fish master
 - `scripts/generate_public_data.py`: 公開データ・fish master 生成
@@ -210,6 +233,7 @@ npm run screenshots
 
 - 旬魚データの更新
 - fish master の再生成
+- 魚画像 PNG の追加 / 更新
 - PR 対象魚の見直し
 - 日次投稿数の確認
 - 今週人気魚の確認

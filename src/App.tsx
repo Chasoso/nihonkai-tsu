@@ -2,6 +2,7 @@
 import { Hero } from "./components/Hero";
 import heroBackgroundImage from "./assets/hero-background.png";
 import { FishModal } from "./components/FishModal";
+import { FishImage } from "./components/FishImage";
 import { ShareStudio } from "./components/ShareStudio";
 import { SeasonalityCalendar } from "./components/SeasonalityCalendar";
 import { BadgeToast } from "./components/BadgeToast";
@@ -251,8 +252,8 @@ export default function App() {
           <div className="featured-fish-grid">
             {featuredFish.map((fish) => (
               <article key={fish.id} className="card featured-fish-card">
-                <div className="featured-fish-image" aria-hidden="true">
-                  <span>魚の写真準備中</span>
+                <div className="featured-fish-image">
+                  <FishImage fishId={fish.id} fishName={fish.name} />
                 </div>
                 <h3>{fish.name}</h3>
                 <p>{fish.microcopy}</p>
@@ -296,7 +297,9 @@ export default function App() {
           <aside className="card main-fish-detail">
             <h2 className="section-title">Fish Detail</h2>
             <div className="main-fish-detail-head">
-              <div className="main-fish-detail-image">澄</div>
+              <div className="main-fish-detail-image">
+                <FishImage fishId={selectedFish.id} fishName={selectedFish.name} />
+              </div>
               <div>
                 <h3>{selectedFish.name}</h3>
                 <p>{selectedFish.microcopy}</p>
