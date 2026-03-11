@@ -23,8 +23,13 @@ const DEFAULT_RATE_LIMIT_MAX_REQUESTS = Number(process.env.RATE_LIMIT_MAX_REQUES
 const DAILY_LIMIT_TABLE_NAME = process.env.DAILY_LIMIT_TABLE_NAME || "";
 const DAILY_LIMIT_MAX_PER_DAY = Number(process.env.DAILY_LIMIT_MAX_PER_DAY || "0");
 const METRICS_TABLE_NAME = process.env.METRICS_TABLE_NAME || "";
+const METRICS_DAILY_TABLE_NAME = process.env.METRICS_DAILY_TABLE_NAME || "";
+const METRICS_FISH_DAILY_TABLE_NAME = process.env.METRICS_FISH_DAILY_TABLE_NAME || "";
 
-const ddbClient = DAILY_LIMIT_TABLE_NAME || METRICS_TABLE_NAME ? new DynamoDBClient({}) : null;
+const ddbClient =
+  DAILY_LIMIT_TABLE_NAME || METRICS_TABLE_NAME || METRICS_DAILY_TABLE_NAME || METRICS_FISH_DAILY_TABLE_NAME
+    ? new DynamoDBClient({})
+    : null;
 const bedrockClient = new BedrockRuntimeClient({ region: BEDROCK_REGION });
 const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
 
@@ -112,7 +117,8 @@ function parseTask(value) {
     raw === "generate_post_text" ||
     raw === "estimate_fish_candidates" ||
     raw === "track_metric" ||
-    raw === "get_metrics_summary"
+    raw === "get_metrics_summary" ||
+    raw === "get_dashboard_metrics"
   ) {
     return raw;
   }
@@ -159,6 +165,26 @@ function getJstDayRangeIso(dateJst) {
     startIso: start.toISOString(),
     endIso: end.toISOString()
   };
+}
+
+function normalizeDateJst(value, fallback) {
+  const normalized = String(value || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return normalized;
+  return fallback;
+}
+
+function enumerateDateJstRange(dateFrom, dateTo) {
+  const start = new Date(`${dateFrom}T00:00:00+09:00`);
+  const end = new Date(`${dateTo}T00:00:00+09:00`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start.getTime() > end.getTime()) {
+    return [];
+  }
+
+  const dates = [];
+  for (let cursor = start; cursor.getTime() <= end.getTime(); cursor = new Date(cursor.getTime() + 24 * 60 * 60 * 1000)) {
+    dates.push(getJstDayKey(cursor));
+  }
+  return dates;
 }
 
 function getEpochSecondsAfterDays(days) {
@@ -542,6 +568,76 @@ async function saveMetricEvent({
   return { stored: true };
 }
 
+function getMetricCountField(metricType) {
+  return metricType === "x_click" ? "x_click_count" : "copy_count";
+}
+
+async function incrementDailyMetrics(dateJst, metricType, timestampIso) {
+  if (!ddbClient || !METRICS_DAILY_TABLE_NAME) {
+    return { stored: false };
+  }
+
+  const metricCountField = getMetricCountField(metricType);
+
+  await ddbClient.send(
+    new UpdateItemCommand({
+      TableName: METRICS_DAILY_TABLE_NAME,
+      Key: {
+        date_jst: { S: dateJst }
+      },
+      UpdateExpression:
+        "SET total_count = if_not_exists(total_count, :zero) + :inc, #metricCount = if_not_exists(#metricCount, :zero) + :inc, updated_at = :updatedAt",
+      ExpressionAttributeNames: {
+        "#metricCount": metricCountField
+      },
+      ExpressionAttributeValues: {
+        ":zero": { N: "0" },
+        ":inc": { N: "1" },
+        ":updatedAt": { S: timestampIso }
+      }
+    })
+  );
+
+  return { stored: true };
+}
+
+async function incrementFishDailyMetrics(dateJst, fishId, fishLabel, metricType, timestampIso) {
+  if (!ddbClient || !METRICS_FISH_DAILY_TABLE_NAME) {
+    return { stored: false };
+  }
+
+  const metricCountField = getMetricCountField(metricType);
+  const ExpressionAttributeValues = {
+    ":zero": { N: "0" },
+    ":inc": { N: "1" },
+    ":updatedAt": { S: timestampIso }
+  };
+  let UpdateExpression =
+    "SET total_count = if_not_exists(total_count, :zero) + :inc, #metricCount = if_not_exists(#metricCount, :zero) + :inc, updated_at = :updatedAt";
+
+  if (fishLabel) {
+    UpdateExpression += ", fish_label = :fishLabel";
+    ExpressionAttributeValues[":fishLabel"] = { S: fishLabel };
+  }
+
+  await ddbClient.send(
+    new UpdateItemCommand({
+      TableName: METRICS_FISH_DAILY_TABLE_NAME,
+      Key: {
+        date_jst: { S: dateJst },
+        fish_id: { S: fishId }
+      },
+      UpdateExpression,
+      ExpressionAttributeNames: {
+        "#metricCount": metricCountField
+      },
+      ExpressionAttributeValues
+    })
+  );
+
+  return { stored: true };
+}
+
 async function queryAllCount(input) {
   if (!ddbClient || !METRICS_TABLE_NAME) return 0;
   let total = 0;
@@ -579,6 +675,61 @@ async function queryAllItems(input) {
     ExclusiveStartKey = response.LastEvaluatedKey;
   } while (ExclusiveStartKey);
   return items;
+}
+
+async function queryTableItems(tableName, input) {
+  if (!ddbClient || !tableName) return [];
+  const items = [];
+  let ExclusiveStartKey;
+  do {
+    const response = await ddbClient.send(
+      new QueryCommand({
+        ...input,
+        TableName: tableName,
+        ExclusiveStartKey
+      })
+    );
+    if (Array.isArray(response.Items)) {
+      items.push(...response.Items);
+    }
+    ExclusiveStartKey = response.LastEvaluatedKey;
+  } while (ExclusiveStartKey);
+  return items;
+}
+
+async function getDailyMetricRows(dateFrom, dateTo) {
+  if (!ddbClient || !METRICS_DAILY_TABLE_NAME) return [];
+  const rows = [];
+  for (const dateJst of enumerateDateJstRange(dateFrom, dateTo)) {
+    const items = await queryTableItems(METRICS_DAILY_TABLE_NAME, {
+      KeyConditionExpression: "date_jst = :dateJst",
+      ExpressionAttributeValues: {
+        ":dateJst": { S: dateJst }
+      }
+    });
+    rows.push(...items);
+  }
+  return rows;
+}
+
+async function getFishDailyMetricRows(dateFrom, dateTo) {
+  if (!ddbClient || !METRICS_FISH_DAILY_TABLE_NAME) return [];
+  const rows = [];
+  for (const dateJst of enumerateDateJstRange(dateFrom, dateTo)) {
+    const items = await queryTableItems(METRICS_FISH_DAILY_TABLE_NAME, {
+      KeyConditionExpression: "date_jst = :dateJst",
+      ExpressionAttributeValues: {
+        ":dateJst": { S: dateJst }
+      }
+    });
+    rows.push(...items);
+  }
+  return rows;
+}
+
+function parseCountAttribute(value) {
+  const count = Number(value?.N || 0);
+  return Number.isFinite(count) ? count : 0;
 }
 
 async function getTotalTodayCount(dateJst) {
@@ -897,6 +1048,8 @@ async function handleTrackMetricTask({ requestId, body }) {
     if (!saved.stored) {
       return json(200, { status: "ignored" });
     }
+    await incrementDailyMetrics(dateJst, metricType, timestamp);
+    await incrementFishDailyMetrics(dateJst, fishId, fishLabel, metricType, timestamp);
     return json(200, { status: "ok" });
   } catch (error) {
     logError("track_metric_failed", error, { requestId, metricType, fishId });
@@ -936,6 +1089,92 @@ async function handleGetMetricsSummaryTask({ requestId, body }) {
       current_order: 0,
       top_fish_this_week: null,
       fish_count_today: fishId ? 0 : null
+    });
+  }
+}
+
+async function handleGetDashboardMetricsTask({ requestId, body }) {
+  const now = new Date();
+  const todayJst = getJstDayKey(now);
+  const defaultDateTo = todayJst;
+  const defaultDateFrom = getJstDayKeyWithOffset(-6, now);
+  const dateFrom = normalizeDateJst(body.date_from, defaultDateFrom);
+  const dateTo = normalizeDateJst(body.date_to, defaultDateTo);
+  const range = enumerateDateJstRange(dateFrom, dateTo);
+  const weekDateFrom = getJstDayKeyWithOffset(-6, now);
+
+  if (!ddbClient || !METRICS_DAILY_TABLE_NAME || !METRICS_FISH_DAILY_TABLE_NAME || range.length === 0) {
+    return json(200, {
+      total: 0,
+      today: 0,
+      this_week: 0,
+      daily_counts: [],
+      fish_counts: [],
+      top_fish: null
+    });
+  }
+
+  try {
+    const [dailyRows, weekRows, fishRows] = await Promise.all([
+      getDailyMetricRows(dateFrom, dateTo),
+      getDailyMetricRows(weekDateFrom, todayJst),
+      getFishDailyMetricRows(dateFrom, dateTo)
+    ]);
+
+    const dailyCountsMap = new Map();
+    for (const row of dailyRows) {
+      const dateJst = row?.date_jst?.S;
+      if (!dateJst) continue;
+      dailyCountsMap.set(dateJst, parseCountAttribute(row?.total_count));
+    }
+
+    const daily_counts = range.map((dateJst) => ({
+      date_jst: dateJst,
+      count: dailyCountsMap.get(dateJst) || 0
+    }));
+
+    const total = daily_counts.reduce((sum, item) => sum + item.count, 0);
+    const today = dailyCountsMap.get(todayJst) || 0;
+    const this_week = weekRows.reduce((sum, row) => sum + parseCountAttribute(row?.total_count), 0);
+
+    const fishCountsMap = new Map();
+    for (const row of fishRows) {
+      const fishId = String(row?.fish_id?.S || "").trim().toLowerCase();
+      if (!fishId) continue;
+      const count = parseCountAttribute(row?.total_count);
+      const fishLabel = String(row?.fish_label?.S || "").trim();
+      const current = fishCountsMap.get(fishId) || {
+        fish_id: fishId,
+        fish_label: fishLabel || fishId,
+        count: 0
+      };
+      current.count += count;
+      if (fishLabel) current.fish_label = fishLabel;
+      fishCountsMap.set(fishId, current);
+    }
+
+    const fish_counts = Array.from(fishCountsMap.values()).sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      return a.fish_id.localeCompare(b.fish_id);
+    });
+
+    return json(200, {
+      total,
+      today,
+      this_week,
+      daily_counts,
+      fish_counts,
+      top_fish: fish_counts[0] || null
+    });
+  } catch (error) {
+    logError("get_dashboard_metrics_failed", error, { requestId, dateFrom, dateTo, todayJst });
+    return json(200, {
+      total: 0,
+      today: 0,
+      this_week: 0,
+      daily_counts: [],
+      fish_counts: [],
+      top_fish: null
     });
   }
 }
@@ -989,6 +1228,9 @@ export const handler = async (event) => {
     }
     if (task === "get_metrics_summary") {
       return await handleGetMetricsSummaryTask({ requestId, body });
+    }
+    if (task === "get_dashboard_metrics") {
+      return await handleGetDashboardMetricsTask({ requestId, body });
     }
     if (task === "estimate_fish_candidates") {
       return await handleEstimateFishCandidatesTask({ requestId, clientKey, body });

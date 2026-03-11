@@ -1,0 +1,44 @@
+{
+  "AttributeDefinitions": [
+    {
+      "AttributeName": "date_jst",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "fish_id",
+      "AttributeType": "S"
+    }
+  ],
+  "KeySchema": [
+    {
+      "AttributeName": "date_jst",
+      "KeyType": "HASH"
+    },
+    {
+      "AttributeName": "fish_id",
+      "KeyType": "RANGE"
+    }
+  ],
+  "BillingMode": "PAY_PER_REQUEST",
+  "SSESpecification": {
+    "Enabled": true
+  },
+  "GlobalSecondaryIndexes": [
+    {
+      "IndexName": "GSI1",
+      "KeySchema": [
+        {
+          "AttributeName": "fish_id",
+          "KeyType": "HASH"
+        },
+        {
+          "AttributeName": "date_jst",
+          "KeyType": "RANGE"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
+      }
+    }
+  ]
+}

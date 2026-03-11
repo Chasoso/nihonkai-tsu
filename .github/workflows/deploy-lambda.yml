@@ -30,6 +30,8 @@ jobs:
       DAILY_LIMIT_TABLE_NAME: ${{ vars.DAILY_LIMIT_TABLE_NAME }}
       DAILY_LIMIT_MAX_PER_DAY: ${{ vars.DAILY_LIMIT_MAX_PER_DAY }}
       METRICS_TABLE_NAME: ${{ vars.METRICS_TABLE_NAME }}
+      METRICS_DAILY_TABLE_NAME: ${{ vars.METRICS_DAILY_TABLE_NAME }}
+      METRICS_FISH_DAILY_TABLE_NAME: ${{ vars.METRICS_FISH_DAILY_TABLE_NAME }}
       LAMBDA_ARCHITECTURE: ${{ vars.LAMBDA_ARCHITECTURE }}
       LAMBDA_RUNTIME: ${{ vars.LAMBDA_RUNTIME }}
       LAMBDA_TIMEOUT: ${{ vars.LAMBDA_TIMEOUT }}
@@ -86,6 +88,8 @@ jobs:
           set -euo pipefail
           EFFECTIVE_DAILY_TABLE_NAME="${DAILY_LIMIT_TABLE_NAME:-nihonkai-post-text-daily-limit}"
           EFFECTIVE_METRICS_TABLE_NAME="${METRICS_TABLE_NAME:-nihonkai_tsu_metrics}"
+          EFFECTIVE_METRICS_DAILY_TABLE_NAME="${METRICS_DAILY_TABLE_NAME:-nihonkai_tsu_metrics_daily}"
+          EFFECTIVE_METRICS_FISH_DAILY_TABLE_NAME="${METRICS_FISH_DAILY_TABLE_NAME:-nihonkai_tsu_metrics_fish_daily}"
 
           if aws dynamodb describe-table --table-name "${EFFECTIVE_DAILY_TABLE_NAME}" >/dev/null 2>&1; then
             echo "DynamoDB table already exists: ${EFFECTIVE_DAILY_TABLE_NAME}"
@@ -103,6 +107,24 @@ jobs:
             aws dynamodb create-table --cli-input-json file://ddb-create-metrics.json >/dev/null
             aws dynamodb wait table-exists --table-name "${EFFECTIVE_METRICS_TABLE_NAME}"
             echo "Created DynamoDB table: ${EFFECTIVE_METRICS_TABLE_NAME}"
+          fi
+
+          if aws dynamodb describe-table --table-name "${EFFECTIVE_METRICS_DAILY_TABLE_NAME}" >/dev/null 2>&1; then
+            echo "DynamoDB table already exists: ${EFFECTIVE_METRICS_DAILY_TABLE_NAME}"
+          else
+            jq --arg tableName "${EFFECTIVE_METRICS_DAILY_TABLE_NAME}" '. + {TableName:$tableName}' infra/dynamodb/metrics-daily-table.json > ddb-create-metrics-daily.json
+            aws dynamodb create-table --cli-input-json file://ddb-create-metrics-daily.json >/dev/null
+            aws dynamodb wait table-exists --table-name "${EFFECTIVE_METRICS_DAILY_TABLE_NAME}"
+            echo "Created DynamoDB table: ${EFFECTIVE_METRICS_DAILY_TABLE_NAME}"
+          fi
+
+          if aws dynamodb describe-table --table-name "${EFFECTIVE_METRICS_FISH_DAILY_TABLE_NAME}" >/dev/null 2>&1; then
+            echo "DynamoDB table already exists: ${EFFECTIVE_METRICS_FISH_DAILY_TABLE_NAME}"
+          else
+            jq --arg tableName "${EFFECTIVE_METRICS_FISH_DAILY_TABLE_NAME}" '. + {TableName:$tableName}' infra/dynamodb/metrics-fish-daily-table.json > ddb-create-metrics-fish-daily.json
+            aws dynamodb create-table --cli-input-json file://ddb-create-metrics-fish-daily.json >/dev/null
+            aws dynamodb wait table-exists --table-name "${EFFECTIVE_METRICS_FISH_DAILY_TABLE_NAME}"
+            echo "Created DynamoDB table: ${EFFECTIVE_METRICS_FISH_DAILY_TABLE_NAME}"
           fi
 
           set +e
@@ -190,6 +212,8 @@ jobs:
             --arg dailyLimitTableName "${DAILY_LIMIT_TABLE_NAME:-nihonkai-post-text-daily-limit}" \
             --arg dailyLimitMaxPerDay "${DAILY_LIMIT_MAX_PER_DAY:-2000}" \
             --arg metricsTableName "${METRICS_TABLE_NAME:-nihonkai_tsu_metrics}" \
+            --arg metricsDailyTableName "${METRICS_DAILY_TABLE_NAME:-nihonkai_tsu_metrics_daily}" \
+            --arg metricsFishDailyTableName "${METRICS_FISH_DAILY_TABLE_NAME:-nihonkai_tsu_metrics_fish_daily}" \
             '{Variables:{
               OPENAI_API_KEY:$openaiApiKey,
               AI_PROVIDER:$aiProvider,
@@ -205,7 +229,9 @@ jobs:
               TEST_MODE_FIXED_TEXT:$testModeFixedText,
               DAILY_LIMIT_TABLE_NAME:$dailyLimitTableName,
               DAILY_LIMIT_MAX_PER_DAY:$dailyLimitMaxPerDay,
-              METRICS_TABLE_NAME:$metricsTableName
+              METRICS_TABLE_NAME:$metricsTableName,
+              METRICS_DAILY_TABLE_NAME:$metricsDailyTableName,
+              METRICS_FISH_DAILY_TABLE_NAME:$metricsFishDailyTableName
             }}' > lambda-env.json
 
           EFFECTIVE_RUNTIME="${LAMBDA_RUNTIME:-nodejs24.x}"

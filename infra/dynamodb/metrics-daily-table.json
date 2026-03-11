@@ -1,0 +1,18 @@
+{
+  "AttributeDefinitions": [
+    {
+      "AttributeName": "date_jst",
+      "AttributeType": "S"
+    }
+  ],
+  "KeySchema": [
+    {
+      "AttributeName": "date_jst",
+      "KeyType": "HASH"
+    }
+  ],
+  "BillingMode": "PAY_PER_REQUEST",
+  "SSESpecification": {
+    "Enabled": true
+  }
+}

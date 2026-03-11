@@ -32,7 +32,8 @@ const captureFiles = [
   "05-modal-step2-other.png",
   "06-modal-step3-initial.png",
   "07-modal-step3-generated.png",
-  "08-progress-board-after-alt-fish.png"
+  "08-progress-board-after-alt-fish.png",
+  "09-dashboard.png"
 ];
 const sampleSvg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
@@ -233,6 +234,11 @@ async function captureSet(browser, outputDir, config) {
     const progressSection = page.locator("section").filter({ has: page.getByRole("heading", { name: "Your Tsu" }) }).first();
     await progressSection.scrollIntoViewIfNeeded();
     await saveElement(progressSection, path.join(outputDir, "08-progress-board-after-alt-fish.png"));
+
+    const dashboardPage = await context.newPage();
+    await dashboardPage.goto(`${baseUrl}/dashboard/`, { waitUntil: "networkidle", timeout: 20000 });
+    await saveFullPage(dashboardPage, path.join(outputDir, "09-dashboard.png"));
+    await dashboardPage.close();
   } finally {
     await context.close();
   }
