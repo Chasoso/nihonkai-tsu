@@ -10,6 +10,10 @@ interface DashboardPageProps {
   error: string | null;
 }
 
+const CHART_WIDTH = 620;
+const CHART_HEIGHT = 180;
+const CHART_PADDING_X = 28;
+
 function formatDateLabel(dateJst: string): string {
   return dateJst.slice(5).replace("-", "/");
 }
@@ -18,14 +22,20 @@ function maxCount(points: DashboardMetrics["dailyCounts"]): number {
   return points.reduce((max, item) => Math.max(max, item.count), 0);
 }
 
-function buildLinePath(points: DashboardMetrics["dailyCounts"], width: number, height: number): string {
+function buildChartPoint(index: number, total: number, count: number, peak: number) {
+  const drawableWidth = CHART_WIDTH - CHART_PADDING_X * 2;
+  const step = total > 1 ? drawableWidth / (total - 1) : 0;
+  const x = CHART_PADDING_X + step * index;
+  const y = CHART_HEIGHT - (count / peak) * CHART_HEIGHT;
+  return { x, y };
+}
+
+function buildLinePath(points: DashboardMetrics["dailyCounts"]): string {
   if (points.length === 0) return "";
   const peak = Math.max(maxCount(points), 1);
-  const step = points.length > 1 ? width / (points.length - 1) : width;
   return points
     .map((point, index) => {
-      const x = step * index;
-      const y = height - (point.count / peak) * height;
+      const { x, y } = buildChartPoint(index, points.length, point.count, peak);
       return `${index === 0 ? "M" : "L"} ${x} ${y}`;
     })
     .join(" ");
@@ -41,7 +51,8 @@ export function DashboardPage({
   error
 }: DashboardPageProps) {
   const points = metrics?.dailyCounts ?? [];
-  const linePath = buildLinePath(points, 620, 180);
+  const peak = Math.max(maxCount(points), 1);
+  const linePath = buildLinePath(points);
   const topFish = metrics?.topFish;
   const fishCounts = metrics?.fishCounts ?? [];
 
@@ -111,15 +122,12 @@ export function DashboardPage({
             ) : (
               <>
                 <svg className="dashboard-line-chart" viewBox="0 0 620 220" preserveAspectRatio="none" aria-label="日別投稿数グラフ">
-                  <path className="dashboard-line-chart-grid" d="M 0 180 L 620 180" />
-                  <path className="dashboard-line-chart-grid" d="M 0 120 L 620 120" />
-                  <path className="dashboard-line-chart-grid" d="M 0 60 L 620 60" />
+                  <path className="dashboard-line-chart-grid" d={`M ${CHART_PADDING_X} 180 L ${CHART_WIDTH - CHART_PADDING_X} 180`} />
+                  <path className="dashboard-line-chart-grid" d={`M ${CHART_PADDING_X} 120 L ${CHART_WIDTH - CHART_PADDING_X} 120`} />
+                  <path className="dashboard-line-chart-grid" d={`M ${CHART_PADDING_X} 60 L ${CHART_WIDTH - CHART_PADDING_X} 60`} />
                   <path className="dashboard-line-chart-line" d={linePath} />
                   {points.map((point, index) => {
-                    const peak = Math.max(maxCount(points), 1);
-                    const step = points.length > 1 ? 620 / (points.length - 1) : 620;
-                    const x = step * index;
-                    const y = 180 - (point.count / peak) * 180;
+                    const { x, y } = buildChartPoint(index, points.length, point.count, peak);
                     return <circle key={point.dateJst} className="dashboard-line-chart-dot" cx={x} cy={y} r="5" />;
                   })}
                 </svg>

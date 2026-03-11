@@ -256,7 +256,7 @@ function drawTrendChart(ctx: CanvasRenderingContext2D, width: number, height: nu
   ctx.fillStyle = "rgba(240, 248, 255, 0.84)";
   ctx.font = `500 ${Math.max(8, width * 0.012)}px "Hiragino Sans", "Yu Gothic", sans-serif`;
   ctx.textAlign = "left";
-  ctx.fillText(`貍∫佐謗ｨ遘ｻ`, chartX, y + boxHeight - 20);
+  ctx.fillText("Trend", chartX, y + boxHeight - 20);
   ctx.fillText(`max ${Math.round(max)} ${unit}`, chartX, y + boxHeight - 7);
 
   ctx.textAlign = "right";
@@ -304,7 +304,12 @@ async function sha256Hex(buffer: ArrayBuffer): Promise<string> {
     .join("");
 }
 
-export async function buildShareImage(file: File, fish: Fish, landings: LandingsData): Promise<File> {
+interface ShareImageFishMeta {
+  fishId: string;
+  fishLabel: string;
+}
+
+export async function buildShareImage(file: File, fish: ShareImageFishMeta, landings: LandingsData): Promise<File> {
   const img = await loadFileImage(file);
   const canvas = document.createElement("canvas");
   canvas.width = img.naturalWidth || img.width;
@@ -317,9 +322,9 @@ export async function buildShareImage(file: File, fish: Fish, landings: Landings
 
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
   drawFlowBackground(ctx, canvas.width, canvas.height);
-  drawFishTitle(ctx, canvas.width, canvas.height, fish.name);
+  drawFishTitle(ctx, canvas.width, canvas.height, fish.fishLabel);
 
-  const species = landings.species.find((item) => item.id === fish.id);
+  const species = landings.species.find((item) => item.id === fish.fishId);
   const series = getTwoYearMonthlySeries(species);
   drawTrendChart(ctx, canvas.width, canvas.height, series, landings.meta.unit);
 
@@ -533,6 +538,13 @@ export function ShareStudio({
   const selectedOption = useMemo(
     () => generatedOptions.find((item) => item.type === selectedOptionType) ?? null,
     [generatedOptions, selectedOptionType]
+  );
+  const shareImageFishMeta = useMemo<ShareImageFishMeta>(
+    () => ({
+      fishId: confirmedFishId.trim() || fish.id,
+      fishLabel: confirmedFishType.trim() || fish.name
+    }),
+    [confirmedFishId, confirmedFishType, fish.id, fish.name]
   );
   const searchableFishOptions = useMemo(() => fishMasterOptions, [fishMasterOptions]);
   const filteredOtherFishOptions = useMemo(() => {
@@ -980,7 +992,7 @@ export function ShareStudio({
     try {
       let fileToSave = selectedImageFile;
       if (fish && frameOption === "nihonkai") {
-        fileToSave = await buildShareImage(fileToSave, fish, landings);
+        fileToSave = await buildShareImage(fileToSave, shareImageFishMeta, landings);
       }
 
       const downloadUrl = URL.createObjectURL(fileToSave);
@@ -1026,7 +1038,7 @@ export function ShareStudio({
     try {
       let imageToPost = selectedImageFile;
       if (imageToPost && frameOption === "nihonkai") {
-        imageToPost = await buildShareImage(imageToPost, fish, landings);
+        imageToPost = await buildShareImage(imageToPost, shareImageFishMeta, landings);
       }
 
       const finalText = formatPostText(editablePostText, appUrl);

@@ -65,6 +65,48 @@ function sanitizeGeneratedText(input: string, maxLen = 180): string {
   return normalized.length > maxLen ? normalized.slice(0, maxLen).trim() : normalized;
 }
 
+function extractJsonPayload(text: string): unknown | null {
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    // Continue to slice-based extraction for responses that wrap JSON in prose.
+  }
+
+  const start = trimmed.indexOf("{");
+  const end = trimmed.lastIndexOf("}");
+  if (start >= 0 && end > start) {
+    try {
+      return JSON.parse(trimmed.slice(start, end + 1));
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function extractEmbeddedOptions(raw: unknown, generatedText: unknown): unknown[] | null {
+  if (Array.isArray(raw)) {
+    const nested = raw.find((item) => typeof (item as { text?: unknown })?.text === "string");
+    const parsed = nested ? extractJsonPayload(String((nested as { text?: unknown }).text || "")) : null;
+    if (parsed && typeof parsed === "object" && Array.isArray((parsed as { options?: unknown[] }).options)) {
+      return (parsed as { options: unknown[] }).options;
+    }
+    return raw;
+  }
+
+  if (typeof generatedText === "string") {
+    const parsed = extractJsonPayload(generatedText);
+    if (parsed && typeof parsed === "object" && Array.isArray((parsed as { options?: unknown[] }).options)) {
+      return (parsed as { options: unknown[] }).options;
+    }
+  }
+
+  return null;
+}
+
 function normalizeOptions(raw: unknown, fishType: string): PostTextOption[] {
   const fallback = buildFallbackOptions(fishType);
   if (!Array.isArray(raw)) return fallback;
@@ -152,7 +194,8 @@ export async function generatePostText({
       errorMessage?: string;
     };
 
-    const options = normalizeOptions(json.options, safeFishType);
+    const normalizedSource = extractEmbeddedOptions(json.options, json.generatedText);
+    const options = normalizeOptions(normalizedSource, safeFishType);
     const standard = options.find((opt) => opt.type === "standard")?.text ?? sanitizeGeneratedText(json.generatedText ?? "");
     if (!standard) {
       return buildFallbackResult(safeFishType, json.errorMessage ?? "empty_response");
