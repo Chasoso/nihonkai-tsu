@@ -11,11 +11,11 @@ const TEST_MODE_FIXED_TEXT =
   process.env.TEST_MODE_FIXED_TEXT || "テストモードです。今日は魚料理をおいしく味わいました。#変わる海を味わう";
 
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
-const OPENAI_MAX_OUTPUT_TOKENS = Number(process.env.OPENAI_MAX_OUTPUT_TOKENS || "320");
+const OPENAI_MAX_OUTPUT_TOKENS = Number(process.env.OPENAI_MAX_OUTPUT_TOKENS || "512");
 
 const BEDROCK_REGION = process.env.BEDROCK_REGION || "us-east-1";
 const BEDROCK_MODEL_ID = process.env.BEDROCK_MODEL_ID || "amazon.nova-lite-v1:0";
-const BEDROCK_MAX_OUTPUT_TOKENS = Number(process.env.BEDROCK_MAX_OUTPUT_TOKENS || "320");
+const BEDROCK_MAX_OUTPUT_TOKENS = Number(process.env.BEDROCK_MAX_OUTPUT_TOKENS || "512");
 
 const DEFAULT_RATE_LIMIT_WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS || "60000");
 const DEFAULT_RATE_LIMIT_MAX_REQUESTS = Number(process.env.RATE_LIMIT_MAX_REQUESTS || "8");
@@ -208,8 +208,17 @@ function sanitizeGeneratedText(input, maxLen = 160) {
   return normalized.length > maxLen ? normalized.slice(0, maxLen).trim() : normalized;
 }
 
+function stripMarkdownCodeFence(input) {
+  const text = String(input || "").trim();
+  if (!text) return "";
+  return text
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+}
+
 function extractJsonCandidate(rawText) {
-  const text = String(rawText || "").trim();
+  const text = stripMarkdownCodeFence(rawText);
   if (!text) return null;
   const directTry = (() => {
     try {
@@ -322,16 +331,19 @@ function parsePostOptionsFromText(rawText, fishType) {
 }
 
 function looksLikeJsonPayload(rawText) {
-  const text = String(rawText || "").trim();
+  const text = stripMarkdownCodeFence(rawText);
   if (!text) return false;
   return text.startsWith("{") || text.startsWith("[") || text.includes('"options"');
 }
 
 function summarizeOptionPayload(rawText) {
-  const text = String(rawText || "").trim();
+  const original = String(rawText || "").trim();
+  const text = stripMarkdownCodeFence(rawText);
   return {
-    rawLength: text.length,
-    preview: sanitizeGeneratedText(text, 200),
+    rawLength: original.length,
+    preview: sanitizeGeneratedText(original, 200),
+    strippedLength: text.length,
+    hadCodeFence: original.startsWith("```"),
     looksLikeJson: looksLikeJsonPayload(text),
     startsWithBrace: text.startsWith("{"),
     startsWithBracket: text.startsWith("["),
@@ -363,7 +375,7 @@ function buildLegacyPrompt(fishType, tone) {
     "あなたは魚料理の写真を見て、SNS向けの短い投稿文を作る編集者です。",
     "入力画像と魚種を踏まえて、日本語で自然な文章を1本だけ作成してください。",
     `魚種は「${fishType}」です。`,
-    `???: ${tone || "friendly"}`,
+    `トーン: ${tone || "friendly"}`,
     "日本語で、読みやすい投稿文を1本だけ出力してください。",
     "100〜140文字程度にしてください。",
     "食べた印象や旬らしさが伝わる表現を入れてください。",
@@ -382,6 +394,9 @@ function buildThreeOptionPrompt(fishType, tone) {
     `トーン: ${tone || "friendly"}`,
     "X投稿向けの本文を3種類返してください。",
     "出力は必ずJSONのみ、説明文は禁止です。",
+    "Markdownのコードフェンスは絶対に付けないでください。",
+    "先頭文字は {、末尾文字は } にしてください。",
+    "JSONは1行のminified JSONで返してください。",
     'JSON形式: {"options":[{"type":"short","text":"..."},{"type":"standard","text":"..."},{"type":"pr","text":"..."}]}',
     "short: 45〜70文字",
     "standard: 90〜140文字",

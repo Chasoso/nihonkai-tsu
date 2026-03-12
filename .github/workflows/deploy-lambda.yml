@@ -1,4 +1,4 @@
-name: Deploy Lambda
+﻿name: Deploy Lambda
 
 on:
   push:
@@ -187,14 +187,14 @@ jobs:
           POST_TEXT_MODE="${LAMBDA_POST_TEXT_MODE:-test}"
           EFFECTIVE_AI_PROVIDER="${AI_PROVIDER:-bedrock}"
           EFFECTIVE_OPENAI_MODEL="${OPENAI_MODEL:-gpt-4o-mini}"
-          EFFECTIVE_MAX_OUTPUT="${OPENAI_MAX_OUTPUT_TOKENS:-120}"
+          EFFECTIVE_MAX_OUTPUT="${OPENAI_MAX_OUTPUT_TOKENS:-512}"
           EFFECTIVE_BEDROCK_REGION="${BEDROCK_REGION:-us-east-1}"
           EFFECTIVE_BEDROCK_MODEL_ID="${BEDROCK_MODEL_ID:-amazon.nova-lite-v1:0}"
-          EFFECTIVE_BEDROCK_MAX_OUTPUT="${BEDROCK_MAX_OUTPUT_TOKENS:-120}"
+          EFFECTIVE_BEDROCK_MAX_OUTPUT="${BEDROCK_MAX_OUTPUT_TOKENS:-512}"
           EFFECTIVE_RATE_WINDOW="${RATE_LIMIT_WINDOW_MS:-60000}"
           EFFECTIVE_RATE_MAX="${RATE_LIMIT_MAX_REQUESTS:-8}"
           EFFECTIVE_ALLOW_ORIGIN="${ALLOW_ORIGIN:-*}"
-          EFFECTIVE_TEST_TEXT="${TEST_MODE_FIXED_TEXT:-テストモード: 今日は魚料理を楽しみました。#変わる海を味わう}"
+          EFFECTIVE_TEST_TEXT="${TEST_MODE_FIXED_TEXT:-テストモードです。今日は魚料理をおいしく味わいました。#変わる海を味わう}"
 
           jq -n \
             --arg openaiApiKey "${OPENAI_API_KEY}" \

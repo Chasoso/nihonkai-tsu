@@ -193,6 +193,53 @@ async function main() {
     }
   }, results);
 
+  await runCase("task=generate_post_text はコードフェンス付きJSON応答を正しく解析する", async () => {
+    const snapshot = snapshotGlobals();
+    try {
+      BedrockRuntimeClient.prototype.send = async () => ({
+        output: {
+          message: {
+            content: [
+              {
+                text: [
+                  "```json",
+                  '{"options":[{"type":"short","text":"ブリの照り焼き、ご飯がすすむ一品です！ #和食 #ブリ"},{"type":"standard","text":"ブリの照り焼きは、甘辛いタレがご飯によく合います。さっぱりとした味わいです。 #和食 #ブリ"},{"type":"pr","text":"石川の海の恵み、ブリの照り焼き。旅先でも味わいたい一皿です。 #石川グルメ #ブリ"}]}',
+                  "```"
+                ].join("\n")
+              }
+            ]
+          }
+        }
+      });
+
+      const handler = await freshHandler({
+        POST_TEXT_MODE: "live",
+        AI_PROVIDER: "bedrock",
+        DAILY_LIMIT_MAX_PER_DAY: "0"
+      });
+      const res = await handler(
+        eventOf({
+          task: "generate_post_text",
+          fishType: "ブリ",
+          imageBase64: "aGVsbG8=",
+          mimeType: "image/jpeg",
+          target: "x",
+          outputLanguage: "ja"
+        })
+      );
+      const body = JSON.parse(res.body);
+      assert.equal(res.statusCode, 200);
+      assert.equal(body.fallbackUsed, false);
+      assert.equal(body.errorMessage, null);
+      assert.equal(body.options.length, 3);
+      assert.equal(body.options[0].type, "short");
+      assert.equal(String(body.options[0].text).includes("```"), false);
+      assert.equal(String(body.generatedText).includes("```"), false);
+    } finally {
+      restoreGlobals(snapshot);
+    }
+  }, results);
+
   await runCase("task=estimate_fish_candidates は候補を返す", async () => {
     const snapshot = snapshotGlobals();
     try {
