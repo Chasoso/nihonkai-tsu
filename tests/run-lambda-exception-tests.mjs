@@ -157,6 +157,42 @@ async function main() {
     }
   }, results);
 
+  await runCase("task=generate_post_text は壊れたJSON応答時にfallbackを返す", async () => {
+    const snapshot = snapshotGlobals();
+    try {
+      BedrockRuntimeClient.prototype.send = async () => ({
+        output: {
+          message: {
+            content: [
+              {
+                text: '{"options":[{"type":"short","text":"石川のブリは絶品！焼き魚にレモンを添えて。#石川グルメ #ブリの魅力'
+              }
+            ]
+          }
+        }
+      });
+
+      const handler = await freshHandler({
+        POST_TEXT_MODE: "live",
+        AI_PROVIDER: "bedrock",
+        DAILY_LIMIT_MAX_PER_DAY: "0"
+      });
+      const res = await handler(
+        eventOf({ task: "generate_post_text", fishType: "ブリ", imageBase64: "aGVsbG8=", mimeType: "image/jpeg" })
+      );
+      const body = JSON.parse(res.body);
+      assert.equal(res.statusCode, 200);
+      assert.equal(body.fallbackUsed, true);
+      assert.equal(body.errorMessage, "invalid_option_response");
+      assert.equal(Array.isArray(body.options), true);
+      assert.equal(body.options.length, 3);
+      assert.equal(body.options.some((option) => String(option.text || "").startsWith('{"options"')), false);
+      assert.equal(String(body.generatedText || "").startsWith('{"options"'), false);
+    } finally {
+      restoreGlobals(snapshot);
+    }
+  }, results);
+
   await runCase("task=estimate_fish_candidates は候補を返す", async () => {
     const snapshot = snapshotGlobals();
     try {

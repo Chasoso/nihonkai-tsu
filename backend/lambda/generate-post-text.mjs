@@ -11,11 +11,11 @@ const TEST_MODE_FIXED_TEXT =
   process.env.TEST_MODE_FIXED_TEXT || "テストモードです。今日は魚の旬を楽しみました。#変わる海を味わう";
 
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
-const OPENAI_MAX_OUTPUT_TOKENS = Number(process.env.OPENAI_MAX_OUTPUT_TOKENS || "120");
+const OPENAI_MAX_OUTPUT_TOKENS = Number(process.env.OPENAI_MAX_OUTPUT_TOKENS || "320");
 
 const BEDROCK_REGION = process.env.BEDROCK_REGION || "us-east-1";
 const BEDROCK_MODEL_ID = process.env.BEDROCK_MODEL_ID || "amazon.nova-lite-v1:0";
-const BEDROCK_MAX_OUTPUT_TOKENS = Number(process.env.BEDROCK_MAX_OUTPUT_TOKENS || "120");
+const BEDROCK_MAX_OUTPUT_TOKENS = Number(process.env.BEDROCK_MAX_OUTPUT_TOKENS || "320");
 
 const DEFAULT_RATE_LIMIT_WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS || "60000");
 const DEFAULT_RATE_LIMIT_MAX_REQUESTS = Number(process.env.RATE_LIMIT_MAX_REQUESTS || "8");
@@ -319,6 +319,16 @@ function parsePostOptionsFromText(rawText, fishType) {
   }
 
   return null;
+}
+
+function looksLikeJsonPayload(rawText) {
+  const text = String(rawText || "").trim();
+  if (!text) return false;
+  return text.startsWith("{") || text.startsWith("[") || text.includes('"options"');
+}
+
+function isMalformedOptionPayload(rawText, parsedOptions) {
+  return !parsedOptions && looksLikeJsonPayload(rawText);
 }
 
 function optionsFromSingleText(text, fishType) {
@@ -942,6 +952,15 @@ async function handleGeneratePostTextTask({ requestId, clientKey, body }) {
   }
 
   const parsed = parsePostOptionsFromText(rawText, fishType);
+  if (isMalformedOptionPayload(rawText, parsed)) {
+    logError("invalid_option_response", new Error("invalid_option_response"), {
+      requestId,
+      provider,
+      preview: sanitizeGeneratedText(rawText, 120)
+    });
+    return json(200, buildOptionFallbackBody(fishType, "invalid_option_response"));
+  }
+
   const options = parsed || optionsFromSingleText(rawText, fishType);
   const standard = options.find((item) => item.type === "standard")?.text || options[0].text;
 
