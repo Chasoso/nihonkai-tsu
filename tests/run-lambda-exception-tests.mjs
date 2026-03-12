@@ -240,6 +240,50 @@ async function main() {
     }
   }, results);
 
+  await runCase("task=generate_post_text は別地域のハッシュタグを除去する", async () => {
+    const snapshot = snapshotGlobals();
+    try {
+      BedrockRuntimeClient.prototype.send = async () => ({
+        output: {
+          message: {
+            content: [
+              {
+                text:
+                  '{"options":[{"type":"short","text":"焼き立てのブリの照り焼き、最高です！ #グルメ #海鮮"},{"type":"standard","text":"焼き立てのブリの照り焼きが、ご飯によく合います。サイドの野菜も美味しい！ #和食 #海鮮料理"},{"type":"pr","text":"地元の市場で新鮮なブリを仕入れて作った照り焼き。サイドの野菜も新鮮で、ご飯が進みます！ #和歌山グルメ #海鮮"}]}'
+              }
+            ]
+          }
+        }
+      });
+
+      const handler = await freshHandler({
+        POST_TEXT_MODE: "live",
+        AI_PROVIDER: "bedrock",
+        DAILY_LIMIT_MAX_PER_DAY: "0"
+      });
+      const res = await handler(
+        eventOf({
+          task: "generate_post_text",
+          fishType: "ブリ",
+          imageBase64: "aGVsbG8=",
+          mimeType: "image/jpeg",
+          target: "x",
+          outputLanguage: "ja"
+        })
+      );
+      const body = JSON.parse(res.body);
+      assert.equal(res.statusCode, 200);
+      assert.equal(body.fallbackUsed, false);
+      assert.equal(body.errorMessage, null);
+      assert.equal(body.options.length, 3);
+      assert.equal(String(body.options[2].text).includes("#和歌山"), false);
+      assert.equal(String(body.options[2].text).includes("#海鮮"), true);
+      assert.equal(String(body.generatedText || "").includes("#和歌山"), false);
+    } finally {
+      restoreGlobals(snapshot);
+    }
+  }, results);
+
   await runCase("task=estimate_fish_candidates は候補を返す", async () => {
     const snapshot = snapshotGlobals();
     try {

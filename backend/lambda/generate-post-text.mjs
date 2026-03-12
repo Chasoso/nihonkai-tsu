@@ -57,6 +57,17 @@ const DEFAULT_FISH_CANDIDATES = FISH_MASTER.slice(0, 3).map((item, index) => ({
   fish_id: item.fish_id.toLowerCase(),
   score: normalizeScore(0.82 - index * 0.18)
 }));
+const ALLOWED_LOCAL_TAG_TERMS = ["石川", "金沢", "能登", "加賀", "日本海", "nihonkai", "nihonkai_tsu", "変わる海"];
+const FORBIDDEN_REGION_TAG_TERMS = [
+  "北海道", "青森", "岩手", "宮城", "秋田", "山形", "福島",
+  "茨城", "栃木", "群馬", "埼玉", "千葉", "東京", "神奈川",
+  "新潟", "富山", "福井", "山梨", "長野",
+  "岐阜", "静岡", "愛知", "三重",
+  "滋賀", "京都", "大阪", "兵庫", "奈良", "和歌山",
+  "鳥取", "島根", "岡山", "広島", "山口",
+  "徳島", "香川", "愛媛", "高知",
+  "福岡", "佐賀", "長崎", "熊本", "大分", "宮崎", "鹿児島", "沖縄"
+];
 
 function logInfo(event, extra = {}) {
   console.log(JSON.stringify({ level: "info", event, ...extra }));
@@ -208,6 +219,25 @@ function sanitizeGeneratedText(input, maxLen = 160) {
   return normalized.length > maxLen ? normalized.slice(0, maxLen).trim() : normalized;
 }
 
+function sanitizeRegionalHashtags(input) {
+  const text = String(input || "").trim();
+  if (!text) return "";
+  return text
+    .replace(/#[^\s#]+/g, (tag) => {
+      const lower = tag.toLowerCase();
+      if (ALLOWED_LOCAL_TAG_TERMS.some((term) => lower.includes(term.toLowerCase()))) {
+        return tag;
+      }
+      if (FORBIDDEN_REGION_TAG_TERMS.some((term) => tag.includes(term))) {
+        return "";
+      }
+      return tag;
+    })
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/ *\n */g, "\n")
+    .trim();
+}
+
 function stripMarkdownCodeFence(input) {
   const text = String(input || "").trim();
   if (!text) return "";
@@ -297,7 +327,7 @@ function normalizePostOptions(rawOptions, fishType) {
   for (const item of input) {
     const type = String(item?.type || "").trim().toLowerCase();
     if (!["short", "standard", "pr"].includes(type)) continue;
-    const text = sanitizeGeneratedText(item?.text, type === "short" ? 120 : 180);
+    const text = sanitizeRegionalHashtags(sanitizeGeneratedText(item?.text, type === "short" ? 120 : 180));
     if (!text) continue;
     byType.set(type, text);
   }
@@ -400,8 +430,10 @@ function buildThreeOptionPrompt(fishType, tone) {
     'JSON形式: {"options":[{"type":"short","text":"..."},{"type":"standard","text":"..."},{"type":"pr","text":"..."}]}',
     "short: 45〜70文字",
     "standard: 90〜140文字",
-    "pr: 110〜170文字で、地域PR要素を少し入れる",
+    "pr: 110〜170文字で、石川県らしい地域PR要素を少し入れる",
     "画像から断定できない調理法や産地は書かないでください。",
+    "石川県・日本海周辺の話題のみ使ってください。石川以外の都道府県名、市区町村名、地域名、観光地名は書かないでください。",
+    "ハッシュタグに石川以外の地域名を入れないでください。",
     "ハッシュタグは各案2つまでです。"
   ].join("\n");
 }
@@ -951,7 +983,7 @@ async function handleLegacyGeneratePostText({ requestId, clientKey, body }) {
     return json(200, buildLegacyFallbackBody(fishType, message));
   }
 
-  generatedText = sanitizeGeneratedText(generatedText, 160);
+  generatedText = sanitizeRegionalHashtags(sanitizeGeneratedText(generatedText, 160));
   if (!generatedText) {
     return json(200, buildLegacyFallbackBody(fishType, "empty_generation"));
   }
@@ -967,7 +999,7 @@ async function handleLegacyGeneratePostText({ requestId, clientKey, body }) {
 async function handleGeneratePostTextTask({ requestId, clientKey, body }) {
   const imageBase64 = String(body.imageBase64 || "");
   const mimeType = String(body.mimeType || "image/jpeg");
-  const fishType = String(body.fishType || "").trim() || "???";
+  const fishType = String(body.fishType || "").trim() || "魚料理";
   const tone = String(body.tone || "friendly");
   const target = String(body.target || "").trim().toLowerCase() || "unknown";
   const outputLanguage = String(body.outputLanguage || "").trim().toLowerCase() || "unknown";
