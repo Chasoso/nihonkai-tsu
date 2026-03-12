@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Hero } from "./components/Hero";
 import heroBackgroundImage from "./assets/hero-background.png";
+import brandLogo from "./assets/nihonkai_tsu.png";
 import { FishModal } from "./components/FishModal";
 import { FishImage } from "./components/FishImage";
 import { ShareStudio } from "./components/ShareStudio";
@@ -226,7 +227,8 @@ export default function App() {
       <header className="top-nav">
         <div className="top-nav-inner">
           <button className="brand-button" onClick={startPostingFlow} aria-label="Nihonkai Tsu">
-            Nihonkai Tsu
+            <img src={brandLogo} alt="" className="brand-logo" aria-hidden="true" />
+            <span>Nihonkai Tsu</span>
           </button>
           <nav className="top-nav-links" aria-label="メインナビゲーション">
             <button onClick={() => scrollToSection("featured")}>Fish</button>

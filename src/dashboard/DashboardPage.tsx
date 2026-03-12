@@ -1,3 +1,4 @@
+import brandLogo from "../assets/nihonkai_tsu.png";
 import type { DashboardMetrics } from "../lib/dashboardMetrics";
 
 interface DashboardPageProps {
@@ -60,6 +61,10 @@ export function DashboardPage({
     <div className="dashboard-shell">
       <header className="dashboard-header">
         <div>
+          <div className="dashboard-brand-row">
+            <img src={brandLogo} alt="" className="dashboard-brand-logo" aria-hidden="true" />
+            <span className="dashboard-brand-name">Nihonkai Tsu</span>
+          </div>
           <p className="dashboard-eyebrow">KPI Dashboard</p>
           <h1>投稿体験ダッシュボード</h1>
           <p className="dashboard-subtitle">日別の投稿体験数と、魚種ごとの反応をまとめて確認します。</p>
