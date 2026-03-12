@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+﻿import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DynamoDBClient, PutItemCommand, QueryCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
@@ -8,7 +8,7 @@ const AI_PROVIDER = String(process.env.AI_PROVIDER || "bedrock").toLowerCase();
 const POST_TEXT_MODE = String(process.env.POST_TEXT_MODE || "live").toLowerCase();
 const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN || "*";
 const TEST_MODE_FIXED_TEXT =
-  process.env.TEST_MODE_FIXED_TEXT || "テストモードです。今日は魚の旬を楽しみました。#変わる海を味わう";
+  process.env.TEST_MODE_FIXED_TEXT || "テストモードです。今日は魚料理をおいしく味わいました。#変わる海を味わう";
 
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 const OPENAI_MAX_OUTPUT_TOKENS = Number(process.env.OPENAI_MAX_OUTPUT_TOKENS || "320");
@@ -327,6 +327,20 @@ function looksLikeJsonPayload(rawText) {
   return text.startsWith("{") || text.startsWith("[") || text.includes('"options"');
 }
 
+function summarizeOptionPayload(rawText) {
+  const text = String(rawText || "").trim();
+  return {
+    rawLength: text.length,
+    preview: sanitizeGeneratedText(text, 200),
+    looksLikeJson: looksLikeJsonPayload(text),
+    startsWithBrace: text.startsWith("{"),
+    startsWithBracket: text.startsWith("["),
+    hasOptionsKey: text.includes('"options"'),
+    endsWithBrace: text.endsWith("}"),
+    endsWithBracket: text.endsWith("]")
+  };
+}
+
 function isMalformedOptionPayload(rawText, parsedOptions) {
   return !parsedOptions && looksLikeJsonPayload(rawText);
 }
@@ -338,7 +352,7 @@ function optionsFromSingleText(text, fishType) {
     [
       { type: "short", text: base.slice(0, 70).trim() },
       { type: "standard", text: base },
-      { type: "pr", text: `${base}\n石川の海の旬を、次の一皿で。` }
+      { type: "pr", text: `${base}\n石川の海の旬を伝える一皿です。` }
     ],
     fishType
   );
@@ -346,34 +360,34 @@ function optionsFromSingleText(text, fishType) {
 
 function buildLegacyPrompt(fishType, tone) {
   return [
-    "あなたは石川県の魚の魅力を伝える案内人です。",
-    "入力画像は料理写真です。",
-    `魚種は「${fishType}」として扱ってください。`,
-    `トーン: ${tone || "friendly"}`,
-    "日本語で、X向け短文を1案のみ出力してください。",
+    "あなたは魚料理の写真を見て、SNS向けの短い投稿文を作る編集者です。",
+    "入力画像と魚種を踏まえて、日本語で自然な文章を1本だけ作成してください。",
+    `魚種は「${fishType}」です。`,
+    `???: ${tone || "friendly"}`,
+    "日本語で、読みやすい投稿文を1本だけ出力してください。",
     "100〜140文字程度にしてください。",
-    "親しみやすく、観光客向けに読める表現にしてください。",
+    "食べた印象や旬らしさが伝わる表現を入れてください。",
     "誇張表現は避けてください。",
-    "画像から断定できない店名・場所・食べ方などは書かないでください。",
-    "ハッシュタグは最大2個まで。",
-    "出力は本文のみ。説明文は不要です。"
+    "画像から断定できない調理法や産地は書かないでください。",
+    "ハッシュタグは最大2つまでです。",
+    "出力は本文のみです。説明やJSONは不要です。"
   ].join("\n");
 }
 
 function buildThreeOptionPrompt(fishType, tone) {
   return [
-    "あなたは石川県の魚の魅力を伝える案内人です。",
-    "入力画像は料理写真です。",
-    `魚種は「${fishType}」として扱ってください。`,
+    "あなたは魚料理の写真を見て、X向け投稿文を3案作る編集者です。",
+    "入力画像と魚種を踏まえて、日本語で3種類の投稿文を作成してください。",
+    `魚種は「${fishType}」です。`,
     `トーン: ${tone || "friendly"}`,
-    "X投稿向けの本文を3案作ってください。",
-    "形式は必ずJSONのみ。説明文禁止。",
+    "X投稿向けの本文を3種類返してください。",
+    "出力は必ずJSONのみ、説明文は禁止です。",
     'JSON形式: {"options":[{"type":"short","text":"..."},{"type":"standard","text":"..."},{"type":"pr","text":"..."}]}',
-    "short: 45〜80文字",
+    "short: 45〜70文字",
     "standard: 90〜140文字",
-    "pr: 110〜170文字。観光客向けの訴求を入れる",
-    "画像から断定できない店名・場所・食べ方は書かない。",
-    "ハッシュタグは各案2個まで。"
+    "pr: 110〜170文字で、地域PR要素を少し入れる",
+    "画像から断定できない調理法や産地は書かないでください。",
+    "ハッシュタグは各案2つまでです。"
   ].join("\n");
 }
 
@@ -883,7 +897,7 @@ function buildCandidateFallbackBody(reason) {
 async function handleLegacyGeneratePostText({ requestId, clientKey, body }) {
   const imageBase64 = String(body.imageBase64 || "");
   const mimeType = String(body.mimeType || "image/jpeg");
-  const fishType = String(body.fishType || "").trim() || "魚料理";
+  const fishType = String(body.fishType || "").trim() || "???";
   const tone = String(body.tone || "friendly");
 
   if (POST_TEXT_MODE === "test") {
@@ -938,8 +952,10 @@ async function handleLegacyGeneratePostText({ requestId, clientKey, body }) {
 async function handleGeneratePostTextTask({ requestId, clientKey, body }) {
   const imageBase64 = String(body.imageBase64 || "");
   const mimeType = String(body.mimeType || "image/jpeg");
-  const fishType = String(body.fishType || "").trim() || "魚料理";
+  const fishType = String(body.fishType || "").trim() || "???";
   const tone = String(body.tone || "friendly");
+  const target = String(body.target || "").trim().toLowerCase() || "unknown";
+  const outputLanguage = String(body.outputLanguage || "").trim().toLowerCase() || "unknown";
 
   if (POST_TEXT_MODE === "test") {
     const options = optionsFromSingleText(TEST_MODE_FIXED_TEXT, fishType);
@@ -988,7 +1004,11 @@ async function handleGeneratePostTextTask({ requestId, clientKey, body }) {
     logError("invalid_option_response", new Error("invalid_option_response"), {
       requestId,
       provider,
-      preview: sanitizeGeneratedText(rawText, 120)
+      fishType,
+      tone,
+      target,
+      outputLanguage,
+      ...summarizeOptionPayload(rawText)
     });
     return json(200, buildOptionFallbackBody(fishType, "invalid_option_response"));
   }
@@ -1318,3 +1338,5 @@ export const handler = async (event) => {
     logInfo("api_task_end", { requestId, elapsedMs, aiProvider: AI_PROVIDER, bedrockRegion: BEDROCK_REGION });
   }
 };
+
+
