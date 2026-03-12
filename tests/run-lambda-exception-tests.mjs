@@ -538,6 +538,83 @@ async function main() {
     }
   }, results);
 
+  await runCase("task=get_dashboard_metrics はfish_dailyが空でもraw metricsから魚別件数を返す", async () => {
+    const snapshot = snapshotGlobals();
+    try {
+      DynamoDBClient.prototype.send = async (command) => {
+        const input = command.input;
+        if (input.TableName === "metrics-daily-table") {
+          const dateJst = input.ExpressionAttributeValues[":dateJst"].S;
+          if (dateJst === "2026-03-12") {
+            return { Items: [{ date_jst: { S: dateJst }, total_count: { N: "3" } }] };
+          }
+          return { Items: [] };
+        }
+        if (input.TableName === "metrics-fish-daily-table") {
+          return { Items: [] };
+        }
+        if (input.TableName === "metrics-table" && input.IndexName === "GSI1") {
+          const dateJst = input.ExpressionAttributeValues[":dateJst"].S;
+          if (dateJst === "2026-03-12") {
+            return {
+              Items: [
+                { fish_id: { S: "buri" }, fish_label: { S: "ブリ" } },
+                { fish_id: { S: "buri" }, fish_label: { S: "ブリ" } },
+                { fish_id: { S: "saba" }, fish_label: { S: "サバ" } }
+              ]
+            };
+          }
+          return { Items: [] };
+        }
+        return { Items: [] };
+      };
+
+      const OriginalDate = Date;
+      globalThis.Date = class extends OriginalDate {
+        constructor(...args) {
+          if (args.length === 0) {
+            super("2026-03-12T12:00:00.000Z");
+            return;
+          }
+          super(...args);
+        }
+        static now() {
+          return new OriginalDate("2026-03-12T12:00:00.000Z").getTime();
+        }
+        static parse(value) {
+          return OriginalDate.parse(value);
+        }
+        static UTC(...args) {
+          return OriginalDate.UTC(...args);
+        }
+      };
+
+      const handler = await freshHandler({
+        POST_TEXT_MODE: "live",
+        AI_PROVIDER: "bedrock",
+        METRICS_TABLE_NAME: "metrics-table",
+        METRICS_DAILY_TABLE_NAME: "metrics-daily-table",
+        METRICS_FISH_DAILY_TABLE_NAME: "metrics-fish-daily-table"
+      });
+      const res = await handler(
+        eventOf({
+          task: "get_dashboard_metrics",
+          date_from: "2026-03-06",
+          date_to: "2026-03-12"
+        })
+      );
+      const body = JSON.parse(res.body);
+      assert.equal(res.statusCode, 200);
+      assert.equal(body.total, 3);
+      assert.equal(body.today, 3);
+      assert.equal(body.fish_counts.length, 2);
+      assert.deepEqual(body.fish_counts[0], { fish_id: "buri", fish_label: "ブリ", count: 2 });
+      assert.deepEqual(body.top_fish, { fish_id: "buri", fish_label: "ブリ", count: 2 });
+    } finally {
+      restoreGlobals(snapshot);
+    }
+  }, results);
+
   await runCase("task=get_dashboard_metrics はDynamoDB異常時もゼロで返す", async () => {
     const snapshot = snapshotGlobals();
     try {

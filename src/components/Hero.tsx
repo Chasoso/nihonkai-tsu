@@ -17,8 +17,12 @@ export function Hero({ year, onStartPost, backgroundImageUrl }: HeroProps) {
     <section id="hero" className="section hero" style={heroStyle}>
       <div className="hero-content">
         <p className="eyebrow hero-eyebrow">Nihonkai Tsu {year}</p>
-        <h1 className="hero-title">石川の魚を撮って投稿しよう</h1>
-        <p className="hero-subline">30秒で投稿文とフレーム画像が完成。魚に詳しくなくても、コピーするだけでOK。</p>
+        <h1 className="hero-title">
+          <span className="hero-title-chunk">石川の魚を撮って</span>
+          <wbr />
+          <span className="hero-title-chunk">投稿しよう</span>
+        </h1>
+        <p className="hero-subline">写真を選ぶだけで、投稿文と画像を作ってそのままX投稿に進めます。</p>
         {onStartPost ? (
           <div className="hero-actions">
             <button className="hero-cta" onClick={onStartPost}>

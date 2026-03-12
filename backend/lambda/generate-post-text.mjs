@@ -737,6 +737,38 @@ async function getFishDailyMetricRows(dateFrom, dateTo) {
   return rows;
 }
 
+async function getFishCountsFromRawMetrics(dateFrom, dateTo) {
+  if (!ddbClient || !METRICS_TABLE_NAME) return [];
+
+  const aggregate = new Map();
+  for (const dateJst of enumerateDateJstRange(dateFrom, dateTo)) {
+    const items = await queryAllItems({
+      IndexName: "GSI1",
+      KeyConditionExpression: "date_jst = :dateJst",
+      ExpressionAttributeValues: {
+        ":dateJst": { S: dateJst }
+      },
+      ProjectionExpression: "fish_id, fish_label"
+    });
+
+    for (const item of items) {
+      const fishId = String(item?.fish_id?.S || "").trim().toLowerCase();
+      if (!fishId) continue;
+      const fishLabel = String(item?.fish_label?.S || "").trim() || fishId;
+      const current = aggregate.get(fishId) || {
+        fish_id: fishId,
+        fish_label: fishLabel,
+        count: 0
+      };
+      current.count += 1;
+      if (fishLabel) current.fish_label = fishLabel;
+      aggregate.set(fishId, current);
+    }
+  }
+
+  return Array.from(aggregate.values());
+}
+
 function parseCountAttribute(value) {
   const count = Number(value?.N || 0);
   return Number.isFinite(count) ? count : 0;
@@ -1122,7 +1154,7 @@ async function handleGetDashboardMetricsTask({ requestId, body }) {
   const range = enumerateDateJstRange(dateFrom, dateTo);
   const weekDateFrom = getJstDayKeyWithOffset(-6, now);
 
-  if (!ddbClient || !METRICS_DAILY_TABLE_NAME || !METRICS_FISH_DAILY_TABLE_NAME || range.length === 0) {
+  if (!ddbClient || !METRICS_DAILY_TABLE_NAME || range.length === 0) {
     return json(200, {
       total: 0,
       today: 0,
@@ -1137,7 +1169,7 @@ async function handleGetDashboardMetricsTask({ requestId, body }) {
     const [dailyRows, weekRows, fishRows] = await Promise.all([
       getDailyMetricRows(dateFrom, dateTo),
       getDailyMetricRows(weekDateFrom, todayJst),
-      getFishDailyMetricRows(dateFrom, dateTo)
+      METRICS_FISH_DAILY_TABLE_NAME ? getFishDailyMetricRows(dateFrom, dateTo) : Promise.resolve([])
     ]);
 
     const dailyCountsMap = new Map();
@@ -1157,7 +1189,27 @@ async function handleGetDashboardMetricsTask({ requestId, body }) {
     const this_week = weekRows.reduce((sum, row) => sum + parseCountAttribute(row?.total_count), 0);
 
     const fishCountsMap = new Map();
-    for (const row of fishRows) {
+    const effectiveFishRows =
+      fishRows.length > 0 ? fishRows.map((row) => ({ source: "aggregated", row })) : (await getFishCountsFromRawMetrics(dateFrom, dateTo)).map((row) => ({ source: "raw", row }));
+
+    for (const item of effectiveFishRows) {
+      if (item.source === "raw") {
+        const fishId = String(item.row?.fish_id || "").trim().toLowerCase();
+        if (!fishId) continue;
+        const count = Number(item.row?.count || 0);
+        const fishLabel = String(item.row?.fish_label || "").trim();
+        const current = fishCountsMap.get(fishId) || {
+          fish_id: fishId,
+          fish_label: fishLabel || fishId,
+          count: 0
+        };
+        current.count += count;
+        if (fishLabel) current.fish_label = fishLabel;
+        fishCountsMap.set(fishId, current);
+        continue;
+      }
+
+      const row = item.row;
       const fishId = String(row?.fish_id?.S || "").trim().toLowerCase();
       if (!fishId) continue;
       const count = parseCountAttribute(row?.total_count);

@@ -578,6 +578,10 @@ h3 {
   text-wrap: balance;
 }
 
+.hero-title-chunk {
+  display: inline-block;
+}
+
 .hero-subline {
   margin: 0;
   color: rgba(247, 251, 255, 0.92);
