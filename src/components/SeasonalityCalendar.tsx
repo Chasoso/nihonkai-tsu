@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import type { Fish, LandingsData } from "../types";
 import {
   computeSeasonalityBySpecies,
@@ -29,6 +29,7 @@ export function SeasonalityCalendar({
   selectedFishId,
   onSelectMainFish
 }: SeasonalityCalendarProps) {
+  const tooltipId = useId();
   const fishById = useMemo(() => new Map(fishList.map((fish) => [fish.id, fish])), [fishList]);
   const seasonalityList = useMemo(() => computeSeasonalityBySpecies(landings, SEASON_THRESHOLD), [landings]);
   const seasonalityById = useMemo(() => new Map(seasonalityList.map((item) => [item.id, item])), [seasonalityList]);
@@ -88,13 +89,29 @@ export function SeasonalityCalendar({
   return (
     <section className="section seasonality-section" id="seasonality-calendar">
       <h2 className="section-title">投稿ネタを探す（旬の魚）</h2>
-      <p className="section-lead">
-        旬判定: 指数 {SEASON_THRESHOLD.toFixed(2)} 以上 / 集計期間:{" "}
-        {landings.meta.range_years[0]}〜{landings.meta.range_years[landings.meta.range_years.length - 1]} / 単位:{" "}
-        {landings.meta.unit}
-      </p>
+      <div className="season-meta-row">
+        <p className="section-lead season-meta-copy">
+          旬判定: 指数 {SEASON_THRESHOLD.toFixed(2)} 以上 / 集計期間: {landings.meta.range_years[0]}-
+          {landings.meta.range_years[landings.meta.range_years.length - 1]} / 単位: {landings.meta.unit}
+        </p>
+        <div className="season-help">
+          <button
+            type="button"
+            className="season-help-button"
+            aria-label="指数の説明"
+            aria-describedby={tooltipId}
+          >
+            ?
+          </button>
+          <div id={tooltipId} role="tooltip" className="season-help-tooltip">
+            指数は、各月の平均漁獲量をその魚の年間平均漁獲量で割った値です。
+            <br />
+            1.00 が年間平均、1.20 以上なら「旬」とみなします。
+          </div>
+        </div>
+      </div>
 
-      <div className="season-month-tabs" role="tablist" aria-label="月選択">
+      <div className="season-month-tabs" role="tablist" aria-label="月を選ぶ">
         {Array.from({ length: 12 }, (_, idx) => idx + 1).map((month) => (
           <button
             key={month}

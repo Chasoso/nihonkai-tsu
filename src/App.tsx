@@ -25,9 +25,28 @@ function categoryLabel(category: string): string {
 }
 
 function trendLabel(trend: Fish["trend"]) {
-  if (trend === "up") return "上昇";
-  if (trend === "down") return "下降";
-  return "横ばい";
+  if (trend === "up") {
+    return (
+      <span className="trend-indicator">
+        <span className="trend-arrow trend-arrow-up">↗</span>
+        <span>上昇</span>
+      </span>
+    );
+  }
+  if (trend === "down") {
+    return (
+      <span className="trend-indicator">
+        <span className="trend-arrow trend-arrow-down">↘</span>
+        <span>下降</span>
+      </span>
+    );
+  }
+  return (
+    <span className="trend-indicator">
+      <span className="trend-arrow trend-arrow-flat">→</span>
+      <span>横ばい</span>
+    </span>
+  );
 }
 
 function buildSeasonIndexByMonth(landings: LandingsData | null, fishId: string): number[] {
@@ -173,6 +192,10 @@ export default function App() {
   }, [seasonIndexByMonth]);
 
   const dishes = useMemo(() => (selectedFish ? recommendDishes(selectedFish.name) : []), [selectedFish]);
+  const seasonGraphMax = useMemo(
+    () => Math.max(1, ...seasonIndexByMonth),
+    [seasonIndexByMonth]
+  );
 
   const sectionRefByKey: Record<SectionKey, RefObject<HTMLElement | null>> = {
     featured: featuredRef,
@@ -263,8 +286,8 @@ export default function App() {
                 <h3>{fish.name}</h3>
                 <p>{fish.microcopy}</p>
                 <div className="featured-fish-meta">
-                  <span>Season: {fish.percentile.toFixed(1)}%</span>
-                  <span>Trend: {trendLabel(fish.trend)}</span>
+                  <span>構成比: {fish.percentile.toFixed(1)}%</span>
+                  <span>直近2年のトレンド: {trendLabel(fish.trend)}</span>
                 </div>
                 <button
                   onClick={() => {
@@ -324,7 +347,7 @@ export default function App() {
                       <div key={idx} className="season-mini-bar-wrap" title={`${idx + 1}譛・/ 謖・焚 ${value.toFixed(2)}`}>
                         <div
                           className={`season-mini-bar ${peakMonth === idx + 1 ? "season-mini-bar-peak" : ""}`}
-                          style={{ height: `${Math.max(10, Math.min(100, value * 58))}%` }}
+                          style={{ height: `${Math.max(10, (value / seasonGraphMax) * 100)}%` }}
                         />
                       </div>
                     ))}

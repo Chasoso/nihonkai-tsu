@@ -10,9 +10,28 @@ interface FishModalProps {
 }
 
 function trendLabel(trend: Fish["trend"]) {
-  if (trend === "up") return "上昇";
-  if (trend === "down") return "下降";
-  return "横ばい";
+  if (trend === "up") {
+    return (
+      <span className="trend-indicator">
+        <span className="trend-arrow trend-arrow-up">↗</span>
+        <span>上昇</span>
+      </span>
+    );
+  }
+  if (trend === "down") {
+    return (
+      <span className="trend-indicator">
+        <span className="trend-arrow trend-arrow-down">↘</span>
+        <span>下降</span>
+      </span>
+    );
+  }
+  return (
+    <span className="trend-indicator">
+      <span className="trend-arrow trend-arrow-flat">→</span>
+      <span>横ばい</span>
+    </span>
+  );
 }
 
 function categoryLabel(category: string) {
@@ -57,6 +76,7 @@ export function FishModal({ fish, landings = null, onClose, onSelectForShare }: 
     [fish, landings]
   );
   const dishes = useMemo(() => (fish ? recommendDishes(fish.name) : []), [fish]);
+  const seasonGraphMax = useMemo(() => Math.max(1, ...seasonIndexByMonth), [seasonIndexByMonth]);
   const peakMonth = useMemo(() => {
     if (!seasonIndexByMonth.length) return null;
     let bestIndex = 0;
@@ -76,7 +96,7 @@ export function FishModal({ fish, landings = null, onClose, onSelectForShare }: 
     <div className="modal-backdrop" role="dialog" aria-modal="true">
       <div className="modal fish-detail-modal">
         <button className="close-button" onClick={onClose} aria-label="閉じる">
-          ×
+          x
         </button>
         <div className="fish-detail-grid">
           <div className="fish-detail-hero card">
@@ -103,7 +123,7 @@ export function FishModal({ fish, landings = null, onClose, onSelectForShare }: 
                     <div key={idx} className="season-mini-bar-wrap" title={`${idx + 1}月 / 指数 ${value.toFixed(2)}`}>
                       <div
                         className={`season-mini-bar ${peakMonth === idx + 1 ? "season-mini-bar-peak" : ""}`}
-                        style={{ height: `${Math.max(10, Math.min(100, value * 58))}%` }}
+                        style={{ height: `${Math.max(10, (value / seasonGraphMax) * 100)}%` }}
                       />
                     </div>
                   ))}
