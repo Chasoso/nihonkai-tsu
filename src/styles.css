@@ -216,7 +216,6 @@ a {
 
 .dashboard-chart-card,
 .dashboard-ranking-card {
-  position: relative;
   border-radius: 18px;
   background: linear-gradient(180deg, rgba(245, 249, 255, 0.94) 0%, rgba(234, 241, 252, 0.9) 100%);
   border: 1px solid rgba(29, 78, 216, 0.1);
@@ -248,13 +247,6 @@ a {
   fill: #ffffff;
   stroke: var(--primary);
   stroke-width: 3;
-  cursor: pointer;
-}
-
-.dashboard-line-chart-dot:focus-visible {
-  outline: none;
-  stroke: var(--primary-deep);
-  stroke-width: 4;
 }
 
 .dashboard-line-chart-label {
@@ -262,11 +254,6 @@ a {
   font-size: 12px;
   fill: var(--text-sub);
   dominant-baseline: hanging;
-}
-
-.dashboard-chart-tooltip {
-  max-width: min(180px, calc(100vw - 24px));
-  white-space: nowrap;
 }
 
 .dashboard-ranking-list {
