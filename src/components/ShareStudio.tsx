@@ -2,6 +2,7 @@
 import type { ChangeEvent } from "react";
 import { createPortal } from "react-dom";
 import type { Fish, LandingsData, LandingSpecies } from "../types";
+import nihonkaiLogo from "../assets/nihonkai_tsu.png";
 import { StepFlowHeader } from "./StepFlowHeader";
 import {
   generatePostText,
@@ -99,6 +100,32 @@ function drawRoundedRect(
   ctx.closePath();
 }
 
+function drawScallopPattern(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  color: string,
+  lineWidth: number
+) {
+  const spacing = Math.max(24, width * 0.07);
+  const radius = spacing * 0.5;
+
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+
+  for (let y = 0; y < height + spacing; y += radius * 0.86) {
+    const offset = Math.round(y / (radius * 0.86)) % 2 === 0 ? 0 : radius;
+    for (let x = -spacing; x < width + spacing; x += spacing) {
+      ctx.beginPath();
+      ctx.arc(x + offset, y, radius, Math.PI, 0, false);
+      ctx.stroke();
+    }
+  }
+
+  ctx.restore();
+}
+
 function getTwoYearMonthlySeries(species: LandingSpecies | undefined): number[] {
   if (!species) return [];
 
@@ -132,136 +159,184 @@ function findSpeciesBySelection(landings: LandingsData, selection: string): Land
 }
 
 function drawFlowBackground(ctx: CanvasRenderingContext2D, width: number, height: number) {
-  const gradient = ctx.createLinearGradient(0, 0, 0, height);
-  gradient.addColorStop(0, "rgba(255, 255, 255, 0.04)");
-  gradient.addColorStop(0.55, "rgba(9, 26, 45, 0.06)");
-  gradient.addColorStop(1, "rgba(9, 26, 45, 0.24)");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, width, height);
-
-  ctx.strokeStyle = "rgba(209, 236, 255, 0.22)";
-  ctx.lineWidth = Math.max(1.5, width * 0.0024);
-  ctx.beginPath();
-  ctx.moveTo(width * 0.04, height * 0.78);
-  ctx.bezierCurveTo(width * 0.28, height * 0.70, width * 0.54, height * 0.87, width * 0.82, height * 0.76);
-  ctx.bezierCurveTo(width * 0.90, height * 0.73, width * 0.95, height * 0.76, width * 1.02, height * 0.72);
-  ctx.stroke();
-
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.14)";
-  ctx.lineWidth = Math.max(1, width * 0.0018);
-  ctx.beginPath();
-  ctx.moveTo(width * 0.04, height * 0.84);
-  ctx.bezierCurveTo(width * 0.22, height * 0.78, width * 0.53, height * 0.93, width * 0.88, height * 0.82);
-  ctx.stroke();
-}
-
-function drawFishTitle(ctx: CanvasRenderingContext2D, width: number, height: number, fishName: string) {
-  const panelWidth = width * 0.28;
-  const panelHeight = height * 0.09;
-  const pad = width * 0.04;
+  const headerHeight = Math.max(height * 0.28, 120);
+  const gradient = ctx.createLinearGradient(0, 0, width, headerHeight);
+  gradient.addColorStop(0, "rgba(37, 89, 226, 0.96)");
+  gradient.addColorStop(1, "rgba(56, 101, 236, 0.92)");
 
   ctx.save();
-  drawRoundedRect(ctx, pad, pad, panelWidth, panelHeight, Math.max(10, width * 0.018));
-  ctx.fillStyle = "rgba(255, 255, 255, 0.26)";
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(width, 0);
+  ctx.lineTo(width, headerHeight * 0.78);
+  ctx.bezierCurveTo(
+    width * 0.82,
+    headerHeight * 0.56,
+    width * 0.52,
+    headerHeight * 1.02,
+    width * 0.22,
+    headerHeight * 0.92
+  );
+  ctx.bezierCurveTo(width * 0.1, headerHeight * 0.88, width * 0.04, headerHeight * 0.98, 0, headerHeight * 0.96);
+  ctx.closePath();
   ctx.fill();
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.44)";
-  ctx.lineWidth = Math.max(1.2, width * 0.0018);
-  ctx.stroke();
+  ctx.clip();
 
-  ctx.fillStyle = "#f3f8ff";
-  ctx.font = `700 ${Math.max(12, width * 0.022)}px "Hiragino Sans", "Yu Gothic", sans-serif`;
+  drawScallopPattern(ctx, width, headerHeight * 1.04, "rgba(18, 49, 143, 0.18)", Math.max(1.1, width * 0.0018));
+  ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+  ctx.fillRect(0, 0, width, headerHeight * 0.18);
+  ctx.restore();
+
+  const wave = ctx.createLinearGradient(0, headerHeight * 0.62, 0, headerHeight);
+  wave.addColorStop(0, "rgba(255, 255, 255, 0.12)");
+  wave.addColorStop(1, "rgba(255, 255, 255, 0)");
+  ctx.fillStyle = wave;
+  ctx.beginPath();
+  ctx.moveTo(0, headerHeight * 0.7);
+  ctx.bezierCurveTo(width * 0.18, headerHeight * 0.88, width * 0.48, headerHeight * 0.48, width, headerHeight * 0.82);
+  ctx.lineTo(width, headerHeight);
+  ctx.lineTo(0, headerHeight);
+  ctx.closePath();
+  ctx.fill();
+}
+
+async function loadImageElement(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("failed to load image asset"));
+    img.src = src;
+  });
+}
+
+let nihonkaiLogoPromise: Promise<HTMLImageElement> | null = null;
+
+function getNihonkaiLogoImage(): Promise<HTMLImageElement> {
+  nihonkaiLogoPromise ??= loadImageElement(nihonkaiLogo);
+  return nihonkaiLogoPromise;
+}
+
+function fitText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, startSize: number, minSize: number) {
+  let fontSize = startSize;
+  while (fontSize > minSize) {
+    ctx.font = `800 ${fontSize}px "Hiragino Sans", "Yu Gothic", sans-serif`;
+    if (ctx.measureText(text).width <= maxWidth) break;
+    fontSize -= 2;
+  }
+  return fontSize;
+}
+
+function drawFishTitle(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  fishName: string,
+  logo: HTMLImageElement
+) {
+  const headerHeight = Math.max(height * 0.28, 120);
+  const padX = width * 0.05;
+  const logoHeight = Math.min(headerHeight * 0.62, width * 0.2);
+  const logoWidth = (logo.width / logo.height) * logoHeight;
+  const logoY = headerHeight * 0.18;
+  const textX = padX + logoWidth + width * 0.028;
+  const textMaxWidth = width - textX - width * 0.06;
+  const fontSize = fitText(ctx, fishName, textMaxWidth, Math.max(28, width * 0.068), Math.max(18, width * 0.034));
+
+  ctx.save();
+  ctx.drawImage(logo, padX, logoY, logoWidth, logoHeight);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `800 ${fontSize}px "Hiragino Sans", "Yu Gothic", sans-serif`;
   ctx.textBaseline = "middle";
-  ctx.fillText(fishName, pad + width * 0.018, pad + panelHeight / 2);
+  ctx.shadowColor = "rgba(18, 43, 120, 0.35)";
+  ctx.shadowBlur = Math.max(8, width * 0.018);
+  ctx.fillText(fishName, textX, logoY + logoHeight * 0.42);
   ctx.restore();
 }
 
 function drawTrendChart(ctx: CanvasRenderingContext2D, width: number, height: number, series: number[], unit: string) {
-  const boxWidth = width * 0.42;
-  const boxHeight = height * 0.28;
-  const margin = width * 0.03;
+  const boxWidth = width * 0.34;
+  const boxHeight = height * 0.2;
+  const margin = width * 0.045;
   const x = width - boxWidth - margin;
   const y = height - boxHeight - margin;
 
   ctx.save();
-  const fade = ctx.createRadialGradient(
-    width * 0.92,
-    height * 0.9,
-    0,
-    width * 0.92,
-    height * 0.9,
-    Math.max(boxWidth * 1.26, height * 0.42)
-  );
-  fade.addColorStop(0, "rgba(6, 30, 56, 0.62)");
-  fade.addColorStop(0.32, "rgba(6, 30, 56, 0.42)");
-  fade.addColorStop(0.56, "rgba(6, 30, 56, 0.22)");
-  fade.addColorStop(0.76, "rgba(6, 30, 56, 0.1)");
-  fade.addColorStop(1, "rgba(6, 30, 56, 0)");
-  ctx.fillStyle = fade;
-  ctx.fillRect(0, 0, width, height);
 
   if (!series.length) {
-    ctx.fillStyle = "rgba(240, 248, 255, 0.9)";
-    ctx.font = `600 ${Math.max(10, width * 0.016)}px "Inter", "Noto Sans JP", sans-serif`;
-    ctx.textAlign = "right";
-    ctx.fillText("Nihonkai-tsu 2026", x + boxWidth - 2, y + boxHeight - 6);
+    ctx.fillStyle = "rgba(240, 248, 255, 0.84)";
+    ctx.font = `600 ${Math.max(10, width * 0.014)}px "Inter", "Noto Sans JP", sans-serif`;
+    ctx.textAlign = "left";
+    ctx.fillText("漁獲量", x + boxWidth * 0.1, y + boxHeight * 0.24);
     ctx.restore();
     return;
   }
 
-  const chartX = x + boxWidth * 0.04;
-  const chartY = y + boxHeight * 0.22;
-  const chartW = boxWidth * 0.92;
-  const chartH = boxHeight * 0.46;
+  const chartX = x + boxWidth * 0.09;
+  const chartY = y + boxHeight * 0.26;
+  const chartW = boxWidth * 0.82;
+  const chartH = boxHeight * 0.54;
 
   const min = Math.min(...series);
   const max = Math.max(...series);
   const range = Math.max(1, max - min);
 
-  ctx.strokeStyle = "rgba(240, 248, 255, 0.38)";
+  ctx.strokeStyle = "rgba(229, 240, 255, 0.32)";
   ctx.lineWidth = Math.max(1, width * 0.0015);
   ctx.beginPath();
   ctx.moveTo(chartX, chartY + chartH);
   ctx.lineTo(chartX + chartW, chartY + chartH);
   ctx.stroke();
 
-  // Draw a thin dark outline first so the chart line stays visible on bright backgrounds.
-  ctx.strokeStyle = "rgba(17, 44, 76, 0.55)";
-  ctx.lineWidth = Math.max(2.8, width * 0.0032);
-  ctx.beginPath();
-  series.forEach((value, idx) => {
+  const points = series.map((value, idx) => {
     const px = chartX + (chartW * idx) / Math.max(1, series.length - 1);
     const py = chartY + chartH - ((value - min) / range) * chartH;
+    return { px, py };
+  });
+
+  ctx.beginPath();
+  ctx.moveTo(points[0]?.px ?? chartX, chartY + chartH);
+  points.forEach((point) => {
+    ctx.lineTo(point.px, point.py);
+  });
+  ctx.lineTo(points[points.length - 1]?.px ?? chartX + chartW, chartY + chartH);
+  ctx.closePath();
+  const area = ctx.createLinearGradient(0, chartY, 0, chartY + chartH);
+  area.addColorStop(0, "rgba(114, 162, 255, 0.45)");
+  area.addColorStop(1, "rgba(114, 162, 255, 0.08)");
+  ctx.fillStyle = area;
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(44, 98, 228, 0.5)";
+  ctx.lineWidth = Math.max(3.4, width * 0.0042);
+  ctx.beginPath();
+  points.forEach((point, idx) => {
     if (idx === 0) {
-      ctx.moveTo(px, py);
+      ctx.moveTo(point.px, point.py);
     } else {
-      ctx.lineTo(px, py);
+      ctx.lineTo(point.px, point.py);
     }
   });
   ctx.stroke();
 
-  ctx.strokeStyle = "rgba(221, 242, 255, 0.96)";
-  ctx.lineWidth = Math.max(1.8, width * 0.0022);
+  ctx.strokeStyle = "rgba(100, 156, 255, 0.98)";
+  ctx.lineWidth = Math.max(2.1, width * 0.0028);
   ctx.beginPath();
-  series.forEach((value, idx) => {
-    const px = chartX + (chartW * idx) / Math.max(1, series.length - 1);
-    const py = chartY + chartH - ((value - min) / range) * chartH;
+  points.forEach((point, idx) => {
     if (idx === 0) {
-      ctx.moveTo(px, py);
+      ctx.moveTo(point.px, point.py);
     } else {
-      ctx.lineTo(px, py);
+      ctx.lineTo(point.px, point.py);
     }
   });
   ctx.stroke();
 
-  ctx.fillStyle = "rgba(240, 248, 255, 0.84)";
-  ctx.font = `500 ${Math.max(8, width * 0.012)}px "Hiragino Sans", "Yu Gothic", sans-serif`;
+  ctx.fillStyle = "rgba(244, 249, 255, 0.92)";
+  ctx.font = `700 ${Math.max(9, width * 0.013)}px "Hiragino Sans", "Yu Gothic", sans-serif`;
   ctx.textAlign = "left";
-  ctx.fillText("Trend", chartX, y + boxHeight - 20);
-  ctx.fillText(`max ${Math.round(max)} ${unit}`, chartX, y + boxHeight - 7);
-
-  ctx.textAlign = "right";
-  ctx.font = `600 ${Math.max(10, width * 0.015)}px "Inter", "Noto Sans JP", sans-serif`;
-  ctx.fillText("Nihonkai-tsu 2026", x + boxWidth - 2, y + boxHeight - 6);
+  ctx.fillText("漁獲量", chartX, y + boxHeight - 18);
+  ctx.font = `500 ${Math.max(8, width * 0.011)}px "Inter", "Noto Sans JP", sans-serif`;
+  ctx.fillText(`max ${Math.round(max)} ${unit}`, chartX, y + boxHeight - 5);
   ctx.restore();
 }
 
@@ -311,6 +386,7 @@ interface ShareImageFishMeta {
 
 export async function buildShareImage(file: File, fish: ShareImageFishMeta, landings: LandingsData): Promise<File> {
   const img = await loadFileImage(file);
+  const logo = await getNihonkaiLogoImage();
   const canvas = document.createElement("canvas");
   canvas.width = img.naturalWidth || img.width;
   canvas.height = img.naturalHeight || img.height;
@@ -322,13 +398,14 @@ export async function buildShareImage(file: File, fish: ShareImageFishMeta, land
 
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
   drawFlowBackground(ctx, canvas.width, canvas.height);
-  drawFishTitle(ctx, canvas.width, canvas.height, fish.fishLabel);
+  drawFishTitle(ctx, canvas.width, canvas.height, fish.fishLabel, logo);
 
   const species = landings.species.find((item) => item.id === fish.fishId);
   const series = getTwoYearMonthlySeries(species);
   drawTrendChart(ctx, canvas.width, canvas.height, series, landings.meta.unit);
 
-  const borderInset = Math.max(6, canvas.width * 0.012);
+  const borderInset = Math.max(8, canvas.width * 0.014);
+  const outerBorderWidth = Math.max(6, canvas.width * 0.011);
   drawRoundedRect(
     ctx,
     borderInset,
@@ -337,8 +414,19 @@ export async function buildShareImage(file: File, fish: ShareImageFishMeta, land
     canvas.height - borderInset * 2,
     Math.max(12, canvas.width * 0.02)
   );
-  ctx.strokeStyle = "rgba(246, 194, 111, 0.9)";
-  ctx.lineWidth = Math.max(3, canvas.width * 0.005);
+  ctx.strokeStyle = "rgba(45, 88, 220, 0.98)";
+  ctx.lineWidth = outerBorderWidth;
+  ctx.stroke();
+  drawRoundedRect(
+    ctx,
+    borderInset,
+    borderInset,
+    canvas.width - borderInset * 2,
+    canvas.height - borderInset * 2,
+    Math.max(12, canvas.width * 0.02)
+  );
+  ctx.strokeStyle = "rgba(240, 208, 126, 0.92)";
+  ctx.lineWidth = Math.max(1.2, canvas.width * 0.0026);
   ctx.stroke();
 
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.94));
@@ -502,6 +590,16 @@ export function ShareStudio({
       .join(" ");
   }, [previewSeries]);
 
+  const previewAreaPoints = useMemo(() => {
+    if (!previewPolyline) return "";
+    return `4,90 ${previewPolyline} 236,90`;
+  }, [previewPolyline]);
+
+  const previewMaxLabel = useMemo(() => {
+    if (!previewSeries.length) return "";
+    return `max ${Math.round(Math.max(...previewSeries))} ${landings.meta.unit}`;
+  }, [previewSeries, landings.meta.unit]);
+
   const shareHashtags = useMemo(() => {
     const matches = fish?.share.text.match(/#[^\s#]+/g) ?? [];
     const unique = Array.from(new Set(matches));
@@ -531,6 +629,7 @@ export function ShareStudio({
   const step2Complete = Boolean(confirmedFishId.trim());
   const displayFishLabel = confirmedFishType.trim() || "未選択";
   const frameFishBadgeLabel = confirmedFishType.trim();
+  const previewFishTitle = frameFishBadgeLabel;
   const needsOtherFishSelection = pendingFishType === "other";
   const canConfirmFishType = Boolean(
     pendingFishType.trim() && (!needsOtherFishSelection || selectedOtherFish.trim())
@@ -1205,44 +1304,72 @@ export function ShareStudio({
                           </button>
                         ) : null}
 
-                        {frameOption === "nihonkai" ? (
-                          <div className="frame-overlay" aria-hidden="true">
-                            {frameFishBadgeLabel ? <div className="frame-fish-badge">{frameFishBadgeLabel}</div> : null}
-                            <div className="frame-mini-overlay">
-                              {previewPolyline ? (
-                                <svg viewBox="0 0 240 100" preserveAspectRatio="none">
-                                  <polyline points={previewPolyline} />
-                                </svg>
-                              ) : null}
-                              <span className="frame-mini-label">トレンド</span>
-                              <span className="frame-mini-brand">Nihonkai-tsu 2026</span>
-                            </div>
-                          </div>
-                        ) : null}
+	                        {frameOption === "nihonkai" ? (
+	                          <div className="frame-overlay" aria-hidden="true">
+	                            <div className="frame-inner-border" />
+	                            <div className="frame-header-band">
+	                              <svg className="frame-header-wave" viewBox="0 0 1000 360" preserveAspectRatio="none">
+	                                <defs>
+	                                  <linearGradient id="frameHeaderGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+	                                    <stop offset="0%" stopColor="rgba(37, 89, 226, 0.96)" />
+	                                    <stop offset="100%" stopColor="rgba(56, 101, 236, 0.92)" />
+	                                  </linearGradient>
+	                                </defs>
+	                                <path
+	                                  className="frame-header-wave-fill"
+	                                  d="M0 0H1000V258C880 220 702 244 542 278C330 323 148 337 0 320V0Z"
+	                                />
+	                                <path
+	                                  className="frame-header-wave-highlight"
+	                                  d="M0 220C190 252 356 230 542 192C712 158 866 160 1000 188V232C876 206 718 204 542 236C342 274 186 294 0 270V220Z"
+	                                />
+	                              </svg>
+	                              <div className="frame-header-content">
+	                                <img src={nihonkaiLogo} className="frame-logo" alt="" />
+	                                {previewFishTitle ? <div className="frame-fish-title">{previewFishTitle}</div> : null}
+	                              </div>
+	                            </div>
+	                            <div className="frame-mini-overlay">
+	                              {previewPolyline ? (
+	                                <svg viewBox="0 0 240 100" preserveAspectRatio="none">
+	                                  <line className="frame-mini-baseline" x1="4" y1="90" x2="236" y2="90" />
+	                                  {previewAreaPoints ? <polygon className="frame-mini-area" points={previewAreaPoints} /> : null}
+	                                  <polyline points={previewPolyline} />
+	                                </svg>
+	                              ) : null}
+	                              <span className="frame-mini-label">漁獲量</span>
+	                              {previewMaxLabel ? <span className="frame-mini-max">{previewMaxLabel}</span> : null}
+	                            </div>
+	                          </div>
+	                        ) : null}
                       </div>
                     </div>
 
-                    <div className="composer-step-footer composer-step-footer-split">
-                      <div className="step-secondary-actions">
-                        <button
-                          type="button"
-                          className="step-secondary-button"
-                          onClick={startCamera}
-                          disabled={isGenerating || isSubmitting}
-                        >
-                          カメラを開く
-                        </button>
-                        <button
-                          type="button"
-                          className="step-secondary-button"
-                          onClick={handlePickImageClick}
-                          disabled={isGenerating || isSubmitting}
-                        >
-                          画像を選ぶ
-                        </button>
-                      </div>
-                      <div className="step-primary-actions step-primary-actions-step1">
-                        <button
+	                    <div className="composer-step-footer composer-step-footer-split">
+	                      {selectedImageUrl ? (
+	                        <div className="step-secondary-actions">
+	                          <button
+	                            type="button"
+	                            className="step-secondary-button"
+	                            onClick={startCamera}
+	                            disabled={isGenerating || isSubmitting}
+	                          >
+	                            カメラを開く
+	                          </button>
+	                          <button
+	                            type="button"
+	                            className="step-secondary-button"
+	                            onClick={handlePickImageClick}
+	                            disabled={isGenerating || isSubmitting}
+	                          >
+	                            画像を選ぶ
+	                          </button>
+	                        </div>
+	                      ) : (
+	                        <div />
+	                      )}
+	                      <div className="step-primary-actions step-primary-actions-step1">
+	                        <button
                           type="button"
                           className="step-primary-button"
                           onClick={goToStep2}
