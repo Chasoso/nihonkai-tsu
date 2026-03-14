@@ -1,5 +1,9 @@
 # nihonkai-tsu
 
+## Architecture
+
+![Architecture diagram](docs/architecture.svg)
+
 石川の魚を撮って、そのまま投稿体験につなげるための投稿促進アプリです。  
 フロントエンドは GitHub Pages、投稿文生成 API は AWS Lambda + API Gateway、KPI 集計は DynamoDB を前提にしています。
 
@@ -11,6 +15,17 @@
 1. 写真を撮る / 選ぶ
 2. AI が魚候補を提示し、ユーザーが確認する
 3. 投稿文を 3 案から選んでコピーまたは X に投稿する
+
+## 閲覧・探索体験
+
+投稿フローに入る前に、ユーザーは次の UI から魚を探せます。
+
+- おすすめ魚 3 件のカード表示
+- 旬カレンダーから魚を選択
+- Fish Detail でカテゴリ / トレンド / 旬グラフ / おすすめ料理を確認
+- 魚詳細モーダルからそのまま投稿フローに進む
+
+投稿だけでなく、旬の魚を見つけてから投稿につなげる導線を重視しています。
 
 ## 投稿フロー
 
@@ -30,7 +45,16 @@
 - 文章は編集可能
 - `コピーする` または `Xに投稿する` を押した時点で投稿体験として計測
 
-## AI 機能
+補足:
+
+- 投稿文は 3 案から選択後に自由編集できます
+- 投稿時には固定ハッシュタグを補完します
+  - `#石川の魚`
+  - `#日本海`
+  - `#nihonkai_tsu`
+- `VITE_APP_URL` が設定されている場合は投稿文末尾にアプリ URL を付与します
+
+## API 機能
 
 ### 魚種候補推定
 
@@ -43,6 +67,28 @@
 
 - Lambda task: `generate_post_text`
 - `short` / `standard` / `pr` の 3 案を返します
+- AI 応答が不正な場合はフォールバック文を返します
+
+### KPI 記録
+
+- Lambda task: `track_metric`
+- `copy` / `x_click` を記録します
+- 生イベント保存と日別・魚別集計を更新します
+
+### KPI サマリー取得
+
+- Lambda task: `get_metrics_summary`
+- 今日の投稿体験数
+- 現在の何件目か
+- 今週人気の魚
+- 魚別の当日件数
+
+### ダッシュボード集計取得
+
+- Lambda task: `get_dashboard_metrics`
+- 指定期間の日別推移
+- 魚種別件数
+- 総数 / 今日 / 直近 7 日 / 期間トップ魚
 
 ## KPI 定義
 
@@ -50,6 +96,14 @@
 
 - 投稿文コピー: `copy`
 - X 投稿導線クリック: `x_click`
+
+投稿体験を記録した後は、ユーザー向けに次を表示します。
+
+- 今日の何件目か
+- 今日の投稿体験総数
+- 今週人気の魚
+
+コピー時・X 投稿導線クリック時のどちらでも同様にサマリーを返します。
 
 ## KPI ダッシュボードの目的
 
@@ -122,6 +176,18 @@
 - 魚ごとの日次推移
 - 今週人気魚の算出
 
+### 日次上限テーブル
+
+- テーブル名: `nihonkai-post-text-daily-limit`（既定）
+- 用途:
+  - AI API の日次利用上限管理
+  - `expiresAt` による TTL 管理
+
+補足:
+
+- レート制限とは別に、日次上限でも AI 呼び出しを制御します
+- 上限超過時はフォールバック応答に切り替えます
+
 ## KPI ダッシュボード
 
 ダッシュボードは投稿アプリ本体とは別ページです。
@@ -152,6 +218,21 @@
 - `fish_id` は `public/data/2026.json` と `backend/lambda/fish-master.json` を基準にします
 - 画像未配置の魚は `default-fish.png` を表示します
 
+## 投稿フレーム画像
+
+Step 1 で `Nihonkai-tsu` フレームを選ぶと、投稿用画像をブラウザ内で生成します。
+
+フレームに含まれる要素:
+
+- 魚名ラベル
+- 直近 2 年分の水揚げ推移を元にしたトレンド表示
+- Nihonkai-tsu ブランド装飾
+
+補足:
+
+- 元画像は保持しつつ、投稿用には `_framed.jpg` を生成します
+- `なし` を選ぶとフレームなし画像を使います
+
 ## X 投稿に関する制限事項
 
 このアプリの `Xに投稿する` は X の Web Intent (`https://x.com/intent/tweet`) を使います。  
@@ -175,6 +256,17 @@ AI が生成した文章は参考文です。
 ユーザーは自由に編集できます。  
 投稿内容の責任はユーザーにあります。
 
+## AI 出力ポリシー
+
+投稿文生成では次の制約をかけています。
+
+- 石川県・日本海周辺の文脈を優先
+- 石川以外の地域名ハッシュタグは除外対象
+- 画像から断定できない調理法・産地は避ける
+- 応答が不正 / 空 / 制限超過時はフォールバック文を返す
+
+AI 失敗時にも投稿体験が止まらないよう、固定ルールによる代替文を返します。
+
 ## 技術構成
 
 - Frontend: React + TypeScript + Vite
@@ -183,16 +275,31 @@ AI が生成した文章は参考文です。
 - AI: Amazon Bedrock / OpenAI
 - Metrics: DynamoDB
 
+## バッジ / Your Tsu
+
+投稿完了後、対象の魚に応じた `通` バッジを獲得できます。
+
+- 投稿完了時に魚ごとのバッジを付与
+- `Your Tsu` で獲得状況を可視化
+- Badge History で年ごとの獲得履歴を表示
+
+補足:
+
+- バッジ獲得履歴はブラウザの `localStorage` に保存します
+- ブラウザや端末をまたぐ同期機能はありません
+
 ## ディレクトリ構成
 
 - `src/`: フロントエンド
 - `src/components/`: UI コンポーネント
 - `src/lib/`: API クライアント、投稿文処理、KPI 関連
 - `src/assets/fish/`: 魚画像 PNG
+- `src/assets/`: ヒーロー画像、ロゴ、投稿フロー画像などのアセット
 - `src/dashboard/`: KPI ダッシュボードの entry / page
 - `backend/lambda/generate-post-text.mjs`: Lambda ハンドラ
 - `backend/lambda/fish-master.json`: Lambda 用 fish master
 - `scripts/generate_public_data.py`: 公開データ / fish master 生成
+- `scripts/capture-screenshots.mjs`: スクリーンショット取得
 - `infra/dynamodb/daily-limit-table.json`: 日次上限テーブル定義
 - `infra/dynamodb/metrics-table.json`: 生イベントテーブル定義
 - `infra/dynamodb/metrics-daily-table.json`: 日別集計テーブル定義
@@ -227,17 +334,44 @@ npm run generate:data
 npm run build
 ```
 
+プレビュー:
+
+```bash
+npm run preview
+```
+
 テスト:
 
 ```bash
+npm run test
 npm run test:lambda
 npm run test:frontend
+```
+
+カバレッジ付きテスト:
+
+```bash
+npm run test:coverage
+npm run test:frontend:coverage
+npm run test:lambda:coverage
+```
+
+フロントエンド watch テスト:
+
+```bash
+npm run test:frontend:watch
 ```
 
 スクリーンショット確認:
 
 ```bash
 npm run screenshots
+```
+
+スクリーンショット用ブラウザ導入:
+
+```bash
+npm run screenshots:install
 ```
 
 ## デプロイ
@@ -272,6 +406,10 @@ npm run screenshots
 
 - `AWS_REGION`
 - `LAMBDA_FUNCTION_NAME`
+- `LAMBDA_ARCHITECTURE`
+- `LAMBDA_RUNTIME`
+- `LAMBDA_TIMEOUT`
+- `LAMBDA_MEMORY_SIZE`
 - `ALLOW_ORIGIN`
 - `API_NAME`
 - `API_ROUTE_PATH`
@@ -283,7 +421,24 @@ npm run screenshots
 - `METRICS_FISH_DAILY_TABLE_NAME`
 - `LAMBDA_POST_TEXT_MODE`
 - `AI_PROVIDER`
+- `OPENAI_MODEL`
+- `OPENAI_MAX_OUTPUT_TOKENS`
+- `BEDROCK_REGION`
+- `BEDROCK_MODEL_ID`
+- `BEDROCK_MAX_OUTPUT_TOKENS`
+- `RATE_LIMIT_WINDOW_MS`
+- `RATE_LIMIT_MAX_REQUESTS`
+- `TEST_MODE_FIXED_TEXT`
 - `VITE_POST_TEXT_API_URL`
+
+### Frontend 用 Env / Variables
+
+- `VITE_AI_POST_TEXT_ENABLED`
+- `VITE_AI_IMAGE_MAX_EDGE_PX`
+- `VITE_AI_IMAGE_QUALITY`
+- `VITE_AI_CACHE_TTL_MS`
+- `VITE_APP_URL`
+- `VITE_HERO_BACKGROUND_URL`
 
 ## 運用前提
 
@@ -303,3 +458,5 @@ npm run screenshots
 - `/dashboard/` は運用確認用であり、一般ユーザー導線には含めていません
 - X 投稿時の画像自動添付には未対応です
 - KPI は `copy` と `x_click` を投稿体験として計測しており、X 側で実投稿完了までは保証しません
+- バッジ獲得履歴 (`Your Tsu`) はブラウザの `localStorage` 依存です
+- ダッシュボードは Vite の別 entry として配信される運用向けページです
