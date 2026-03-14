@@ -406,14 +406,18 @@ export default function App() {
             openComposerNonce={openShareComposerNonce}
             onComposerOpenChange={setShareComposerOpen}
             onPostExperience={handlePostExperience}
-            onOpenXIntent={async (finalText, imageFile) => {
+            onOpenXIntent={async (finalText, imageFile, popupWindow) => {
               if (imageFile) {
                 saveImageForXPost(imageFile);
                 openToast("画像を保存しました。Xの投稿画面で画像を添付してください。");
               }
 
               const url = `https://x.com/intent/tweet?text=${encodeURIComponent(finalText)}`;
-              window.open(url, "_blank", "noopener,noreferrer");
+              if (popupWindow && !popupWindow.closed) {
+                popupWindow.location.href = url;
+              } else {
+                window.open(url, "_blank", "noopener,noreferrer");
+              }
               return true;
             }}
             onComplete={(completedFishId) => {

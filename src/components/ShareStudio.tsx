@@ -19,7 +19,7 @@ interface ShareStudioProps {
   fishTypeOptions: string[];
   landings: LandingsData;
   openComposerNonce: number;
-  onOpenXIntent: (finalText: string, imageFile: File | null) => Promise<boolean> | boolean;
+  onOpenXIntent: (finalText: string, imageFile: File | null, popupWindow?: Window | null) => Promise<boolean> | boolean;
   onComplete: (completedFishId?: string) => void;
   onPostExperience?: (metricType: "copy" | "x_click", summary?: MetricsSummary | null) => void;
   onComposerOpenChange?: (open: boolean) => void;
@@ -1109,6 +1109,7 @@ export function ShareStudio({
     const metricFishId = confirmedFishId.trim().toLowerCase();
     const metricFishLabel = confirmedFishType.trim() || fish?.name || "unknown";
     const metricVariant = selectedOptionType;
+    const popupWindow = typeof window !== "undefined" ? window.open("", "_blank") : null;
     try {
       let imageToPost = selectedImageFile;
       if (imageToPost && frameOption === "nihonkai") {
@@ -1116,8 +1117,11 @@ export function ShareStudio({
       }
 
       const finalText = formatPostText(editablePostText, appUrl);
-      const posted = await onOpenXIntent(finalText, imageToPost);
-      if (!posted) return;
+      const posted = await onOpenXIntent(finalText, imageToPost, popupWindow);
+      if (!posted) {
+        popupWindow?.close();
+        return;
+      }
 
       void recordPostExperience({
         apiUrl: aiApiUrl,
@@ -1135,6 +1139,9 @@ export function ShareStudio({
         onPostExperience
       });
       closeComposer();
+    } catch (error) {
+      popupWindow?.close();
+      throw error;
     } finally {
       setIsSubmitting(false);
     }
