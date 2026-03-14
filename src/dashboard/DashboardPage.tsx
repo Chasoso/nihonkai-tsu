@@ -1,3 +1,4 @@
+import { useState, type FocusEvent, type MouseEvent } from "react";
 import brandLogo from "../assets/nihonkai_tsu.png";
 import type { DashboardMetrics } from "../lib/dashboardMetrics";
 
@@ -11,12 +12,20 @@ interface DashboardPageProps {
   error: string | null;
 }
 
+interface ChartTooltipState {
+  x: number;
+  y: number;
+  dateLabel: string;
+  count: number;
+}
+
 const CHART_WIDTH = 620;
 const CHART_SVG_HEIGHT = 240;
 const CHART_PADDING_X = 28;
 const CHART_PADDING_TOP = 16;
 const CHART_PLOT_HEIGHT = 164;
 const CHART_LABEL_Y = 206;
+const TOOLTIP_OFFSET = 12;
 
 function formatDateLabel(dateJst: string): string {
   return dateJst.slice(5).replace("-", "/");
@@ -29,16 +38,15 @@ function maxCount(points: DashboardMetrics["dailyCounts"]): number {
 function buildChartPoint(index: number, total: number, count: number, maxYValue: number) {
   const drawableWidth = CHART_WIDTH - CHART_PADDING_X * 2;
   const centeredX = CHART_PADDING_X + drawableWidth / 2;
+  const safeMaxYValue = Math.max(maxYValue, 1);
+  const y = CHART_PADDING_TOP + CHART_PLOT_HEIGHT - (count / safeMaxYValue) * CHART_PLOT_HEIGHT;
+
   if (total <= 1) {
-    const safeMaxYValue = Math.max(maxYValue, 1);
-    const y = CHART_PADDING_TOP + CHART_PLOT_HEIGHT - (count / safeMaxYValue) * CHART_PLOT_HEIGHT;
     return { x: centeredX, y };
   }
 
-  const step = total > 1 ? drawableWidth / (total - 1) : 0;
+  const step = drawableWidth / (total - 1);
   const x = CHART_PADDING_X + step * index;
-  const safeMaxYValue = Math.max(maxYValue, 1);
-  const y = CHART_PADDING_TOP + CHART_PLOT_HEIGHT - (count / safeMaxYValue) * CHART_PLOT_HEIGHT;
   return { x, y };
 }
 
@@ -87,6 +95,25 @@ export function DashboardPage({
   const labelIndices = buildLabelIndices(points.length);
   const topFish = metrics?.topFish;
   const fishCounts = metrics?.fishCounts ?? [];
+  const [tooltip, setTooltip] = useState<ChartTooltipState | null>(null);
+
+  function showTooltipAtPosition(x: number, y: number, point: DashboardMetrics["dailyCounts"][number]) {
+    setTooltip({
+      x: x + TOOLTIP_OFFSET,
+      y: y + TOOLTIP_OFFSET,
+      dateLabel: formatDateLabel(point.dateJst),
+      count: point.count
+    });
+  }
+
+  function handlePointMouseMove(event: MouseEvent<SVGCircleElement>, point: DashboardMetrics["dailyCounts"][number]) {
+    showTooltipAtPosition(event.clientX, event.clientY, point);
+  }
+
+  function handlePointFocus(event: FocusEvent<SVGCircleElement>, point: DashboardMetrics["dailyCounts"][number]) {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    showTooltipAtPosition(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2, point);
+  }
 
   return (
     <div className="dashboard-shell">
@@ -156,33 +183,55 @@ export function DashboardPage({
             ) : points.length === 0 ? (
               <div className="dashboard-empty">表示できる集計データがありません。</div>
             ) : (
-              <svg className="dashboard-line-chart" viewBox={`0 0 ${CHART_WIDTH} ${CHART_SVG_HEIGHT}`} aria-label="日別投稿数グラフ">
-                {[0.25, 0.5, 0.75].map((ratio) => {
-                  const y = CHART_PADDING_TOP + CHART_PLOT_HEIGHT * ratio;
-                  return (
-                    <path
-                      key={ratio}
-                      className="dashboard-line-chart-grid"
-                      d={`M ${CHART_PADDING_X} ${y} L ${CHART_WIDTH - CHART_PADDING_X} ${y}`}
-                    />
-                  );
-                })}
-                <path className="dashboard-line-chart-line" d={linePath} />
-                {points.map((point, index) => {
-                  const { x, y } = buildChartPoint(index, points.length, point.count, maxYValue);
-                  return <circle key={point.dateJst} className="dashboard-line-chart-dot" cx={x} cy={y} r="5" />;
-                })}
-                {points.map((point, index) => {
-                  if (!labelIndices.has(index)) return null;
+              <>
+                <svg className="dashboard-line-chart" viewBox={`0 0 ${CHART_WIDTH} ${CHART_SVG_HEIGHT}`} aria-label="日別投稿数グラフ">
+                  {[0.25, 0.5, 0.75].map((ratio) => {
+                    const y = CHART_PADDING_TOP + CHART_PLOT_HEIGHT * ratio;
+                    return (
+                      <path
+                        key={ratio}
+                        className="dashboard-line-chart-grid"
+                        d={`M ${CHART_PADDING_X} ${y} L ${CHART_WIDTH - CHART_PADDING_X} ${y}`}
+                      />
+                    );
+                  })}
+                  <path className="dashboard-line-chart-line" d={linePath} />
+                  {points.map((point, index) => {
+                    const { x, y } = buildChartPoint(index, points.length, point.count, maxYValue);
+                    return (
+                      <circle
+                        key={point.dateJst}
+                        className="dashboard-line-chart-dot"
+                        cx={x}
+                        cy={y}
+                        r="5"
+                        tabIndex={0}
+                        aria-label={`${point.dateJst} ${point.count}件`}
+                        onMouseEnter={(event) => handlePointMouseMove(event, point)}
+                        onMouseMove={(event) => handlePointMouseMove(event, point)}
+                        onMouseLeave={() => setTooltip(null)}
+                        onFocus={(event) => handlePointFocus(event, point)}
+                        onBlur={() => setTooltip(null)}
+                      />
+                    );
+                  })}
+                  {points.map((point, index) => {
+                    if (!labelIndices.has(index)) return null;
 
-                  const { x } = buildChartPoint(index, points.length, point.count, maxYValue);
-                  return (
-                    <text key={point.dateJst} className="dashboard-line-chart-label" x={x} y={CHART_LABEL_Y} textAnchor="middle">
-                      {formatDateLabel(point.dateJst)}
-                    </text>
-                  );
-                })}
-              </svg>
+                    const { x } = buildChartPoint(index, points.length, point.count, maxYValue);
+                    return (
+                      <text key={point.dateJst} className="dashboard-line-chart-label" x={x} y={CHART_LABEL_Y} textAnchor="middle">
+                        {formatDateLabel(point.dateJst)}
+                      </text>
+                    );
+                  })}
+                </svg>
+                {tooltip ? (
+                  <div className="tooltip dashboard-chart-tooltip" role="tooltip" style={{ left: tooltip.x, top: tooltip.y }}>
+                    {tooltip.dateLabel} / {tooltip.count}件
+                  </div>
+                ) : null}
+              </>
             )}
           </div>
         </section>
