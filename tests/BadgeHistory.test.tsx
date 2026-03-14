@@ -31,7 +31,7 @@ describe("BadgeHistory", () => {
       { year: 2026, fishId: "aji", category: "回遊", earnedAt: "2026-03-02T09:00:00.000Z" }
     ];
 
-    render(<BadgeHistory badges={badges} fishList={fishList} year={2026} />);
+    render(<BadgeHistory badges={badges} fishList={fishList} year={2026} earnedSharePercent={100} />);
 
     const list = screen.getByRole("list");
     const items = within(list).getAllByRole("listitem");
@@ -41,7 +41,7 @@ describe("BadgeHistory", () => {
   });
 
   it("該当年バッジがない場合はリストを表示しない", () => {
-    render(<BadgeHistory badges={[]} fishList={fishList} year={2026} />);
+    render(<BadgeHistory badges={[]} fishList={fishList} year={2026} earnedSharePercent={0} />);
     expect(screen.queryByRole("list")).not.toBeInTheDocument();
   });
 
@@ -50,8 +50,15 @@ describe("BadgeHistory", () => {
       { year: 2026, fishId: "unknown", category: "不明", earnedAt: "2026-03-03T09:00:00.000Z" }
     ];
 
-    render(<BadgeHistory badges={badges} fishList={fishList} year={2026} />);
+    render(<BadgeHistory badges={badges} fishList={fishList} year={2026} earnedSharePercent={0} />);
 
     expect(screen.getByText(/2026 unknown/)).toBeInTheDocument();
+  });
+
+  it("累積漁獲量シェアで Tsu Level を表示する", () => {
+    render(<BadgeHistory badges={[]} fishList={fishList} year={2026} earnedSharePercent={32.5} />);
+
+    expect(screen.getByText("Silver")).toBeInTheDocument();
+    expect(screen.getByText("32.5%")).toBeInTheDocument();
   });
 });

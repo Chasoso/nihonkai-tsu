@@ -11,7 +11,7 @@ import { BadgeHistory } from "./components/BadgeHistory";
 import { ProgressBoardVoronoi } from "./components/ProgressBoardVoronoi";
 import { fetchLandings5y, fetchYearData } from "./lib/data";
 import type { MetricsSummary } from "./lib/metrics";
-import { computeMaxCoveredPercentile } from "./lib/progress";
+import { computeEarnedSharePercent } from "./lib/progress";
 import { earnBadge, getBadges } from "./lib/storage";
 import type { AppData, Fish, LandingsData } from "./types";
 
@@ -163,8 +163,8 @@ export default function App() {
     [badges, data?.year]
   );
   const earnedFishIds = useMemo(() => new Set(yearBadges.map((badge) => badge.fishId)), [yearBadges]);
-  const maxCoveredPercentile = useMemo(
-    () => computeMaxCoveredPercentile(yearBadges, data?.fish ?? []),
+  const earnedSharePercent = useMemo(
+    () => computeEarnedSharePercent(yearBadges, data?.fish ?? []),
     [yearBadges, data?.fish]
   );
 
@@ -422,11 +422,11 @@ export default function App() {
             fish={data.fish}
             categories={data.categories}
             earnedFishIds={earnedFishIds}
-            maxCoveredPercentile={maxCoveredPercentile}
+            earnedSharePercent={earnedSharePercent}
             onOpenFish={setModalFish}
           />
           <section ref={historyRef}>
-            <BadgeHistory badges={yearBadges} fishList={data.fish} year={data.year} />
+            <BadgeHistory badges={yearBadges} fishList={data.fish} year={data.year} earnedSharePercent={earnedSharePercent} />
           </section>
         </div>
       </section>

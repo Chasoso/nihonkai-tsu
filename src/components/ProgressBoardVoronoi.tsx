@@ -7,7 +7,7 @@ interface ProgressBoardVoronoiProps {
   fish: Fish[];
   categories: Category[];
   earnedFishIds: Set<string>;
-  maxCoveredPercentile: number;
+  earnedSharePercent: number;
   onOpenFish: (fish: Fish) => void;
 }
 
@@ -35,17 +35,15 @@ function getVoronoiFill(isEarned: boolean): string {
   return isEarned ? "#1d4ed8" : "#dce7f5";
 }
 
-function getVoronoiStroke(isEarned: boolean, isCovered: boolean): string {
-  if (isEarned) return "#f8fbff";
-  if (isCovered) return "#7aa6f7";
-  return "#b7c9e1";
+function getVoronoiStroke(isEarned: boolean): string {
+  return isEarned ? "#f8fbff" : "#b7c9e1";
 }
 
 export function ProgressBoardVoronoi({
   fish,
   categories,
   earnedFishIds,
-  maxCoveredPercentile,
+  earnedSharePercent,
   onOpenFish
 }: ProgressBoardVoronoiProps) {
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
@@ -64,8 +62,6 @@ export function ProgressBoardVoronoi({
             name: item.name,
             category: item.category,
             percentile: item.percentile,
-            // Use percentile itself as area weight.
-            // Keep a tiny epsilon only to avoid zero-value layout instability.
             weight: item.percentile + 0.0001
           }))
       }))
@@ -103,19 +99,18 @@ export function ProgressBoardVoronoi({
   return (
     <section className="section" id="progress-board">
       <h2>Progress Board</h2>
-      <p>上位 {maxCoveredPercentile}% の海を味わった</p>
+      <p>累計で漁獲量シェア {earnedSharePercent.toFixed(1)}% を味わった</p>
       <div className="progress-shell">
-        <div className="progress-bar" style={{ width: `${maxCoveredPercentile}%` }} />
+        <div className="progress-bar" style={{ width: `${earnedSharePercent}%` }} />
       </div>
 
       <div className="voronoi-wrapper">
-        <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label="魚の進捗ボード">
+        <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label="Fish progress board">
           {leaves.map((leaf) => {
             const fishData = fishById.get(leaf.id);
             if (!fishData || leaf.polygon.length < 3) return null;
 
             const isEarned = earnedFishIds.has(leaf.id);
-            const isCovered = fishData.percentile <= maxCoveredPercentile;
             const points = leaf.polygon.map((point) => point.join(",")).join(" ");
 
             return (
@@ -125,13 +120,13 @@ export function ProgressBoardVoronoi({
                 className="voronoi-cell"
                 fill={getVoronoiFill(isEarned)}
                 fillOpacity={isEarned ? 0.96 : 0.86}
-                stroke={getVoronoiStroke(isEarned, isCovered)}
-                strokeWidth={isEarned ? 2.6 : isCovered ? 1.9 : 1.2}
+                stroke={getVoronoiStroke(isEarned)}
+                strokeWidth={isEarned ? 2.6 : 1.2}
                 onMouseMove={(event) =>
                   setTooltip({
                     x: event.clientX,
                     y: event.clientY,
-                    text: `${leaf.name} / 上位${leaf.percentile}%`
+                    text: `${leaf.name} / ${leaf.percentile}%`
                   })
                 }
                 onMouseLeave={() => setTooltip(null)}
