@@ -604,7 +604,7 @@ export function ShareStudio({
     const matches = fish?.share.text.match(/#[^\s#]+/g) ?? [];
     const unique = Array.from(new Set(matches));
     if (unique.length) return unique.slice(0, 4);
-    return ["#譌･譛ｬ豬ｷ騾・026", "#螟峨ｏ繧区ｵｷ繧貞袖繧上≧"];
+    return ["#石川の魚", "#日本海", "#nihonkai_tsu"];
   }, [fish?.share.text]);
 
   const fallbackFishCandidates = useMemo<FishCandidateOption[]>(() => {
@@ -627,8 +627,8 @@ export function ShareStudio({
   const step1Complete = Boolean(selectedImageFile);
   const step1PreviewVisible = step1Complete || cameraPreviewOpen;
   const step2Complete = Boolean(confirmedFishId.trim());
-  const displayFishLabel = confirmedFishType.trim() || "未選択";
-  const frameFishBadgeLabel = confirmedFishType.trim();
+  const displayFishLabel = confirmedFishType.trim() || fish?.name || "未選択";
+  const frameFishBadgeLabel = confirmedFishType.trim() || fish?.name || "";
   const previewFishTitle = frameFishBadgeLabel;
   const needsOtherFishSelection = pendingFishType === "other";
   const canConfirmFishType = Boolean(
@@ -654,6 +654,13 @@ export function ShareStudio({
       .filter((item) => item.label.toLowerCase().includes(query))
       .slice(0, 24);
   }, [needsOtherFishSelection, otherFishQuery, searchableFishOptions]);
+
+  const applyInitialFishSelection = () => {
+    const initialFishId = fish?.id?.trim() ?? "";
+    setPendingFishType(initialFishId);
+    setConfirmedFishType("");
+    setConfirmedFishId("");
+  };
 
   useEffect(() => {
     return () => {
@@ -715,7 +722,6 @@ export function ShareStudio({
   useEffect(() => {
     if (openComposerNonce === lastOpenNonceRef.current) return;
     lastOpenNonceRef.current = openComposerNonce;
-    if (!fish) return;
     setComposerOpen(true);
   }, [openComposerNonce, fish]);
 
@@ -736,15 +742,7 @@ export function ShareStudio({
   }, [composerOpen, currentStep]);
 
   useEffect(() => {
-    if (fish?.name) {
-      setPendingFishType("");
-      setConfirmedFishType("");
-      setConfirmedFishId("");
-    } else {
-      setPendingFishType("");
-      setConfirmedFishType("");
-      setConfirmedFishId("");
-    }
+    applyInitialFishSelection();
     setFishCandidates([]);
     setFishEstimateError(null);
     setIsEstimatingFish(false);
@@ -849,10 +847,8 @@ export function ShareStudio({
     }
 
     setSelectedImageFile(file);
-    setCurrentStep(file ? 2 : 1);
-    setConfirmedFishType("");
-    setConfirmedFishId("");
-    setPendingFishType("");
+    setCurrentStep(1);
+    applyInitialFishSelection();
     setOtherFishQuery("");
     setSelectedOtherFish("");
     setFishCandidates([]);
@@ -898,7 +894,6 @@ export function ShareStudio({
   };
 
   const openComposer = () => {
-    if (!fish) return;
     setComposerOpen(true);
   };
 

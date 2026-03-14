@@ -101,6 +101,7 @@ export default function App() {
   const [data, setData] = useState<AppData | null>(null);
   const [landings, setLandings] = useState<LandingsData | null>(null);
   const [selectedFish, setSelectedFish] = useState<Fish | null>(null);
+  const [shareTargetFish, setShareTargetFish] = useState<Fish | null>(null);
   const [openShareComposerNonce, setOpenShareComposerNonce] = useState(0);
   const [modalFish, setModalFish] = useState<Fish | null>(null);
   const [badges, setBadges] = useState(() => getBadges());
@@ -128,7 +129,7 @@ export default function App() {
           setSelectedFish(yearData.fish[0]);
         }
       })
-      .catch((e) => setError(e instanceof Error ? e.message : "繝・・繧ｿ縺ｮ隱ｭ縺ｿ霎ｼ縺ｿ縺ｫ螟ｱ謨励＠縺ｾ縺励◆"));
+      .catch((e) => setError(e instanceof Error ? e.message : "データの読み込みに失敗しました"));
   }, []);
 
   useEffect(() => {
@@ -194,11 +195,13 @@ export default function App() {
 
   const openFishForShare = (fish: Fish) => {
     setSelectedFish(fish);
+    setShareTargetFish(fish);
     setOpenShareComposerNonce((prev) => prev + 1);
     shareRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const startPostingFlow = () => {
+    setShareTargetFish(null);
     setOpenShareComposerNonce((prev) => prev + 1);
     shareRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -354,7 +357,7 @@ export default function App() {
       <section ref={shareRef} className="section">
         <div className="panel-inner">
           <ShareStudio
-            fish={selectedFish}
+            fish={shareTargetFish}
             fishTypeOptions={data.fish.map((item) => item.name)}
             landings={landings}
             openComposerNonce={openShareComposerNonce}
@@ -371,7 +374,9 @@ export default function App() {
             }}
             onComplete={(completedFishId) => {
               const earnedFish =
-                data.fish.find((item) => item.id === (completedFishId?.trim().toLowerCase() || "")) ?? selectedFish;
+                data.fish.find((item) => item.id === (completedFishId?.trim().toLowerCase() || "")) ??
+                shareTargetFish ??
+                selectedFish;
               const result = earnBadge(data.year, earnedFish);
               setBadges(result.badges);
               if (result.added) {
