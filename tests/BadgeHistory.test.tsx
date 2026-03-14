@@ -58,7 +58,8 @@ describe("BadgeHistory", () => {
   it("累積漁獲量シェアで Tsu Level を表示する", () => {
     render(<BadgeHistory badges={[]} fishList={fishList} year={2026} earnedSharePercent={32.5} />);
 
-    expect(screen.getByText("Silver")).toBeInTheDocument();
+    expect(screen.getAllByText("Silver")).toHaveLength(2);
     expect(screen.getByText("32.5%")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Silverレベルのアイコン" })).toBeInTheDocument();
   });
 });

@@ -1,4 +1,7 @@
 import type { BadgeRecord, Fish } from "../types";
+import basicLevelIcon from "../assets/tsu-level/basic.png";
+import silverLevelIcon from "../assets/tsu-level/silver.png";
+import goldLevelIcon from "../assets/tsu-level/gold.png";
 
 interface BadgeHistoryProps {
   badges: BadgeRecord[];
@@ -20,6 +23,11 @@ export function BadgeHistory({ badges, fishList, year, earnedSharePercent }: Bad
   const currentLevelIndex = levels.reduce((best, level, idx) => (earnedSharePercent >= level.minShare ? idx : best), 0);
   const currentLevel = levels[currentLevelIndex];
   const nextLevel = levels[currentLevelIndex + 1] ?? null;
+  const levelIconMap = {
+    basic: basicLevelIcon,
+    silver: silverLevelIcon,
+    gold: goldLevelIcon
+  } as const;
 
   const levelProgressPercent = (() => {
     if (!nextLevel) return 100;
@@ -30,20 +38,32 @@ export function BadgeHistory({ badges, fishList, year, earnedSharePercent }: Bad
 
   return (
     <section id="badge-history" className="section">
-      <h2>Badge History</h2>
-      <article className="card tsu-level-card" aria-label="Tsu level">
-        <h3>Your Tsu Level</h3>
+      <h2>バッジ履歴</h2>
+      <article className="card tsu-level-card" aria-label="通レベル">
+        <h3>あなたの通レベル</h3>
+        <div className="tsu-level-hero">
+          <img
+            className="tsu-level-icon"
+            src={levelIconMap[currentLevel.key]}
+            alt={`${currentLevel.label}レベルのアイコン`}
+            loading="lazy"
+          />
+          <div className="tsu-level-hero-copy">
+            <p className="tsu-level-eyebrow">現在のランク</p>
+            <strong>{currentLevel.label}</strong>
+          </div>
+        </div>
         <div className="tsu-level-grid">
           <div className="tsu-level-item">
-            <p>Current level</p>
+            <p>現在のレベル</p>
             <strong>{currentLevel.label}</strong>
           </div>
           <div className="tsu-level-item">
-            <p>Next level</p>
-            <strong>{nextLevel ? nextLevel.label : "MAX"}</strong>
+            <p>次のレベル</p>
+            <strong>{nextLevel ? nextLevel.label : "最高ランク"}</strong>
           </div>
           <div className="tsu-level-item">
-            <p>Earned share</p>
+            <p>累計シェア</p>
             <strong>{earnedSharePercent.toFixed(1)}%</strong>
           </div>
         </div>
