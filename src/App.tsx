@@ -126,6 +126,8 @@ export default function App() {
   const [badges, setBadges] = useState(() => getBadges());
   const [toastMessage, setToastMessage] = useState("");
   const [toastVisible, setToastVisible] = useState(false);
+  const [shareComposerOpen, setShareComposerOpen] = useState(false);
+  const [pendingCopyToast, setPendingCopyToast] = useState<string | null>(null);
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -216,6 +218,12 @@ export default function App() {
     toastTimerRef.current = window.setTimeout(() => setToastVisible(false), 7000);
   };
 
+  useEffect(() => {
+    if (shareComposerOpen || !pendingCopyToast) return;
+    openToast(pendingCopyToast);
+    setPendingCopyToast(null);
+  }, [pendingCopyToast, shareComposerOpen]);
+
   const openFishForShare = (fish: Fish) => {
     setSelectedFish(fish);
     setShareTargetFish(fish);
@@ -231,13 +239,25 @@ export default function App() {
 
   const handlePostExperience = (metricType: "copy" | "x_click", summary?: MetricsSummary | null) => {
     const popularFishName = featuredFish[0]?.name ?? selectedFish?.name ?? "おすすめの魚";
+    const message = summary
+      ? buildPostExperienceToastFromSummary(metricType, summary, popularFishName)
+      : buildPostExperienceToast(metricType, postExperienceCountRef.current + 1, popularFishName);
+
     if (summary) {
       postExperienceCountRef.current = summary.currentOrder;
-      openToast(buildPostExperienceToastFromSummary(metricType, summary, popularFishName));
+      if (metricType === "copy" && shareComposerOpen) {
+        setPendingCopyToast(message);
+        return;
+      }
+      openToast(message);
       return;
     }
 
     postExperienceCountRef.current += 1;
+    if (metricType === "copy" && shareComposerOpen) {
+      setPendingCopyToast(buildPostExperienceToast(metricType, postExperienceCountRef.current, popularFishName));
+      return;
+    }
     openToast(buildPostExperienceToast(metricType, postExperienceCountRef.current, popularFishName));
   };
 
@@ -384,6 +404,7 @@ export default function App() {
             fishTypeOptions={data.fish.map((item) => item.name)}
             landings={landings}
             openComposerNonce={openShareComposerNonce}
+            onComposerOpenChange={setShareComposerOpen}
             onPostExperience={handlePostExperience}
             onOpenXIntent={async (finalText, imageFile) => {
               if (imageFile) {

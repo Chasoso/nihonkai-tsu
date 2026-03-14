@@ -22,6 +22,7 @@ interface ShareStudioProps {
   onOpenXIntent: (finalText: string, imageFile: File | null) => Promise<boolean> | boolean;
   onComplete: (completedFishId?: string) => void;
   onPostExperience?: (metricType: "copy" | "x_click", summary?: MetricsSummary | null) => void;
+  onComposerOpenChange?: (open: boolean) => void;
 }
 
 type FrameOption = "none" | "nihonkai";
@@ -480,7 +481,8 @@ export function ShareStudio({
   openComposerNonce,
   onOpenXIntent,
   onComplete,
-  onPostExperience
+  onPostExperience,
+  onComposerOpenChange
 }: ShareStudioProps) {
   const [composerOpen, setComposerOpen] = useState(false);
   const [cameraPreviewOpen, setCameraPreviewOpen] = useState(false);
@@ -896,10 +898,12 @@ export function ShareStudio({
 
   const openComposer = () => {
     setComposerOpen(true);
+    onComposerOpenChange?.(true);
   };
 
   const closeComposer = () => {
     setComposerOpen(false);
+    onComposerOpenChange?.(false);
     resetComposer();
   };
 
