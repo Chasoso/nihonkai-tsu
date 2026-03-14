@@ -28,6 +28,13 @@ function maxCount(points: DashboardMetrics["dailyCounts"]): number {
 
 function buildChartPoint(index: number, total: number, count: number, maxYValue: number) {
   const drawableWidth = CHART_WIDTH - CHART_PADDING_X * 2;
+  const centeredX = CHART_PADDING_X + drawableWidth / 2;
+  if (total <= 1) {
+    const safeMaxYValue = Math.max(maxYValue, 1);
+    const y = CHART_PADDING_TOP + CHART_PLOT_HEIGHT - (count / safeMaxYValue) * CHART_PLOT_HEIGHT;
+    return { x: centeredX, y };
+  }
+
   const step = total > 1 ? drawableWidth / (total - 1) : 0;
   const x = CHART_PADDING_X + step * index;
   const safeMaxYValue = Math.max(maxYValue, 1);
