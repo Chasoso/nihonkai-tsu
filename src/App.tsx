@@ -232,7 +232,7 @@ export default function App() {
   };
 
   const startPostingFlow = () => {
-    setShareTargetFish(selectedFish);
+    setShareTargetFish(null);
     setOpenShareComposerNonce((prev) => prev + 1);
     shareRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };

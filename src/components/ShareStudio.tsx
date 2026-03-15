@@ -976,7 +976,7 @@ export function ShareStudio({
   const capturePhoto = () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas || !fish) return;
+    if (!video || !canvas) return;
 
     const width = video.videoWidth;
     const height = video.videoHeight;
@@ -992,7 +992,7 @@ export function ShareStudio({
     canvas.toBlob(
       (blob) => {
         if (!blob) return;
-        const file = new File([blob], `nihonkai-${fish.id}-${Date.now()}.jpg`, { type: "image/jpeg" });
+        const file = new File([blob], `nihonkai-${fish?.id || "fish"}-${Date.now()}.jpg`, { type: "image/jpeg" });
         updateSelectedImage(file);
         stopCamera();
       },
@@ -1147,7 +1147,7 @@ export function ShareStudio({
   };
 
   const handleOpenXPost = async () => {
-    if (!fish || !editablePostText.trim()) return;
+    if (!editablePostText.trim()) return;
 
     setIsSubmitting(true);
     const metricFishId = confirmedFishId.trim().toLowerCase();
@@ -1174,7 +1174,7 @@ export function ShareStudio({
         fishLabel: metricFishLabel,
         selectedVariant: metricVariant,
         alreadyCompleted: completionNotifiedRef.current,
-        completedFishId: confirmedFishId.trim() || fish.id,
+        completedFishId: confirmedFishId.trim() || fish?.id || "unknown",
         onComplete,
         onMarkCompleted: () => {
           completionNotifiedRef.current = true;

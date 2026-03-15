@@ -24,8 +24,17 @@ const landings: LandingsData = {
   species: []
 };
 
+const landingsWithSpecies: LandingsData = {
+  meta: landings.meta,
+  species: [
+    { id: "saba", name_ja: "サバ", monthly: [] },
+    { id: "aji", name_ja: "アジ", monthly: [] },
+    { id: "iwashi", name_ja: "イワシ", monthly: [] }
+  ]
+};
+
 describe("ShareStudio", () => {
-  it("投稿フロー3ステップを表示し、未完了ステップを無効化する", async () => {
+  it("shows the 3-step flow and disables incomplete steps", async () => {
     const { rerender } = render(
       <ShareStudio
         fish={fish}
@@ -54,7 +63,7 @@ describe("ShareStudio", () => {
     expect(screen.queryByRole("button", { name: "投稿文を作る" })).not.toBeInTheDocument();
   });
 
-  it("カメラ起動時はプレビューを表示し、撮影前は次へを無効化する", async () => {
+  it("shows the camera preview and keeps next disabled before capture", async () => {
     const getUserMedia = vi.fn().mockResolvedValue({
       getTracks: () => [{ stop: vi.fn() }]
     });
@@ -95,7 +104,7 @@ describe("ShareStudio", () => {
     expect(screen.getByRole("button", { name: "この写真で次へ" })).toBeDisabled();
   });
 
-  it("撮影ボタンで写真を取り込み、次へ進める状態になる", async () => {
+  it("captures a photo from the shutter button and enables next", async () => {
     const getUserMedia = vi.fn().mockResolvedValue({
       getTracks: () => [{ stop: vi.fn() }]
     });
@@ -157,7 +166,7 @@ describe("ShareStudio", () => {
     toBlob.mockRestore();
   });
 
-  it("カメラプレビューにストリームの縦横比を反映する", async () => {
+  it("uses the camera stream aspect ratio for the preview frame", async () => {
     const getUserMedia = vi.fn().mockResolvedValue({
       getTracks: () => [
         {
@@ -211,5 +220,66 @@ describe("ShareStudio", () => {
     expect(document.querySelector(".media-frame")).toHaveStyle({
       aspectRatio: `${4032 / 3024}`
     });
+  });
+
+  it("keeps the target fish unselected when opened without an explicit fish", async () => {
+    const getUserMedia = vi.fn().mockResolvedValue({
+      getTracks: () => [{ stop: vi.fn() }]
+    });
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: { getUserMedia }
+    });
+    Object.defineProperty(HTMLMediaElement.prototype, "play", {
+      configurable: true,
+      value: vi.fn().mockResolvedValue(undefined)
+    });
+    Object.defineProperty(HTMLVideoElement.prototype, "videoWidth", {
+      configurable: true,
+      get: () => 1280
+    });
+    Object.defineProperty(HTMLVideoElement.prototype, "videoHeight", {
+      configurable: true,
+      get: () => 720
+    });
+
+    const drawImage = vi.fn();
+    const getContext = vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      drawImage
+    } as unknown as CanvasRenderingContext2D);
+    const toBlob = vi
+      .spyOn(HTMLCanvasElement.prototype, "toBlob")
+      .mockImplementation((callback) => callback(new Blob(["image"], { type: "image/jpeg" })));
+
+    const { rerender } = render(
+      <ShareStudio
+        fish={null}
+        fishTypeOptions={["saba", "aji", "iwashi"]}
+        landings={landingsWithSpecies}
+        openComposerNonce={0}
+        onOpenXIntent={async () => true}
+        onComplete={() => undefined}
+      />
+    );
+
+    rerender(
+      <ShareStudio
+        fish={null}
+        fishTypeOptions={["saba", "aji", "iwashi"]}
+        landings={landingsWithSpecies}
+        openComposerNonce={1}
+        onOpenXIntent={async () => true}
+        onComplete={() => undefined}
+      />
+    );
+
+    expect((await screen.findAllByText("対象の魚: 未選択")).length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "カメラを開く" }));
+    fireEvent.touchEnd(await screen.findByLabelText("撮影"));
+    await waitFor(() => expect(screen.getByRole("button", { name: "この写真で次へ" })).toBeEnabled());
+
+    getContext.mockRestore();
+    toBlob.mockRestore();
   });
 });
