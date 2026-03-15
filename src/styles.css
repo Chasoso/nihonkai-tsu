@@ -2735,11 +2735,14 @@ textarea {
   }
 
   .step-flow-step-number {
-    font-size: 14px;
+    font-size: 12px;
   }
 
   .step-flow-step-label {
-    font-size: 22px;
+    font-size: 16px;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    white-space: nowrap;
   }
 
   .step-flow-icon-row {
