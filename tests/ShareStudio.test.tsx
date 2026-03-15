@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { ShareStudio } from "../src/components/ShareStudio";
+import { ShareStudio, normalizeKanaForSearch } from "../src/components/ShareStudio";
 import type { Fish, LandingsData } from "../src/types";
 
 const fish: Fish = {
@@ -34,6 +34,11 @@ const landingsWithSpecies: LandingsData = {
 };
 
 describe("ShareStudio", () => {
+  it("normalizes hiragana and katakana to the same search key", () => {
+    expect(normalizeKanaForSearch("まいわし")).toBe(normalizeKanaForSearch("マイワシ"));
+    expect(normalizeKanaForSearch("  あかがれい ")).toBe(normalizeKanaForSearch("アカガレイ"));
+  });
+
   it("shows the 3-step flow and disables incomplete steps", async () => {
     const { rerender } = render(
       <ShareStudio

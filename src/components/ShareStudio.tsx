@@ -84,6 +84,14 @@ function formatPostText(input: string, appUrl: string): string {
   return lines.filter((line) => line.trim().length > 0).join("\n");
 }
 
+export function normalizeKanaForSearch(value: string): string {
+  return value
+    .normalize("NFKC")
+    .trim()
+    .toLowerCase()
+    .replace(/[ァ-ヶ]/g, (char) => String.fromCharCode(char.charCodeAt(0) - 0x60));
+}
+
 function drawRoundedRect(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -664,10 +672,10 @@ export function ShareStudio({
   const searchableFishOptions = useMemo(() => fishMasterOptions, [fishMasterOptions]);
   const filteredOtherFishOptions = useMemo(() => {
     if (!needsOtherFishSelection) return [];
-    const query = otherFishQuery.trim().toLowerCase();
+    const query = normalizeKanaForSearch(otherFishQuery);
     if (!query) return searchableFishOptions.slice(0, 24);
     return searchableFishOptions
-      .filter((item) => item.label.toLowerCase().includes(query))
+      .filter((item) => normalizeKanaForSearch(item.label).includes(query))
       .slice(0, 24);
   }, [needsOtherFishSelection, otherFishQuery, searchableFishOptions]);
 
