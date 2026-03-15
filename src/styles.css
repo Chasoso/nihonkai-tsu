@@ -1936,6 +1936,7 @@ textarea {
 .camera-preview {
   object-fit: cover;
   background: rgba(0, 0, 0, 0.35);
+  pointer-events: none;
 }
 
 .captured-preview {
@@ -1957,6 +1958,8 @@ textarea {
   background: rgba(255, 255, 255, 0.24);
   border: 2px solid rgba(255, 255, 255, 0.92);
   z-index: 6;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .capture-icon {

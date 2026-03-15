@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, TouchEvent as ReactTouchEvent } from "react";
 import { createPortal } from "react-dom";
 import type { Fish, LandingsData, LandingSpecies } from "../types";
 import nihonkaiLogo from "../assets/nihonkai_tsu.png";
@@ -474,6 +474,18 @@ export async function buildAiInputImage(file: File, maxEdgePx: number, quality: 
   };
 }
 
+async function measureFileAspectRatio(file: File): Promise<number | null> {
+  try {
+    const img = await loadFileImage(file);
+    const width = img.naturalWidth || img.width;
+    const height = img.naturalHeight || img.height;
+    if (!width || !height) return null;
+    return width / height;
+  } catch {
+    return null;
+  }
+}
+
 export function ShareStudio({
   fish,
   fishTypeOptions,
@@ -491,6 +503,7 @@ export function ShareStudio({
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
+  const [previewAspectRatio, setPreviewAspectRatio] = useState<number | null>(null);
   const [frameOption, setFrameOption] = useState<FrameOption>("nihonkai");
   const [currentStep, setCurrentStep] = useState<ComposerStep>(1);
   const [fishCandidates, setFishCandidates] = useState<FishCandidateOption[]>([]);
@@ -701,11 +714,29 @@ export function ShareStudio({
     if (!cameraPreviewOpen || !video || !stream || selectedImageUrl) return;
 
     let cancelled = false;
+    const syncPreviewAspectRatio = () => {
+      if (cancelled) return;
+      const width = video.videoWidth;
+      const height = video.videoHeight;
+      if (width > 0 && height > 0) {
+        setPreviewAspectRatio(width / height);
+        return;
+      }
+      const trackSettings = stream.getVideoTracks?.()[0]?.getSettings?.();
+      const trackWidth = Number(trackSettings?.width || 0);
+      const trackHeight = Number(trackSettings?.height || 0);
+      if (trackWidth > 0 && trackHeight > 0) {
+        setPreviewAspectRatio(trackWidth / trackHeight);
+      }
+    };
+
+    video.addEventListener("loadedmetadata", syncPreviewAspectRatio);
     video.srcObject = stream;
     void video
       .play()
       .then(() => {
         if (!cancelled) {
+          syncPreviewAspectRatio();
           setCameraReady(true);
         }
       })
@@ -719,6 +750,7 @@ export function ShareStudio({
 
     return () => {
       cancelled = true;
+      video.removeEventListener("loadedmetadata", syncPreviewAspectRatio);
     };
   }, [cameraPreviewOpen, selectedImageUrl, cameraStreamVersion]);
 
@@ -850,6 +882,7 @@ export function ShareStudio({
     }
 
     setSelectedImageFile(file);
+    setPreviewAspectRatio(null);
     setCurrentStep(1);
     applyInitialFishSelection();
     setOtherFishQuery("");
@@ -869,6 +902,11 @@ export function ShareStudio({
       return;
     }
     setSelectedImageUrl(URL.createObjectURL(file));
+    void measureFileAspectRatio(file).then((ratio) => {
+      if (ratio) {
+        setPreviewAspectRatio(ratio);
+      }
+    });
     void estimateFishCandidates(file);
   };
 
@@ -913,6 +951,7 @@ export function ShareStudio({
     updateSelectedImage(null);
     setCameraPreviewOpen(true);
     setCameraReady(false);
+    setPreviewAspectRatio(null);
 
     try {
       if (!navigator.mediaDevices?.getUserMedia) {
@@ -960,6 +999,11 @@ export function ShareStudio({
       "image/jpeg",
       0.92
     );
+  };
+
+  const handleCaptureTouchEnd = (event: ReactTouchEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    capturePhoto();
   };
 
   const handlePickImageClick = () => {
@@ -1274,7 +1318,10 @@ export function ShareStudio({
                     ) : null}
 
                     <div className="composer-step-preview composer-step-preview-wide">
-                      <div className="media-frame">
+                      <div
+                        className="media-frame"
+                        style={previewAspectRatio ? { aspectRatio: `${previewAspectRatio}` } : undefined}
+                      >
                         {selectedImageUrl ? (
                           <img src={selectedImageUrl} className="captured-preview" alt="post image preview" />
                         ) : (
@@ -1286,8 +1333,10 @@ export function ShareStudio({
 
                         {cameraReady && !selectedImageUrl ? (
                           <button
+                            type="button"
                             className="capture-button-in-frame"
                             onClick={capturePhoto}
+                            onTouchEnd={handleCaptureTouchEnd}
                             disabled={isGenerating || isSubmitting}
                             aria-label="撮影"
                           >
